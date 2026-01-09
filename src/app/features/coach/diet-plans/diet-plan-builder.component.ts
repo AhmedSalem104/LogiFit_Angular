@@ -2278,6 +2278,7 @@ interface Meal {
         .p-dropdown-label {
           color: white;
           padding: 12px 16px;
+          font-weight: 500;
         }
 
         &:not(.p-disabled):hover {
@@ -2287,6 +2288,72 @@ interface Meal {
         &:not(.p-disabled).p-focus {
           border-color: var(--diet-primary);
           box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+      }
+
+      /* Dropdown Panel Overlay Styles */
+      .p-dropdown-panel {
+        background: #1a1a2e !important;
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+
+        .p-dropdown-header {
+          background: #151525;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          padding: 12px;
+
+          .p-dropdown-filter {
+            background: #1a1a2e;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #fff;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+
+            &::placeholder {
+              color: rgba(255, 255, 255, 0.4);
+            }
+
+            &:focus {
+              border-color: #10b981;
+              box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+            }
+          }
+        }
+
+        .p-dropdown-items-wrapper {
+          max-height: 350px;
+        }
+
+        .p-dropdown-items {
+          padding: 8px;
+
+          .p-dropdown-item {
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+
+            &:hover {
+              background: rgba(16, 185, 129, 0.15);
+              color: #10b981;
+            }
+
+            &.p-highlight {
+              background: linear-gradient(135deg, #10b981, #059669);
+              color: white;
+              font-weight: 600;
+            }
+          }
+
+          .p-dropdown-empty-message {
+            color: rgba(255, 255, 255, 0.5);
+            padding: 20px;
+            text-align: center;
+          }
         }
       }
 
@@ -2929,7 +2996,7 @@ export class DietPlanBuilderComponent implements OnInit {
         // Set foods
         this.foods.set(foods);
         this.foodOptions = foods.map(f => ({
-          label: f.name,
+          label: f.nameAr || f.name,
           value: f.id,
           data: f
         }));
@@ -3043,7 +3110,7 @@ export class DietPlanBuilderComponent implements OnInit {
       next: (data) => {
         this.foods.set(data);
         this.foodOptions = data.map(f => ({
-          label: f.name,
+          label: f.nameAr || f.name,
           value: f.id,
           data: f
         }));

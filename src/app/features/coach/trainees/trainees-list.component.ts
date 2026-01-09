@@ -171,8 +171,7 @@ import { CoachService, Trainee } from '../services/coach.service';
                     }
                   </div>
                   <div class="trainee-details">
-                    <span class="trainee-name">{{ trainee.clientName || trainee.fullName }}</span>
-                    <span class="trainee-id" *ngIf="trainee.id">ID: {{ trainee.id | slice:0:8 }}</span>
+                    <span class="trainee-name">{{ trainee.clientName || trainee.fullName || 'بدون اسم' }}</span>
                   </div>
                 </div>
               </td>
@@ -599,10 +598,13 @@ import { CoachService, Trainee } from '../services/coach.service';
       font-size: 0.95rem;
     }
 
-    .trainee-id {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      font-family: monospace;
+    .trainee-email {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .contact-cell {
@@ -1207,6 +1209,7 @@ export class TraineesListComponent implements OnInit {
   }
 
   getInitials(name: string): string {
+    if (!name) return '؟';
     return name.split(' ').map(n => n[0]).slice(0, 2).join('');
   }
 

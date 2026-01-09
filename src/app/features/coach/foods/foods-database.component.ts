@@ -96,38 +96,110 @@ import Swal from 'sweetalert2';
               <i class="pi pi-times"></i>
             </button>
           </div>
-          <div class="filter-chips">
-            <button
-              class="chip"
-              [class.active]="selectedMacroFilter === ''"
-              (click)="filterByMacro('')"
-            >
-              الكل
-            </button>
-            <button
-              class="chip protein-chip"
-              [class.active]="selectedMacroFilter === 'protein'"
-              (click)="filterByMacro('protein')"
-            >
-              <i class="pi pi-star-fill"></i>
-              عالي البروتين
-            </button>
-            <button
-              class="chip carbs-chip"
-              [class.active]="selectedMacroFilter === 'carbs'"
-              (click)="filterByMacro('carbs')"
-            >
-              <i class="pi pi-stop-circle"></i>
-              عالي الكربوهيدرات
-            </button>
-            <button
-              class="chip fat-chip"
-              [class.active]="selectedMacroFilter === 'fat'"
-              (click)="filterByMacro('fat')"
-            >
-              <i class="pi pi-circle-fill"></i>
-              عالي الدهون
-            </button>
+          <div class="filter-section">
+            <span class="filter-label">الماكروز:</span>
+            <div class="filter-chips">
+              <button
+                class="chip"
+                [class.active]="selectedMacroFilter === '' && selectedCategory === ''"
+                (click)="clearFilters()"
+              >
+                الكل
+              </button>
+              <button
+                class="chip protein-chip"
+                [class.active]="selectedMacroFilter === 'protein'"
+                (click)="filterByMacro('protein')"
+              >
+                <i class="pi pi-star-fill"></i>
+                عالي البروتين
+              </button>
+              <button
+                class="chip carbs-chip"
+                [class.active]="selectedMacroFilter === 'carbs'"
+                (click)="filterByMacro('carbs')"
+              >
+                <i class="pi pi-stop-circle"></i>
+                عالي الكربوهيدرات
+              </button>
+              <button
+                class="chip fat-chip"
+                [class.active]="selectedMacroFilter === 'fat'"
+                (click)="filterByMacro('fat')"
+              >
+                <i class="pi pi-circle-fill"></i>
+                عالي الدهون
+              </button>
+            </div>
+          </div>
+          <div class="filter-section">
+            <span class="filter-label">الفئات:</span>
+            <div class="filter-chips">
+              <button
+                class="chip category-chip protein-cat"
+                [class.active]="selectedCategory === 'Protein'"
+                (click)="filterByCategory('Protein')"
+              >
+                <i class="pi pi-heart-fill"></i>
+                بروتين
+              </button>
+              <button
+                class="chip category-chip carbs-cat"
+                [class.active]="selectedCategory === 'Carbs'"
+                (click)="filterByCategory('Carbs')"
+              >
+                <i class="pi pi-box"></i>
+                كربوهيدرات
+              </button>
+              <button
+                class="chip category-chip fats-cat"
+                [class.active]="selectedCategory === 'Fats'"
+                (click)="filterByCategory('Fats')"
+              >
+                <i class="pi pi-circle"></i>
+                دهون
+              </button>
+              <button
+                class="chip category-chip vegetables-cat"
+                [class.active]="selectedCategory === 'Vegetables'"
+                (click)="filterByCategory('Vegetables')"
+              >
+                <i class="pi pi-slack"></i>
+                خضروات
+              </button>
+              <button
+                class="chip category-chip fruits-cat"
+                [class.active]="selectedCategory === 'Fruits'"
+                (click)="filterByCategory('Fruits')"
+              >
+                <i class="pi pi-sun"></i>
+                فواكه
+              </button>
+              <button
+                class="chip category-chip dairy-cat"
+                [class.active]="selectedCategory === 'Dairy'"
+                (click)="filterByCategory('Dairy')"
+              >
+                <i class="pi pi-slack"></i>
+                ألبان
+              </button>
+              <button
+                class="chip category-chip beverages-cat"
+                [class.active]="selectedCategory === 'Beverages'"
+                (click)="filterByCategory('Beverages')"
+              >
+                <i class="pi pi-filter"></i>
+                مشروبات
+              </button>
+              <button
+                class="chip category-chip snacks-cat"
+                [class.active]="selectedCategory === 'Snacks'"
+                (click)="filterByCategory('Snacks')"
+              >
+                <i class="pi pi-ticket"></i>
+                وجبات خفيفة
+              </button>
+            </div>
           </div>
         </div>
 
@@ -476,6 +548,20 @@ import Swal from 'sweetalert2';
       gap: 1rem;
     }
 
+    .filter-section {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      min-width: 60px;
+    }
+
     .search-box {
       position: relative;
       max-width: 400px;
@@ -594,6 +680,52 @@ import Swal from 'sweetalert2';
           background: linear-gradient(135deg, #22c55e, #16a34a);
           border-color: #22c55e;
         }
+      }
+
+      // Category chips
+      &.category-chip {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.85rem;
+      }
+
+      &.protein-cat {
+        &:hover { border-color: #ef4444; color: #ef4444; }
+        &.active { background: linear-gradient(135deg, #ef4444, #dc2626); border-color: #ef4444; }
+      }
+
+      &.carbs-cat {
+        &:hover { border-color: #3b82f6; color: #3b82f6; }
+        &.active { background: linear-gradient(135deg, #3b82f6, #2563eb); border-color: #3b82f6; }
+      }
+
+      &.fats-cat {
+        &:hover { border-color: #eab308; color: #eab308; }
+        &.active { background: linear-gradient(135deg, #eab308, #ca8a04); border-color: #eab308; }
+      }
+
+      &.vegetables-cat {
+        &:hover { border-color: #22c55e; color: #22c55e; }
+        &.active { background: linear-gradient(135deg, #22c55e, #16a34a); border-color: #22c55e; }
+      }
+
+      &.fruits-cat {
+        &:hover { border-color: #ec4899; color: #ec4899; }
+        &.active { background: linear-gradient(135deg, #ec4899, #db2777); border-color: #ec4899; }
+      }
+
+      &.dairy-cat {
+        &:hover { border-color: #8b5cf6; color: #8b5cf6; }
+        &.active { background: linear-gradient(135deg, #8b5cf6, #7c3aed); border-color: #8b5cf6; }
+      }
+
+      &.beverages-cat {
+        &:hover { border-color: #06b6d4; color: #06b6d4; }
+        &.active { background: linear-gradient(135deg, #06b6d4, #0891b2); border-color: #06b6d4; }
+      }
+
+      &.snacks-cat {
+        &:hover { border-color: #f97316; color: #f97316; }
+        &.active { background: linear-gradient(135deg, #f97316, #ea580c); border-color: #f97316; }
       }
     }
 
@@ -1047,16 +1179,22 @@ export class FoodsDatabaseComponent implements OnInit {
 
   clearSearch(): void {
     this.searchQuery = '';
+  }
+
+  clearFilters(): void {
+    this.searchQuery = '';
     this.selectedCategory = '';
     this.selectedMacroFilter = '';
   }
 
   filterByCategory(category: string): void {
-    this.selectedCategory = category;
+    this.selectedCategory = this.selectedCategory === category ? '' : category;
+    this.selectedMacroFilter = ''; // Clear macro filter when selecting category
   }
 
   filterByMacro(macro: string): void {
-    this.selectedMacroFilter = macro;
+    this.selectedMacroFilter = this.selectedMacroFilter === macro ? '' : macro;
+    this.selectedCategory = ''; // Clear category filter when selecting macro
   }
 
   getCategoryColor(category: string): string {
@@ -1107,7 +1245,8 @@ export class FoodsDatabaseComponent implements OnInit {
           fatPer100g: f.fatsPer100g || f.fatPer100g || 0, // Map fatsPer100g to fatPer100g for display
           servingSize: f.servingSize || 100,
           servingUnit: f.servingUnit || 'g',
-          isGlobal: false // Allow editing all foods, API handles permissions
+          isGlobal: false, // Allow editing all foods, API handles permissions
+          isVerified: false // Allow editing all foods, API handles permissions
         }));
         this.foods.set(mappedFoods);
         this.loading.set(false);

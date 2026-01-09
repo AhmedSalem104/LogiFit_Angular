@@ -204,6 +204,18 @@ interface WorkoutDay {
                       <h3>مدة البرنامج</h3>
                     </div>
                     <div class="card-body">
+                      <!-- Quick Duration Buttons -->
+                      <div class="quick-duration-btns">
+                        <button type="button" class="quick-btn" [class.active]="form.get('durationWeeks')?.value === 4" (click)="setDuration(4)">
+                          4 أسابيع
+                        </button>
+                        <button type="button" class="quick-btn" [class.active]="form.get('durationWeeks')?.value === 8" (click)="setDuration(8)">
+                          8 أسابيع
+                        </button>
+                        <button type="button" class="quick-btn" [class.active]="form.get('durationWeeks')?.value === 12" (click)="setDuration(12)">
+                          12 أسبوع
+                        </button>
+                      </div>
                       <div class="duration-control">
                         <button type="button" class="ctrl-btn" (click)="decrementWeeks()" [disabled]="form.get('durationWeeks')?.value <= 1">
                           <i class="pi pi-minus"></i>
@@ -211,6 +223,7 @@ interface WorkoutDay {
                         <div class="duration-display">
                           <span class="value">{{ form.get('durationWeeks')?.value }}</span>
                           <span class="label">أسبوع</span>
+                          <span class="days-info">≈ {{ form.get('durationWeeks')?.value * 7 }} يوم</span>
                         </div>
                         <button type="button" class="ctrl-btn" (click)="incrementWeeks()">
                           <i class="pi pi-plus"></i>
@@ -313,33 +326,34 @@ interface WorkoutDay {
 
                 <!-- Active Day Content -->
                 <div class="day-builder" formArrayName="days">
-                  @if (expandedDay !== null && daysArray.at(expandedDay)) {
-                    <div [formGroupName]="expandedDay" @fadeSlide>
+                  @for (dayIdx of [expandedDay]; track dayIdx) {
+                    @if (dayIdx !== null && daysArray.at(dayIdx)) {
+                      <div [formGroupName]="dayIdx" @fadeSlide>
                       <!-- Day Header -->
                       <div class="day-header">
                         <input
                           type="text"
                           pInputText
                           formControlName="name"
-                          [placeholder]="'اليوم ' + (expandedDay + 1) + ' - مثال: صدر وترايسبس'"
+                          [placeholder]="'اليوم ' + (dayIdx + 1) + ' - مثال: صدر وترايسبس'"
                           class="day-name-input"
                         />
                         <div class="day-stats">
                           <div class="stat">
                             <i class="pi pi-list"></i>
-                            <span>{{ getExercisesArray(expandedDay).length }} تمرين</span>
+                            <span>{{ getExercisesArray(dayIdx).length }} تمرين</span>
                           </div>
                           <div class="stat">
                             <i class="pi pi-refresh"></i>
-                            <span>{{ getTotalSetsForDay(expandedDay) }} مجموعة</span>
+                            <span>{{ getTotalSetsForDay(dayIdx) }} مجموعة</span>
                           </div>
                           <div class="stat volume">
                             <i class="pi pi-chart-bar"></i>
-                            <span>{{ getDayTotalVolume(expandedDay) | number:'1.0-0' }} kg</span>
+                            <span>{{ getDayTotalVolume(dayIdx) | number:'1.0-0' }} kg</span>
                           </div>
                         </div>
                         @if (daysArray.length > 1) {
-                          <button type="button" class="delete-day-btn" (click)="removeDay(expandedDay)">
+                          <button type="button" class="delete-day-btn" (click)="removeDay(dayIdx)">
                             <i class="pi pi-trash"></i>
                           </button>
                         }
@@ -350,9 +364,9 @@ interface WorkoutDay {
                         class="exercises-container"
                         formArrayName="exercises"
                         cdkDropList
-                        (cdkDropListDropped)="onExerciseDrop($event, expandedDay)"
+                        (cdkDropListDropped)="onExerciseDrop($event, dayIdx)"
                       >
-                        @for (exercise of getExercisesArray(expandedDay).controls; track $index; let j = $index) {
+                        @for (exercise of getExercisesArray(dayIdx).controls; track $index; let j = $index) {
                           <div class="exercise-card" [formGroupName]="j" cdkDrag @fadeSlide>
                             <div class="exercise-drag-placeholder" *cdkDragPlaceholder></div>
 
@@ -373,7 +387,7 @@ interface WorkoutDay {
                                   [style]="{width: '100%'}"
                                   appendTo="body"
                                   styleClass="exercise-dropdown"
-                                  (onChange)="onExerciseSelect($event, expandedDay, j)"
+                                  (onChange)="onExerciseSelect($event, dayIdx, j)"
                                 >
                                   <ng-template pTemplate="selectedItem" let-item>
                                     <div class="selected-exercise">
@@ -383,7 +397,7 @@ interface WorkoutDay {
                                   </ng-template>
                                 </p-dropdown>
                               </div>
-                              <button type="button" class="remove-exercise-btn" (click)="removeExercise(expandedDay, j)">
+                              <button type="button" class="remove-exercise-btn" (click)="removeExercise(dayIdx, j)">
                                 <i class="pi pi-trash"></i>
                               </button>
                             </div>
@@ -394,9 +408,9 @@ interface WorkoutDay {
                               <div class="control-group">
                                 <label><i class="pi pi-th-large"></i> المجموعات</label>
                                 <div class="stepper">
-                                  <button type="button" class="stepper-btn minus" (click)="decrementSets(expandedDay, j)">-</button>
-                                  <span class="stepper-value">{{ getExercisesArray(expandedDay).at(j).get('sets')?.value }}</span>
-                                  <button type="button" class="stepper-btn plus" (click)="incrementSets(expandedDay, j)">+</button>
+                                  <button type="button" class="stepper-btn minus" (click)="decrementSets(dayIdx, j)">-</button>
+                                  <span class="stepper-value">{{ getExercisesArray(dayIdx).at(j).get('sets')?.value }}</span>
+                                  <button type="button" class="stepper-btn plus" (click)="incrementSets(dayIdx, j)">+</button>
                                 </div>
                               </div>
 
@@ -404,9 +418,9 @@ interface WorkoutDay {
                               <div class="control-group">
                                 <label><i class="pi pi-replay"></i> التكرارات</label>
                                 <div class="stepper">
-                                  <button type="button" class="stepper-btn minus" (click)="decrementReps(expandedDay, j)">-</button>
-                                  <span class="stepper-value">{{ getExercisesArray(expandedDay).at(j).get('reps')?.value }}</span>
-                                  <button type="button" class="stepper-btn plus" (click)="incrementReps(expandedDay, j)">+</button>
+                                  <button type="button" class="stepper-btn minus" (click)="decrementReps(dayIdx, j)">-</button>
+                                  <span class="stepper-value">{{ getExercisesArray(dayIdx).at(j).get('reps')?.value }}</span>
+                                  <button type="button" class="stepper-btn plus" (click)="incrementReps(dayIdx, j)">+</button>
                                 </div>
                               </div>
 
@@ -414,9 +428,9 @@ interface WorkoutDay {
                               <div class="control-group weight">
                                 <label><i class="pi pi-chart-line"></i> الوزن (kg)</label>
                                 <div class="stepper">
-                                  <button type="button" class="stepper-btn minus" (click)="decrementWeight(expandedDay, j)">-</button>
-                                  <span class="stepper-value">{{ getExercisesArray(expandedDay).at(j).get('weight')?.value }}</span>
-                                  <button type="button" class="stepper-btn plus" (click)="incrementWeight(expandedDay, j)">+</button>
+                                  <button type="button" class="stepper-btn minus" (click)="decrementWeight(dayIdx, j)">-</button>
+                                  <span class="stepper-value">{{ getExercisesArray(dayIdx).at(j).get('weight')?.value }}</span>
+                                  <button type="button" class="stepper-btn plus" (click)="incrementWeight(dayIdx, j)">+</button>
                                 </div>
                               </div>
 
@@ -433,19 +447,19 @@ interface WorkoutDay {
                             <!-- Volume Display -->
                             <div class="exercise-volume">
                               <div class="volume-formula">
-                                {{ getExercisesArray(expandedDay).at(j).get('sets')?.value }} ×
-                                {{ getExercisesArray(expandedDay).at(j).get('reps')?.value }} ×
-                                {{ getExercisesArray(expandedDay).at(j).get('weight')?.value }}kg
+                                {{ getExercisesArray(dayIdx).at(j).get('sets')?.value }} ×
+                                {{ getExercisesArray(dayIdx).at(j).get('reps')?.value }} ×
+                                {{ getExercisesArray(dayIdx).at(j).get('weight')?.value }}kg
                               </div>
                               <div class="volume-result">
                                 <i class="pi pi-bolt"></i>
-                                <span>{{ getExerciseVolume(expandedDay, j) | number:'1.0-0' }} kg</span>
+                                <span>{{ getExerciseVolume(dayIdx, j) | number:'1.0-0' }} kg</span>
                               </div>
                             </div>
                           </div>
                         }
 
-                        @if (getExercisesArray(expandedDay).length === 0) {
+                        @if (getExercisesArray(dayIdx).length === 0) {
                           <div class="empty-exercises">
                             <div class="empty-icon">
                               <i class="pi pi-box"></i>
@@ -455,18 +469,18 @@ interface WorkoutDay {
                           </div>
                         }
 
-                        <button type="button" class="add-exercise-btn" (click)="addExercise(expandedDay)">
+                        <button type="button" class="add-exercise-btn" (click)="addExercise(dayIdx)">
                           <i class="pi pi-plus"></i>
                           <span>إضافة تمرين جديد</span>
                         </button>
                       </div>
 
                       <!-- Muscle Distribution -->
-                      @if (getExercisesArray(expandedDay).length > 0) {
+                      @if (getExercisesArray(dayIdx).length > 0) {
                         <div class="muscle-distribution">
                           <h5><i class="pi pi-chart-pie"></i> توزيع العضلات</h5>
                           <div class="muscle-bars">
-                            @for (muscle of getDayMuscleDistribution(expandedDay); track muscle.muscleName) {
+                            @for (muscle of getDayMuscleDistribution(dayIdx); track muscle.muscleName) {
                               <div class="muscle-row">
                                 <span class="muscle-name">{{ muscle.muscleName }}</span>
                                 <div class="muscle-bar">
@@ -479,7 +493,9 @@ interface WorkoutDay {
                         </div>
                       }
                     </div>
-                  } @else {
+                    }
+                  }
+                  @if (expandedDay === null) {
                     <div class="no-day-selected">
                       <i class="pi pi-calendar-plus"></i>
                       <p>اختر يوم أو أضف يوم جديد</p>
@@ -914,6 +930,38 @@ interface WorkoutDay {
       }
     }
 
+    /* Quick Duration Buttons */
+    .quick-duration-btns {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+
+      .quick-btn {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid var(--premium-border-default);
+        background: var(--premium-bg-base);
+        border-radius: var(--premium-radius-sm);
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--premium-text-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          border-color: var(--workout-primary);
+          color: var(--workout-primary);
+        }
+
+        &.active {
+          background: linear-gradient(135deg, var(--workout-primary), var(--workout-primary-dark, #ea580c));
+          border-color: var(--workout-primary);
+          color: white;
+          box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+        }
+      }
+    }
+
     /* Duration Control */
     .duration-control {
       display: flex;
@@ -949,6 +997,7 @@ interface WorkoutDay {
 
       .duration-display {
         text-align: center;
+        min-width: 100px;
 
         .value {
           display: block;
@@ -961,6 +1010,14 @@ interface WorkoutDay {
         .label {
           font-size: 0.85rem;
           color: var(--premium-text-muted);
+        }
+
+        .days-info {
+          display: block;
+          font-size: 0.75rem;
+          color: var(--premium-text-muted);
+          margin-top: 4px;
+          opacity: 0.7;
         }
       }
     }
@@ -1893,6 +1950,12 @@ interface WorkoutDay {
           border-color: var(--premium-border-default);
           border-radius: var(--premium-radius-md);
 
+          .p-dropdown-label {
+            color: var(--text-primary);
+            font-weight: 500;
+            padding: 12px 16px;
+          }
+
           &:not(.p-disabled):hover {
             border-color: var(--workout-primary);
           }
@@ -1900,6 +1963,71 @@ interface WorkoutDay {
           &:not(.p-disabled).p-focus {
             border-color: var(--workout-primary);
             box-shadow: 0 0 0 3px var(--workout-primary-glow);
+          }
+        }
+      }
+
+      /* Dropdown Panel Overlay Styles */
+      .p-dropdown-panel {
+        background: var(--bg-primary, #1e1e2d) !important;
+        border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+
+        .p-dropdown-header {
+          background: var(--bg-secondary, #151521);
+          border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.1));
+          padding: 12px;
+
+          .p-dropdown-filter {
+            background: var(--bg-primary, #1e1e2d);
+            border: 1px solid var(--border-color, rgba(255,255,255,0.15));
+            color: var(--text-primary, #fff);
+            border-radius: 8px;
+            padding: 10px 14px;
+
+            &::placeholder {
+              color: var(--text-muted, rgba(255,255,255,0.4));
+            }
+
+            &:focus {
+              border-color: var(--workout-primary, #f97316);
+              box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
+            }
+          }
+        }
+
+        .p-dropdown-items-wrapper {
+          max-height: 350px;
+        }
+
+        .p-dropdown-items {
+          padding: 8px;
+
+          .p-dropdown-item {
+            color: var(--text-primary, #fff);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+
+            &:hover {
+              background: rgba(249, 115, 22, 0.15);
+              color: #f97316;
+            }
+
+            &.p-highlight {
+              background: linear-gradient(135deg, #f97316, #ea580c);
+              color: white;
+              font-weight: 600;
+            }
+          }
+
+          .p-dropdown-empty-message {
+            color: var(--text-muted, rgba(255,255,255,0.5));
+            padding: 20px;
+            text-align: center;
           }
         }
       }
@@ -2213,7 +2341,18 @@ export class ProgramBuilderComponent implements OnInit {
   }
 
   onDayDrop(event: CdkDragDrop<any[]>): void {
-    moveItemInArray(this.daysArray.controls, event.previousIndex, event.currentIndex);
+    if (event.previousIndex === event.currentIndex) return;
+
+    // Get the control to move
+    const controlToMove = this.daysArray.at(event.previousIndex);
+
+    // Remove from original position
+    this.daysArray.removeAt(event.previousIndex);
+
+    // Insert at new position
+    this.daysArray.insert(event.currentIndex, controlToMove);
+
+    // Update expanded day index to follow the moved day
     if (this.expandedDay === event.previousIndex) {
       this.expandedDay = event.currentIndex;
     } else if (this.expandedDay !== null) {
@@ -2226,8 +2365,18 @@ export class ProgramBuilderComponent implements OnInit {
   }
 
   onExerciseDrop(event: CdkDragDrop<any[]>, dayIndex: number): void {
+    if (event.previousIndex === event.currentIndex) return;
+
     const exercisesArray = this.getExercisesArray(dayIndex);
-    moveItemInArray(exercisesArray.controls, event.previousIndex, event.currentIndex);
+
+    // Get the control to move
+    const controlToMove = exercisesArray.at(event.previousIndex);
+
+    // Remove from original position
+    exercisesArray.removeAt(event.previousIndex);
+
+    // Insert at new position
+    exercisesArray.insert(event.currentIndex, controlToMove);
   }
 
   ngOnInit(): void {
@@ -2243,7 +2392,7 @@ export class ProgramBuilderComponent implements OnInit {
         // Set exercises
         this.exercises.set(exercises);
         this.exerciseOptions = exercises.map(e => ({
-          label: `${e.name} (${e.targetMuscleName || e.muscleGroupName || 'غير محدد'})`,
+          label: `${e.nameAr || e.name} (${e.targetMuscleName || e.muscleGroupName || 'غير محدد'})`,
           value: e.id
         }));
 
@@ -2320,7 +2469,7 @@ export class ProgramBuilderComponent implements OnInit {
       next: (data) => {
         this.exercises.set(data);
         this.exerciseOptions = data.map(e => ({
-          label: `${e.name} (${e.targetMuscleName || e.muscleGroupName || 'غير محدد'})`,
+          label: `${e.nameAr || e.name} (${e.targetMuscleName || e.muscleGroupName || 'غير محدد'})`,
           value: e.id
         }));
       },
@@ -2342,7 +2491,7 @@ export class ProgramBuilderComponent implements OnInit {
         ];
         this.exercises.set(mockExercises);
         this.exerciseOptions = mockExercises.map(e => ({
-          label: `${e.name} (${e.muscleGroupName})`,
+          label: `${e.name} (${e.muscleGroupName})`,  // Mock data already in Arabic
           value: e.id
         }));
       }
@@ -2434,6 +2583,10 @@ export class ProgramBuilderComponent implements OnInit {
     if (current > 1) {
       this.form.patchValue({ durationWeeks: current - 1 });
     }
+  }
+
+  setDuration(weeks: number): void {
+    this.form.patchValue({ durationWeeks: weeks });
   }
 
   toggleDay(index: number): void {
