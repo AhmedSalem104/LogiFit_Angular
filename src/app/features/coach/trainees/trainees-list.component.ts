@@ -1476,7 +1476,8 @@ export class TraineesListComponent implements OnInit {
   }
 
   toggleTraineeStatus(trainee: Trainee): void {
-    const traineeId = trainee.id || trainee.clientId;
+    const traineeId = trainee.id || trainee.clientId || '';
+    if (!traineeId) return;
     const newStatus = !trainee.isActive;
 
     this.coachService.updateTrainee(traineeId, { isActive: newStatus }).subscribe({
@@ -1511,7 +1512,11 @@ export class TraineesListComponent implements OnInit {
     if (this.editingTrainee) {
       // For editing, API only allows updating isActive or transferring to another coach
       // We can only toggle status here
-      const traineeId = this.editingTrainee.id || this.editingTrainee.clientId;
+      const traineeId = this.editingTrainee.id || this.editingTrainee.clientId || '';
+      if (!traineeId) {
+        this.saving.set(false);
+        return;
+      }
       this.coachService.updateTrainee(traineeId, { isActive: true }).subscribe({
         next: () => {
           this.saving.set(false);
