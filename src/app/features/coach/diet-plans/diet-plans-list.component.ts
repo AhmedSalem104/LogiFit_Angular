@@ -8,6 +8,7 @@ import { TagModule } from 'primeng/tag';
 import { TableModule } from 'primeng/table';
 import { TooltipModule } from 'primeng/tooltip';
 import { DropdownModule } from 'primeng/dropdown';
+import { DialogModule } from 'primeng/dialog';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { CoachService, DietPlan } from '../services/coach.service';
@@ -25,6 +26,7 @@ import { CoachService, DietPlan } from '../services/coach.service';
     TableModule,
     TooltipModule,
     DropdownModule,
+    DialogModule,
     PageHeaderComponent,
     LoadingSkeletonComponent
   ],
@@ -223,6 +225,14 @@ import { CoachService, DietPlan } from '../services/coach.service';
               <!-- Actions -->
               <td>
                 <div class="actions-cell">
+                  <button
+                    class="action-icon print"
+                    (click)="printPlan(plan)"
+                    pTooltip="طباعة"
+                    tooltipPosition="top"
+                  >
+                    <i class="pi pi-print"></i>
+                  </button>
                   <a
                     [routerLink]="['/coach/diet-plans', plan.id, 'edit']"
                     class="action-icon edit"
@@ -278,6 +288,161 @@ import { CoachService, DietPlan } from '../services/coach.service';
         </p-table>
       </div>
     </div>
+
+    <!-- Print Dialog -->
+    <p-dialog
+      [(visible)]="showPrintDialog"
+      [modal]="true"
+      [style]="{width: '90vw', maxWidth: '900px'}"
+      [draggable]="false"
+      [resizable]="false"
+      styleClass="print-dialog"
+    >
+      <ng-template pTemplate="header">
+        <div class="print-dialog-header">
+          <i class="pi pi-print"></i>
+          <span>معاينة الطباعة - {{ printingPlan?.name }}</span>
+        </div>
+      </ng-template>
+
+      <div class="print-content" id="printAreaDiet">
+        @if (printingPlan) {
+          <!-- Header -->
+          <div class="print-header">
+            <div class="print-logo">
+              <i class="pi pi-bolt"></i>
+              <span>LogicFit</span>
+            </div>
+            <div class="print-title">
+              <h1>خطة التغذية</h1>
+              <h2>{{ printingPlan.name }}</h2>
+            </div>
+            <div class="print-date">
+              <span>تاريخ الطباعة: {{ today | date:'yyyy/MM/dd' }}</span>
+            </div>
+          </div>
+
+          <!-- Coach & Trainee Info -->
+          <div class="print-info-section">
+            <div class="info-card coach">
+              <div class="info-header">
+                <i class="pi pi-user"></i>
+                <span>بيانات المدرب</span>
+              </div>
+              <div class="info-body">
+                <div class="info-row">
+                  <span class="info-label">الاسم:</span>
+                  <span class="info-value">{{ printingPlan.coachName || coachName || 'غير محدد' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="info-card trainee">
+              <div class="info-header">
+                <i class="pi pi-users"></i>
+                <span>بيانات المتدرب</span>
+              </div>
+              <div class="info-body">
+                <div class="info-row">
+                  <span class="info-label">الاسم:</span>
+                  <span class="info-value">{{ printingPlan.clientName || 'غير محدد' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Nutrition Targets -->
+          <div class="print-nutrition-targets">
+            <div class="target-item calories">
+              <i class="pi pi-bolt"></i>
+              <span class="target-value">{{ printingPlan.totalCalories ?? printingPlan.targetCalories ?? 0 }}</span>
+              <span class="target-label">سعرة</span>
+            </div>
+            <div class="target-item protein">
+              <i class="pi pi-star-fill"></i>
+              <span class="target-value">{{ printingPlan.proteinGrams ?? printingPlan.targetProtein ?? 0 }}g</span>
+              <span class="target-label">بروتين</span>
+            </div>
+            <div class="target-item carbs">
+              <i class="pi pi-circle-fill"></i>
+              <span class="target-value">{{ printingPlan.carbsGrams ?? printingPlan.targetCarbs ?? 0 }}g</span>
+              <span class="target-label">كربوهيدرات</span>
+            </div>
+            <div class="target-item fats">
+              <i class="pi pi-moon"></i>
+              <span class="target-value">{{ printingPlan.fatGrams ?? printingPlan.targetFats ?? 0 }}g</span>
+              <span class="target-label">دهون</span>
+            </div>
+          </div>
+
+          @if (printingPlan.description) {
+            <div class="print-description">
+              <strong>الوصف:</strong> {{ printingPlan.description }}
+            </div>
+          }
+
+          <!-- Meals -->
+          @if (printingPlan.meals?.length) {
+            <div class="print-meals">
+              <h3>تفاصيل الوجبات</h3>
+              @for (meal of printingPlan.meals; track meal.id; let i = $index) {
+                <div class="meal-card">
+                  <div class="meal-header">
+                    <span class="meal-number">{{ i + 1 }}</span>
+                    <span class="meal-name">{{ meal.name || meal.mealName || 'وجبة ' + (i + 1) }}</span>
+                    @if (meal.time) {
+                      <span class="meal-time">{{ meal.time }}</span>
+                    }
+                  </div>
+                  @if (meal.items?.length) {
+                    <table class="meals-table">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>الطعام</th>
+                          <th>الكمية</th>
+                          <th>السعرات</th>
+                          <th>بروتين</th>
+                          <th>كربوهيدرات</th>
+                          <th>دهون</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (item of meal.items; track item.id; let j = $index) {
+                          <tr>
+                            <td>{{ j + 1 }}</td>
+                            <td>{{ item.foodName || 'طعام ' + (j + 1) }}</td>
+                            <td>{{ item.assignedQuantity }}{{ item.unit || 'g' }}</td>
+                            <td>{{ item.calcCalories ?? item.calories ?? 0 }}</td>
+                            <td>{{ item.calcProtein ?? item.protein ?? 0 }}g</td>
+                            <td>{{ item.calcCarbs ?? item.carbs ?? 0 }}g</td>
+                            <td>{{ item.calcFats ?? item.fats ?? 0 }}g</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  } @else {
+                    <p class="no-items">لا توجد عناصر في هذه الوجبة</p>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Footer -->
+          <div class="print-footer">
+            <p>تم إنشاء هذه الخطة بواسطة LogicFit</p>
+          </div>
+        }
+      </div>
+
+      <ng-template pTemplate="footer">
+        <button class="btn btn-secondary" (click)="showPrintDialog = false">إغلاق</button>
+        <button class="btn btn-primary" (click)="executePrint()">
+          <i class="pi pi-print"></i>
+          طباعة
+        </button>
+      </ng-template>
+    </p-dialog>
   `,
   styles: [`
     .diet-plans-page {
@@ -581,6 +746,286 @@ import { CoachService, DietPlan } from '../services/coach.service';
         border-color: #ef4444;
         color: #ef4444;
       }
+
+      &.print:hover {
+        background: rgba(99, 102, 241, 0.1);
+        border-color: #6366f1;
+        color: #6366f1;
+      }
+    }
+
+    /* Print Dialog Styles */
+    .print-dialog-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      color: var(--text-primary);
+
+      i {
+        color: #22c55e;
+      }
+    }
+
+    .print-content {
+      direction: rtl;
+      padding: 20px;
+      background: white;
+      color: #1a1a2e;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+    }
+
+    .print-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #22c55e;
+      margin-bottom: 20px;
+    }
+
+    .print-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #22c55e;
+
+      i {
+        font-size: 2rem;
+      }
+    }
+
+    .print-title {
+      text-align: center;
+
+      h1 {
+        font-size: 1.25rem;
+        color: #666;
+        margin: 0;
+        font-weight: 500;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+        color: #1a1a2e;
+        margin: 5px 0 0;
+      }
+    }
+
+    .print-date {
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    .print-info-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .info-card {
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+
+      .info-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 15px;
+        font-weight: 600;
+        color: white;
+
+        i {
+          font-size: 1rem;
+        }
+      }
+
+      &.coach .info-header {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+      }
+
+      &.trainee .info-header {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+      }
+
+      .info-body {
+        padding: 15px;
+      }
+
+      .info-row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 8px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+
+      .info-label {
+        font-weight: 600;
+        color: #666;
+        min-width: 60px;
+      }
+
+      .info-value {
+        color: #1a1a2e;
+      }
+    }
+
+    .print-nutrition-targets {
+      display: flex;
+      justify-content: space-around;
+      gap: 15px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      margin-bottom: 20px;
+
+      .target-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        padding: 15px 25px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+
+        i {
+          font-size: 1.25rem;
+        }
+
+        .target-value {
+          font-size: 1.5rem;
+          font-weight: 700;
+        }
+
+        .target-label {
+          font-size: 0.8rem;
+          color: #666;
+        }
+
+        &.calories {
+          i, .target-value { color: #f59e0b; }
+        }
+
+        &.protein {
+          i, .target-value { color: #ef4444; }
+        }
+
+        &.carbs {
+          i, .target-value { color: #3b82f6; }
+        }
+
+        &.fats {
+          i, .target-value { color: #22c55e; }
+        }
+      }
+    }
+
+    .print-description {
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .print-meals {
+      h3 {
+        font-size: 1.1rem;
+        color: #1a1a2e;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e0e0e0;
+      }
+    }
+
+    .meal-card {
+      margin-bottom: 20px;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .meal-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 12px 15px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+
+      .meal-number {
+        width: 28px;
+        height: 28px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+      }
+
+      .meal-name {
+        flex: 1;
+        font-weight: 600;
+      }
+
+      .meal-time {
+        font-size: 0.85rem;
+        opacity: 0.9;
+      }
+    }
+
+    .meals-table {
+      width: 100%;
+      border-collapse: collapse;
+
+      th, td {
+        padding: 10px 12px;
+        text-align: right;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #666;
+        font-size: 0.85rem;
+      }
+
+      td {
+        font-size: 0.9rem;
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      tr:hover {
+        background: #f8f9fa;
+      }
+    }
+
+    .no-items {
+      padding: 20px;
+      text-align: center;
+      color: #666;
+    }
+
+    .print-footer {
+      margin-top: 30px;
+      padding-top: 15px;
+      border-top: 1px solid #e0e0e0;
+      text-align: center;
+      color: #666;
+      font-size: 0.85rem;
     }
 
     .inactive-row {
@@ -742,6 +1187,12 @@ export class DietPlansListComponent implements OnInit {
   filteredPlans = signal<DietPlan[]>([]);
 
   searchTerm = '';
+
+  // Print-related properties
+  showPrintDialog = false;
+  printingPlan: DietPlan | null = null;
+  today = new Date();
+  coachName = '';
   statusFilter: string | null = null;
 
   statusOptions = [
@@ -766,6 +1217,18 @@ export class DietPlansListComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadPlans();
+    this.loadCoachProfile();
+  }
+
+  loadCoachProfile(): void {
+    this.coachService.getProfile().subscribe({
+      next: (profile) => {
+        this.coachName = profile.profile?.fullName || '';
+      },
+      error: () => {
+        this.coachName = '';
+      }
+    });
   }
 
   // Map Backend response to Frontend format
@@ -935,5 +1398,244 @@ export class DietPlansListComponent implements OnInit {
         }
       });
     }
+  }
+
+  // Print methods
+  printPlan(plan: DietPlan): void {
+    // Fetch full plan details
+    this.coachService.getDietPlanById(plan.id).subscribe({
+      next: (fullPlan) => {
+        this.printingPlan = fullPlan;
+        this.showPrintDialog = true;
+      },
+      error: () => {
+        // Use the plan from list if API fails
+        this.printingPlan = plan;
+        this.showPrintDialog = true;
+      }
+    });
+  }
+
+  executePrint(): void {
+    const printContent = document.getElementById('printAreaDiet');
+    if (!printContent) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('يرجى السماح بالنوافذ المنبثقة للطباعة');
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <title>طباعة خطة التغذية - ${this.printingPlan?.name}</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            direction: rtl;
+            padding: 20px;
+            color: #1a1a2e;
+            background: white;
+          }
+          .print-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #22c55e;
+            margin-bottom: 25px;
+          }
+          .print-logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #22c55e;
+          }
+          .print-title {
+            text-align: center;
+          }
+          .print-title h1 {
+            font-size: 1.2rem;
+            color: #666;
+            font-weight: 500;
+          }
+          .print-title h2 {
+            font-size: 1.6rem;
+            color: #1a1a2e;
+            margin-top: 5px;
+          }
+          .print-date {
+            font-size: 0.85rem;
+            color: #666;
+          }
+          .print-info-section {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+          }
+          .info-card {
+            flex: 1;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+          }
+          .info-header {
+            padding: 10px 15px;
+            font-weight: 600;
+            color: white;
+          }
+          .info-card.coach .info-header {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+          }
+          .info-card.trainee .info-header {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+          }
+          .info-body {
+            padding: 15px;
+          }
+          .info-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 8px;
+          }
+          .info-label {
+            font-weight: 600;
+            color: #666;
+          }
+          .print-nutrition-targets {
+            display: flex;
+            justify-content: space-around;
+            gap: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 25px;
+          }
+          .target-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            padding: 15px 25px;
+            background: white;
+            border-radius: 10px;
+          }
+          .target-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+          }
+          .target-label {
+            font-size: 0.8rem;
+            color: #666;
+          }
+          .target-item.calories .target-value { color: #f59e0b; }
+          .target-item.protein .target-value { color: #ef4444; }
+          .target-item.carbs .target-value { color: #3b82f6; }
+          .target-item.fats .target-value { color: #22c55e; }
+          .print-description {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+          }
+          .print-meals h3 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+          }
+          .meal-card {
+            margin-bottom: 25px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            page-break-inside: avoid;
+          }
+          .meal-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 15px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+          }
+          .meal-number {
+            width: 28px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+          }
+          .meal-name {
+            flex: 1;
+            font-weight: 600;
+          }
+          .meal-time {
+            font-size: 0.85rem;
+            opacity: 0.9;
+          }
+          .meals-table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          .meals-table th, .meals-table td {
+            padding: 10px 12px;
+            text-align: right;
+            border-bottom: 1px solid #e0e0e0;
+          }
+          .meals-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #666;
+            font-size: 0.85rem;
+          }
+          .meals-table td {
+            font-size: 0.9rem;
+          }
+          .meals-table tr:last-child td {
+            border-bottom: none;
+          }
+          .no-items {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+          }
+          .print-footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+          }
+          @media print {
+            body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+            .meal-card { page-break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+        ${printContent.innerHTML}
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   }
 }

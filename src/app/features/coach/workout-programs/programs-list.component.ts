@@ -8,6 +8,7 @@ import { TagModule } from 'primeng/tag';
 import { DropdownModule } from 'primeng/dropdown';
 import { TableModule } from 'primeng/table';
 import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { CoachService, WorkoutProgram } from '../services/coach.service';
@@ -25,6 +26,7 @@ import { CoachService, WorkoutProgram } from '../services/coach.service';
     DropdownModule,
     TableModule,
     TooltipModule,
+    DialogModule,
     PageHeaderComponent,
     LoadingSkeletonComponent
   ],
@@ -184,6 +186,9 @@ import { CoachService, WorkoutProgram } from '../services/coach.service';
                 </td>
                 <td>
                   <div class="actions-cell">
+                    <button class="action-btn print" (click)="printProgram(program)" pTooltip="طباعة">
+                      <i class="pi pi-print"></i>
+                    </button>
                     <a [routerLink]="['/coach/workout-programs', program.id, 'edit']" class="action-btn edit" pTooltip="تعديل">
                       <i class="pi pi-pencil"></i>
                     </a>
@@ -219,6 +224,153 @@ import { CoachService, WorkoutProgram } from '../services/coach.service';
         </div>
       }
     </div>
+
+    <!-- Print Dialog -->
+    <p-dialog
+      [(visible)]="showPrintDialog"
+      [modal]="true"
+      [style]="{width: '90vw', maxWidth: '900px'}"
+      [draggable]="false"
+      [resizable]="false"
+      styleClass="print-dialog"
+    >
+      <ng-template pTemplate="header">
+        <div class="print-dialog-header">
+          <i class="pi pi-print"></i>
+          <span>معاينة الطباعة - {{ printingProgram?.name }}</span>
+        </div>
+      </ng-template>
+
+      <div class="print-content" id="printArea">
+        @if (printingProgram) {
+          <!-- Header -->
+          <div class="print-header">
+            <div class="print-logo">
+              <i class="pi pi-bolt"></i>
+              <span>LogicFit</span>
+            </div>
+            <div class="print-title">
+              <h1>برنامج التمرين</h1>
+              <h2>{{ printingProgram.name }}</h2>
+            </div>
+            <div class="print-date">
+              <span>تاريخ الطباعة: {{ today | date:'yyyy/MM/dd' }}</span>
+            </div>
+          </div>
+
+          <!-- Coach & Trainee Info -->
+          <div class="print-info-section">
+            <div class="info-card coach">
+              <div class="info-header">
+                <i class="pi pi-user"></i>
+                <span>بيانات المدرب</span>
+              </div>
+              <div class="info-body">
+                <div class="info-row">
+                  <span class="info-label">الاسم:</span>
+                  <span class="info-value">{{ printingProgram.coachName || coachName || 'غير محدد' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="info-card trainee">
+              <div class="info-header">
+                <i class="pi pi-users"></i>
+                <span>بيانات المتدرب</span>
+              </div>
+              <div class="info-body">
+                <div class="info-row">
+                  <span class="info-label">الاسم:</span>
+                  <span class="info-value">{{ printingProgram.clientName || 'غير محدد' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Program Details -->
+          <div class="print-program-details">
+            <div class="detail-item">
+              <i class="pi pi-calendar"></i>
+              <span>المدة: {{ printingProgram.durationWeeks ?? calculateDurationWeeks(printingProgram) }} أسبوع</span>
+            </div>
+            <div class="detail-item">
+              <i class="pi pi-clock"></i>
+              <span>الأيام: {{ printingProgram.daysPerWeek ?? printingProgram.routines?.length ?? 0 }} أيام/أسبوع</span>
+            </div>
+            <div class="detail-item">
+              <i class="pi pi-flag"></i>
+              <span>الهدف: {{ printingProgram.goal || 'غير محدد' }}</span>
+            </div>
+            <div class="detail-item">
+              <i class="pi pi-chart-line"></i>
+              <span>المستوى: {{ getDifficultyLabel(printingProgram.difficulty || '') }}</span>
+            </div>
+          </div>
+
+          @if (printingProgram.description) {
+            <div class="print-description">
+              <strong>الوصف:</strong> {{ printingProgram.description }}
+            </div>
+          }
+
+          <!-- Routines/Days -->
+          @if (printingProgram.routines?.length) {
+            <div class="print-routines">
+              <h3>تفاصيل التمارين</h3>
+              @for (routine of printingProgram.routines; track routine.id; let i = $index) {
+                <div class="routine-card">
+                  <div class="routine-header">
+                    <span class="routine-number">{{ i + 1 }}</span>
+                    <span class="routine-name">{{ routine.name || getDayName(routine.dayOfWeek) }}</span>
+                    <span class="routine-day">{{ getDayName(routine.dayOfWeek) }}</span>
+                  </div>
+                  @if (routine.exercises?.length) {
+                    <table class="exercises-table">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>التمرين</th>
+                          <th>المجموعات</th>
+                          <th>التكرارات</th>
+                          <th>الراحة</th>
+                          <th>ملاحظات</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (exercise of routine.exercises; track exercise.id; let j = $index) {
+                          <tr>
+                            <td>{{ j + 1 }}</td>
+                            <td>{{ exercise.exerciseName || 'تمرين ' + (j + 1) }}</td>
+                            <td>{{ exercise.sets }}</td>
+                            <td>{{ exercise.repsMin }}-{{ exercise.repsMax }}</td>
+                            <td>{{ exercise.restSec }}ث</td>
+                            <td>{{ exercise.notes || '-' }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  } @else {
+                    <p class="no-exercises">لا توجد تمارين</p>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Footer -->
+          <div class="print-footer">
+            <p>تم إنشاء هذا البرنامج بواسطة LogicFit</p>
+          </div>
+        }
+      </div>
+
+      <ng-template pTemplate="footer">
+        <button class="btn btn-secondary" (click)="showPrintDialog = false">إغلاق</button>
+        <button class="btn btn-primary" (click)="executePrint()">
+          <i class="pi pi-print"></i>
+          طباعة
+        </button>
+      </ng-template>
+    </p-dialog>
   `,
   styles: [`
     .programs-page {
@@ -557,6 +709,259 @@ import { CoachService, WorkoutProgram } from '../services/coach.service';
         border-color: #ef4444;
         color: #ef4444;
       }
+
+      &.print:hover {
+        background: rgba(99, 102, 241, 0.1);
+        border-color: #6366f1;
+        color: #6366f1;
+      }
+    }
+
+    /* Print Dialog Styles */
+    .print-dialog-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      color: var(--text-primary);
+
+      i {
+        color: #8b5cf6;
+      }
+    }
+
+    .print-content {
+      direction: rtl;
+      padding: 20px;
+      background: white;
+      color: #1a1a2e;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+    }
+
+    .print-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #8b5cf6;
+      margin-bottom: 20px;
+    }
+
+    .print-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #8b5cf6;
+
+      i {
+        font-size: 2rem;
+      }
+    }
+
+    .print-title {
+      text-align: center;
+
+      h1 {
+        font-size: 1.25rem;
+        color: #666;
+        margin: 0;
+        font-weight: 500;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+        color: #1a1a2e;
+        margin: 5px 0 0;
+      }
+    }
+
+    .print-date {
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    .print-info-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .info-card {
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+
+      .info-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 15px;
+        font-weight: 600;
+        color: white;
+
+        i {
+          font-size: 1rem;
+        }
+      }
+
+      &.coach .info-header {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      }
+
+      &.trainee .info-header {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+      }
+
+      .info-body {
+        padding: 15px;
+      }
+
+      .info-row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 8px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+
+      .info-label {
+        font-weight: 600;
+        color: #666;
+        min-width: 60px;
+      }
+
+      .info-value {
+        color: #1a1a2e;
+      }
+    }
+
+    .print-program-details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      margin-bottom: 20px;
+
+      .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 15px;
+        background: white;
+        border-radius: 8px;
+        font-size: 0.9rem;
+
+        i {
+          color: #8b5cf6;
+        }
+      }
+    }
+
+    .print-description {
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .print-routines {
+      h3 {
+        font-size: 1.1rem;
+        color: #1a1a2e;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e0e0e0;
+      }
+    }
+
+    .routine-card {
+      margin-bottom: 20px;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .routine-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 12px 15px;
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      color: white;
+
+      .routine-number {
+        width: 28px;
+        height: 28px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+      }
+
+      .routine-name {
+        flex: 1;
+        font-weight: 600;
+      }
+
+      .routine-day {
+        font-size: 0.85rem;
+        opacity: 0.9;
+      }
+    }
+
+    .exercises-table {
+      width: 100%;
+      border-collapse: collapse;
+
+      th, td {
+        padding: 10px 12px;
+        text-align: right;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #666;
+        font-size: 0.85rem;
+      }
+
+      td {
+        font-size: 0.9rem;
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      tr:hover {
+        background: #f8f9fa;
+      }
+    }
+
+    .no-exercises {
+      padding: 20px;
+      text-align: center;
+      color: #666;
+    }
+
+    .print-footer {
+      margin-top: 30px;
+      padding-top: 15px;
+      border-top: 1px solid #e0e0e0;
+      text-align: center;
+      color: #666;
+      font-size: 0.85rem;
     }
 
     /* Empty Table */
@@ -644,6 +1049,22 @@ export class ProgramsListComponent implements OnInit {
     { label: 'متقدم', value: 'advanced' }
   ];
 
+  // Print-related properties
+  showPrintDialog = false;
+  printingProgram: WorkoutProgram | null = null;
+  today = new Date();
+  coachName = '';
+
+  dayNames: Record<number, string> = {
+    0: 'الأحد',
+    1: 'الاثنين',
+    2: 'الثلاثاء',
+    3: 'الأربعاء',
+    4: 'الخميس',
+    5: 'الجمعة',
+    6: 'السبت'
+  };
+
   activePrograms(): number {
     return this.programs().filter(p => p.isActive !== false).length;
   }
@@ -666,6 +1087,19 @@ export class ProgramsListComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadPrograms();
+    this.loadCoachProfile();
+  }
+
+  loadCoachProfile(): void {
+    this.coachService.getProfile().subscribe({
+      next: (profile) => {
+        this.coachName = profile.profile?.fullName || '';
+      },
+      error: () => {
+        // Fallback
+        this.coachName = '';
+      }
+    });
   }
 
   loadPrograms(): void {
@@ -822,5 +1256,233 @@ export class ProgramsListComponent implements OnInit {
         }
       });
     }
+  }
+
+  // Print methods
+  printProgram(program: WorkoutProgram): void {
+    // Fetch full program details
+    this.coachService.getWorkoutProgramById(program.id).subscribe({
+      next: (fullProgram) => {
+        this.printingProgram = fullProgram;
+        this.showPrintDialog = true;
+      },
+      error: () => {
+        // Use the program from list if API fails
+        this.printingProgram = program;
+        this.showPrintDialog = true;
+      }
+    });
+  }
+
+  getDayName(dayOfWeek: number): string {
+    return this.dayNames[dayOfWeek] || `يوم ${dayOfWeek}`;
+  }
+
+  executePrint(): void {
+    const printContent = document.getElementById('printArea');
+    if (!printContent) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('يرجى السماح بالنوافذ المنبثقة للطباعة');
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <title>طباعة برنامج التمرين - ${this.printingProgram?.name}</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            direction: rtl;
+            padding: 20px;
+            color: #1a1a2e;
+            background: white;
+          }
+          .print-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #8b5cf6;
+            margin-bottom: 25px;
+          }
+          .print-logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #8b5cf6;
+          }
+          .print-title {
+            text-align: center;
+          }
+          .print-title h1 {
+            font-size: 1.2rem;
+            color: #666;
+            font-weight: 500;
+          }
+          .print-title h2 {
+            font-size: 1.6rem;
+            color: #1a1a2e;
+            margin-top: 5px;
+          }
+          .print-date {
+            font-size: 0.85rem;
+            color: #666;
+          }
+          .print-info-section {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+          }
+          .info-card {
+            flex: 1;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+          }
+          .info-header {
+            padding: 10px 15px;
+            font-weight: 600;
+            color: white;
+          }
+          .info-card.coach .info-header {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+          }
+          .info-card.trainee .info-header {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+          }
+          .info-body {
+            padding: 15px;
+          }
+          .info-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 8px;
+          }
+          .info-label {
+            font-weight: 600;
+            color: #666;
+          }
+          .print-program-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 25px;
+          }
+          .detail-item {
+            padding: 8px 15px;
+            background: white;
+            border-radius: 8px;
+            font-size: 0.9rem;
+          }
+          .print-description {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+          }
+          .print-routines h3 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+          }
+          .routine-card {
+            margin-bottom: 25px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            page-break-inside: avoid;
+          }
+          .routine-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 15px;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+          }
+          .routine-number {
+            width: 28px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+          }
+          .routine-name {
+            flex: 1;
+            font-weight: 600;
+          }
+          .routine-day {
+            font-size: 0.85rem;
+            opacity: 0.9;
+          }
+          .exercises-table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          .exercises-table th, .exercises-table td {
+            padding: 10px 12px;
+            text-align: right;
+            border-bottom: 1px solid #e0e0e0;
+          }
+          .exercises-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #666;
+            font-size: 0.85rem;
+          }
+          .exercises-table td {
+            font-size: 0.9rem;
+          }
+          .exercises-table tr:last-child td {
+            border-bottom: none;
+          }
+          .no-exercises {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+          }
+          .print-footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+          }
+          @media print {
+            body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+            .routine-card { page-break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+        ${printContent.innerHTML}
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   }
 }

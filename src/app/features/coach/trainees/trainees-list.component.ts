@@ -12,7 +12,8 @@ import { DialogModule } from 'primeng/dialog';
 import { CalendarModule } from 'primeng/calendar';
 import { InputMaskModule } from 'primeng/inputmask';
 import { ToastModule } from 'primeng/toast';
-import { MessageService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { CoachService, Trainee } from '../services/coach.service';
@@ -36,12 +37,14 @@ import { CoachService, Trainee } from '../services/coach.service';
     CalendarModule,
     InputMaskModule,
     ToastModule,
+    ConfirmDialogModule,
     PageHeaderComponent,
     LoadingSkeletonComponent
   ],
-  providers: [MessageService],
+  providers: [MessageService, ConfirmationService],
   template: `
     <p-toast position="top-left" dir="rtl"></p-toast>
+    <p-confirmDialog styleClass="modern-confirm-dialog" [style]="{width: '450px'}" acceptLabel="نعم، حذف" rejectLabel="إلغاء" acceptButtonStyleClass="p-button-danger" rejectButtonStyleClass="p-button-secondary"></p-confirmDialog>
 
     <div class="trainees-page">
       <app-page-header
@@ -136,30 +139,37 @@ import { CoachService, Trainee } from '../services/coach.service';
         >
           <ng-template pTemplate="header">
             <tr>
-              <th pSortableColumn="clientName" style="width: 22%">
+              <th style="width: 5%">#</th>
+              <th pSortableColumn="clientName" style="width: 20%">
                 المتدرب
                 <p-sortIcon field="clientName"></p-sortIcon>
               </th>
-              <th style="width: 15%">التواصل</th>
-              <th pSortableColumn="hasActiveSubscription" style="width: 10%">
+              <th style="width: 14%">التواصل</th>
+              <th pSortableColumn="hasActiveSubscription" style="width: 9%">
                 الحالة
                 <p-sortIcon field="hasActiveSubscription"></p-sortIcon>
               </th>
-              <th style="width: 18%">البرامج</th>
-              <th pSortableColumn="progressPercentage" style="width: 12%">
+              <th style="width: 15%">البرامج</th>
+              <th pSortableColumn="progressPercentage" style="width: 10%">
                 التقدم
                 <p-sortIcon field="progressPercentage"></p-sortIcon>
               </th>
-              <th pSortableColumn="lastActivityDate" style="width: 11%">
+              <th pSortableColumn="lastActivityDate" style="width: 10%">
                 آخر نشاط
                 <p-sortIcon field="lastActivityDate"></p-sortIcon>
               </th>
-              <th style="width: 12%">الإجراءات</th>
+              <th style="width: 17%">الإجراءات</th>
             </tr>
           </ng-template>
 
-          <ng-template pTemplate="body" let-trainee>
+          <ng-template pTemplate="body" let-trainee let-rowIndex="rowIndex">
             <tr [class.inactive-row]="!trainee.isActive && !trainee.hasActiveSubscription">
+              <!-- Row Index with Name -->
+              <td>
+                <div class="index-cell">
+                  <span class="row-index">{{ rowIndex + 1 }}</span>
+                </div>
+              </td>
               <!-- Trainee Name & Avatar -->
               <td>
                 <div class="trainee-cell">
@@ -247,6 +257,14 @@ import { CoachService, Trainee } from '../services/coach.service';
                     <i class="pi pi-eye"></i>
                   </a>
                   <button
+                    class="action-icon edit"
+                    (click)="openEditDialog(trainee)"
+                    pTooltip="تعديل"
+                    tooltipPosition="top"
+                  >
+                    <i class="pi pi-pencil"></i>
+                  </button>
+                  <button
                     class="action-icon assign"
                     (click)="assignProgram(trainee)"
                     pTooltip="تعيين برنامج"
@@ -262,6 +280,14 @@ import { CoachService, Trainee } from '../services/coach.service';
                   >
                     <i class="pi pi-send"></i>
                   </button>
+                  <button
+                    class="action-icon delete"
+                    (click)="confirmDelete(trainee)"
+                    pTooltip="حذف"
+                    tooltipPosition="top"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -269,7 +295,7 @@ import { CoachService, Trainee } from '../services/coach.service';
 
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="7">
+              <td colspan="8">
                 <div class="empty-state">
                   <i class="pi pi-users"></i>
                   <h3>لا يوجد متدربين</h3>
@@ -286,7 +312,7 @@ import { CoachService, Trainee } from '../services/coach.service';
       </div>
     </div>
 
-    <!-- Add Trainee Dialog -->
+    <!-- Add/Edit Trainee Dialog -->
     <p-dialog
       [(visible)]="showAddDialog"
       [modal]="true"
@@ -297,12 +323,12 @@ import { CoachService, Trainee } from '../services/coach.service';
     >
       <ng-template pTemplate="header">
         <div class="dialog-header-custom">
-          <div class="header-icon primary">
-            <i class="pi pi-user-plus"></i>
+          <div class="header-icon" [class.primary]="!editingTrainee" [class.edit]="editingTrainee">
+            <i [class]="editingTrainee ? 'pi pi-user-edit' : 'pi pi-user-plus'"></i>
           </div>
           <div class="header-text">
-            <span class="header-title">إضافة متدرب جديد</span>
-            <span class="header-subtitle">أدخل بيانات المتدرب</span>
+            <span class="header-title">{{ editingTrainee ? 'تعديل بيانات المتدرب' : 'إضافة متدرب جديد' }}</span>
+            <span class="header-subtitle">{{ editingTrainee ? 'عدل بيانات المتدرب' : 'أدخل بيانات المتدرب' }}</span>
           </div>
         </div>
       </ng-template>
@@ -415,7 +441,7 @@ import { CoachService, Trainee } from '../services/coach.service';
               جاري الحفظ...
             } @else {
               <i class="pi pi-check"></i>
-              حفظ المتدرب
+              {{ editingTrainee ? 'حفظ التعديلات' : 'حفظ المتدرب' }}
             }
           </button>
         </div>
@@ -744,6 +770,42 @@ import { CoachService, Trainee } from '../services/coach.service';
         border-color: #22c55e;
         color: #22c55e;
       }
+
+      &.edit:hover {
+        background: rgba(245, 158, 11, 0.1);
+        border-color: #f59e0b;
+        color: #f59e0b;
+      }
+
+      &.delete:hover {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: #ef4444;
+        color: #ef4444;
+      }
+    }
+
+    .index-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .row-index {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+      color: #3b82f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .header-icon.edit {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15));
+      color: #f59e0b;
     }
 
     .inactive-row {
@@ -1023,6 +1085,7 @@ export class TraineesListComponent implements OnInit {
   private coachService = inject(CoachService);
   private fb = inject(FormBuilder);
   private messageService = inject(MessageService);
+  private confirmationService = inject(ConfirmationService);
 
   loading = signal(true);
   saving = signal(false);
@@ -1032,6 +1095,7 @@ export class TraineesListComponent implements OnInit {
   searchTerm = '';
   selectedStatus: string | null = null;
   showAddDialog = false;
+  editingTrainee: Trainee | null = null;
 
   statusOptions = [
     { label: 'نشط', value: 'active' },
@@ -1246,6 +1310,7 @@ export class TraineesListComponent implements OnInit {
   }
 
   openAddDialog(): void {
+    this.editingTrainee = null;
     this.traineeForm.reset({
       fullName: '',
       phoneNumber: '',
@@ -1255,8 +1320,20 @@ export class TraineesListComponent implements OnInit {
     this.showAddDialog = true;
   }
 
+  openEditDialog(trainee: Trainee): void {
+    this.editingTrainee = trainee;
+    this.traineeForm.patchValue({
+      fullName: trainee.clientName || trainee.fullName || '',
+      phoneNumber: trainee.clientPhone || trainee.phoneNumber || '',
+      email: trainee.clientEmail || trainee.email || '',
+      notes: trainee.notes || ''
+    });
+    this.showAddDialog = true;
+  }
+
   closeDialog(): void {
     this.showAddDialog = false;
+    this.editingTrainee = null;
     this.traineeForm.reset();
   }
 
@@ -1269,40 +1346,110 @@ export class TraineesListComponent implements OnInit {
     this.saving.set(true);
     const formValue = this.traineeForm.value;
 
-    // Create trainee data matching API schema
-    const traineeData: {
-      phoneNumber: string;
-      email?: string;
-      fullName?: string;
-      gender?: number;
-      birthDate?: string;
-      heightCm?: number;
-      activityLevel?: string;
-      medicalHistory?: string;
-    } = {
-      phoneNumber: formValue.phoneNumber,
-      fullName: formValue.fullName || undefined,
-      email: formValue.email || undefined
-    };
+    if (this.editingTrainee) {
+      // Update existing trainee
+      const updateData = {
+        phoneNumber: formValue.phoneNumber,
+        fullName: formValue.fullName || undefined,
+        email: formValue.email || undefined
+      };
 
-    // Call API to create trainee (returns client ID as string)
-    this.coachService.createTrainee(traineeData).subscribe({
-      next: (clientId: string) => {
-        this.saving.set(false);
-        this.showAddDialog = false;
-        this.traineeForm.reset();
+      const traineeId = this.editingTrainee.clientId || this.editingTrainee.id;
+      this.coachService.updateTrainee(traineeId, updateData).subscribe({
+        next: () => {
+          this.saving.set(false);
+          this.showAddDialog = false;
+          this.editingTrainee = null;
+          this.traineeForm.reset();
+          this.messageService.add({
+            severity: 'success',
+            summary: 'تم بنجاح',
+            detail: 'تم تعديل بيانات المتدرب بنجاح'
+          });
+          this.loadTrainees();
+        },
+        error: (err: any) => {
+          this.saving.set(false);
+          console.error('Error updating trainee:', err);
+          const errorMessage = err?.translatedMessage || err?.error?.message || err?.message || 'حدث خطأ أثناء تعديل المتدرب';
+          this.messageService.add({
+            severity: 'error',
+            summary: 'خطأ',
+            detail: errorMessage
+          });
+        }
+      });
+    } else {
+      // Create new trainee
+      const traineeData: {
+        phoneNumber: string;
+        email?: string;
+        fullName?: string;
+        gender?: number;
+        birthDate?: string;
+        heightCm?: number;
+        activityLevel?: string;
+        medicalHistory?: string;
+      } = {
+        phoneNumber: formValue.phoneNumber,
+        fullName: formValue.fullName || undefined,
+        email: formValue.email || undefined
+      };
+
+      this.coachService.createTrainee(traineeData).subscribe({
+        next: (clientId: string) => {
+          this.saving.set(false);
+          this.showAddDialog = false;
+          this.traineeForm.reset();
+          this.messageService.add({
+            severity: 'success',
+            summary: 'تم بنجاح',
+            detail: 'تم إضافة المتدرب بنجاح'
+          });
+          this.loadTrainees();
+        },
+        error: (err: any) => {
+          this.saving.set(false);
+          console.error('Error creating trainee:', err);
+          const errorMessage = err?.translatedMessage || err?.error?.message || err?.message || 'حدث خطأ أثناء إضافة المتدرب';
+          this.messageService.add({
+            severity: 'error',
+            summary: 'خطأ',
+            detail: errorMessage
+          });
+        }
+      });
+    }
+  }
+
+  confirmDelete(trainee: Trainee): void {
+    const traineeName = trainee.clientName || trainee.fullName || 'هذا المتدرب';
+    this.confirmationService.confirm({
+      message: `هل أنت متأكد من حذف "${traineeName}"؟ لا يمكن التراجع عن هذا الإجراء.`,
+      header: 'تأكيد الحذف',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'نعم، حذف',
+      rejectLabel: 'إلغاء',
+      accept: () => {
+        this.deleteTrainee(trainee);
+      }
+    });
+  }
+
+  deleteTrainee(trainee: Trainee): void {
+    const traineeId = trainee.clientId || trainee.id;
+    this.coachService.deleteTrainee(traineeId).subscribe({
+      next: () => {
         this.messageService.add({
           severity: 'success',
           summary: 'تم بنجاح',
-          detail: 'تم إضافة المتدرب بنجاح'
+          detail: 'تم حذف المتدرب بنجاح'
         });
-        // Reload trainees to get fresh data from server
         this.loadTrainees();
       },
       error: (err: any) => {
-        this.saving.set(false);
-        console.error('Error creating trainee:', err);
-        const errorMessage = err?.translatedMessage || err?.error?.message || err?.message || 'حدث خطأ أثناء إضافة المتدرب';
+        console.error('Error deleting trainee:', err);
+        const errorMessage = err?.translatedMessage || err?.error?.message || err?.message || 'حدث خطأ أثناء حذف المتدرب';
         this.messageService.add({
           severity: 'error',
           summary: 'خطأ',
