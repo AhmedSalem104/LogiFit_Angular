@@ -563,79 +563,67 @@ export class CoachService {
     return this.http.get<CoachDashboardStats>(`${this.apiUrl}/reports/coach/dashboard`);
   }
 
-  // Clients (Trainees)
-  // GET /api/clients?searchTerm={optional}&isActive={optional}
-  getTrainees(searchTerm?: string, isActive?: boolean): Observable<Trainee[]> {
+  // ==========================================
+  // Coach-Clients API (المتدربين)
+  // Base URL: /api/coach-clients
+  // ==========================================
+
+  // GET /api/coach-clients - جلب كل المتدربين
+  getTrainees(coachId?: string, isActive?: boolean): Observable<any[]> {
     const params: string[] = [];
-    if (searchTerm) params.push(`searchTerm=${encodeURIComponent(searchTerm)}`);
+    if (coachId) params.push(`coachId=${coachId}`);
     if (isActive !== undefined) params.push(`isActive=${isActive}`);
     const queryString = params.length ? '?' + params.join('&') : '';
-    return this.http.get<Trainee[]>(`${this.apiUrl}/clients${queryString}`);
+    return this.http.get<any[]>(`${this.apiUrl}/coach-clients${queryString}`);
   }
 
-  // GET /api/clients/{id}
-  getTraineeById(id: string): Observable<Trainee> {
-    return this.http.get<Trainee>(`${this.apiUrl}/clients/${id}`);
+  // GET /api/coach-clients/{id} - جلب علاقة محددة
+  getTraineeById(id: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/coach-clients/${id}`);
   }
 
+  // GET /api/reports/coach/trainee/{id} - تقرير تقدم المتدرب
   getTraineeProgress(id: string): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/reports/coach/trainee/${id}`);
   }
 
-  // Create new client (POST /api/clients)
+  // POST /api/coach-clients - إضافة متدرب جديد
   createTrainee(trainee: {
     phoneNumber: string;
     email?: string;
-    password?: string;
     fullName?: string;
     gender?: number; // 0=Male, 1=Female
     birthDate?: string;
     heightCm?: number;
+    weightKg?: number;
     activityLevel?: string;
+    fitnessGoal?: string;
     medicalHistory?: string;
-    coachId?: string;
   }): Observable<string> {
-    return this.http.post<string>(`${this.apiUrl}/clients`, trainee);
+    return this.http.post<string>(`${this.apiUrl}/coach-clients`, trainee);
   }
 
-  // Update client (PUT /api/clients/{id})
-  updateTrainee(id: string, trainee: {
-    email?: string;
-    phoneNumber?: string;
+  // PUT /api/coach-clients/{id} - تحديث العلاقة (نقل لكوتش آخر أو تفعيل/تعطيل)
+  updateTrainee(id: string, data: {
+    newCoachId?: string;
     isActive?: boolean;
-    fullName?: string;
-    gender?: number;
-    birthDate?: string;
-    heightCm?: number;
-    activityLevel?: string;
-    medicalHistory?: string;
   }): Observable<void> {
-    return this.http.put<void>(`${this.apiUrl}/clients/${id}`, trainee);
+    return this.http.put<void>(`${this.apiUrl}/coach-clients/${id}`, data);
   }
 
-  // Delete client (DELETE /api/clients/{id})
-  deleteTrainee(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/clients/${id}`);
-  }
-
-  // Assign existing client to coach
-  assignClientToCoach(data: { coachId?: string; clientId: string; notes?: string }): Observable<CoachClient> {
-    return this.http.post<CoachClient>(`${this.apiUrl}/coach-clients/assign`, data);
-  }
-
-  // Unassign client from coach
-  unassignClientFromCoach(clientId: string): Observable<void> {
+  // DELETE /api/coach-clients/{clientId} - إلغاء ربط متدرب
+  deleteTrainee(clientId: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/coach-clients/${clientId}`);
   }
 
-  // Get coach's clients list
-  getCoachClients(coachId?: string, isActive?: boolean): Observable<CoachClient[]> {
-    let url = `${this.apiUrl}/coach-clients`;
-    const params: string[] = [];
-    if (coachId) params.push(`coachId=${coachId}`);
-    if (isActive !== undefined) params.push(`isActive=${isActive}`);
-    if (params.length) url += '?' + params.join('&');
-    return this.http.get<CoachClient[]>(url);
+  // POST /api/coach-clients/assign - ربط client موجود بكوتش
+  assignClientToCoach(data: { clientId: string; coachId?: string }): Observable<string> {
+    return this.http.post<string>(`${this.apiUrl}/coach-clients/assign`, data);
+  }
+
+  // Alias for getTrainees (backward compatibility)
+  getCoachClients(coachId?: string, isActive?: boolean): Observable<any[]> {
+    return this.getTrainees(coachId, isActive);
   }
 
   // Workout Programs

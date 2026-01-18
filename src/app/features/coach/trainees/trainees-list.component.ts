@@ -404,16 +404,105 @@ import { CoachService, Trainee } from '../services/coach.service';
             }
           </div>
 
-          <!-- Notes -->
+          <!-- Gender -->
+          <div class="form-field">
+            <label>
+              <i class="pi pi-users"></i>
+              النوع
+            </label>
+            <p-dropdown
+              [options]="genderOptions"
+              formControlName="gender"
+              placeholder="اختر النوع"
+              styleClass="w-full modern-dropdown"
+            ></p-dropdown>
+          </div>
+
+          <!-- Birth Date -->
+          <div class="form-field">
+            <label>
+              <i class="pi pi-calendar"></i>
+              تاريخ الميلاد
+            </label>
+            <p-calendar
+              formControlName="birthDate"
+              dateFormat="yy-mm-dd"
+              [showIcon]="true"
+              styleClass="w-full"
+              placeholder="اختر تاريخ الميلاد"
+            ></p-calendar>
+          </div>
+
+          <!-- Height -->
+          <div class="form-field">
+            <label>
+              <i class="pi pi-arrows-v"></i>
+              الطول (سم)
+            </label>
+            <input
+              type="number"
+              pInputText
+              formControlName="heightCm"
+              placeholder="175"
+              class="modern-input"
+              dir="ltr"
+            />
+          </div>
+
+          <!-- Weight -->
+          <div class="form-field">
+            <label>
+              <i class="pi pi-chart-line"></i>
+              الوزن (كجم)
+            </label>
+            <input
+              type="number"
+              pInputText
+              formControlName="weightKg"
+              placeholder="75"
+              class="modern-input"
+              dir="ltr"
+            />
+          </div>
+
+          <!-- Activity Level -->
+          <div class="form-field">
+            <label>
+              <i class="pi pi-bolt"></i>
+              مستوى النشاط
+            </label>
+            <p-dropdown
+              [options]="activityLevelOptions"
+              formControlName="activityLevel"
+              placeholder="اختر مستوى النشاط"
+              styleClass="w-full modern-dropdown"
+            ></p-dropdown>
+          </div>
+
+          <!-- Fitness Goal -->
+          <div class="form-field">
+            <label>
+              <i class="pi pi-flag"></i>
+              الهدف
+            </label>
+            <p-dropdown
+              [options]="fitnessGoalOptions"
+              formControlName="fitnessGoal"
+              placeholder="اختر الهدف"
+              styleClass="w-full modern-dropdown"
+            ></p-dropdown>
+          </div>
+
+          <!-- Medical History -->
           <div class="form-field full-width">
             <label>
               <i class="pi pi-file-edit"></i>
-              ملاحظات
+              التاريخ الطبي
             </label>
             <textarea
               pInputText
-              formControlName="notes"
-              placeholder="أي ملاحظات إضافية..."
+              formControlName="medicalHistory"
+              placeholder="أي معلومات طبية مهمة..."
               class="modern-input"
               rows="3"
             ></textarea>
@@ -1110,11 +1199,38 @@ export class TraineesListComponent implements OnInit {
     { label: 'سنوي - 3500 جنيه', value: '4' }
   ];
 
+  genderOptions = [
+    { label: 'ذكر', value: 0 },
+    { label: 'أنثى', value: 1 }
+  ];
+
+  activityLevelOptions = [
+    { label: 'خامل', value: 'Sedentary' },
+    { label: 'نشاط خفيف', value: 'Light' },
+    { label: 'نشاط متوسط', value: 'Moderate' },
+    { label: 'نشاط عالي', value: 'Active' },
+    { label: 'نشاط مكثف', value: 'VeryActive' }
+  ];
+
+  fitnessGoalOptions = [
+    { label: 'خسارة الوزن', value: 'WeightLoss' },
+    { label: 'بناء العضلات', value: 'MuscleGain' },
+    { label: 'الحفاظ على الوزن', value: 'Maintenance' },
+    { label: 'زيادة القوة', value: 'Strength' },
+    { label: 'تحسين اللياقة', value: 'Fitness' }
+  ];
+
   traineeForm: FormGroup = this.fb.group({
     fullName: ['', Validators.required],
     phoneNumber: ['', [Validators.required, Validators.pattern(/^01[0-9]{9}$/)]],
     email: ['', Validators.email],
-    notes: ['']
+    gender: [0],
+    birthDate: [null],
+    heightCm: [null],
+    weightKg: [null],
+    activityLevel: ['Moderate'],
+    fitnessGoal: [''],
+    medicalHistory: ['']
   });
 
   activeTraineesCount = computed(() =>
@@ -1141,18 +1257,15 @@ export class TraineesListComponent implements OnInit {
 
     this.coachService.getTrainees().subscribe({
       next: (data) => {
-        // Map the API response to ensure name fields are properly set
+        console.log('Trainees data from API:', data); // Debug log
+        // API returns: id, coachId, coachName, clientId, clientName, clientPhone, assignedAt, isActive
         const mappedData = data.map((t: any) => ({
           ...t,
-          // Try different possible name fields from API
-          clientName: t.clientName || t.fullName || t.name || t.userName || t.displayName || '',
-          fullName: t.fullName || t.clientName || t.name || t.userName || t.displayName || '',
-          clientPhone: t.clientPhone || t.phoneNumber || t.phone || '',
-          phoneNumber: t.phoneNumber || t.clientPhone || t.phone || '',
-          clientEmail: t.clientEmail || t.email || '',
-          email: t.email || t.clientEmail || ''
+          // Ensure both field naming conventions work
+          fullName: t.clientName || t.fullName || '',
+          phoneNumber: t.clientPhone || t.phoneNumber || '',
+          email: t.clientEmail || t.email || ''
         }));
-        console.log('Trainees data from API:', data); // Debug log
         this.trainees.set(mappedData);
         this.filteredTrainees.set(mappedData);
         this.loading.set(false);
@@ -1327,18 +1440,31 @@ export class TraineesListComponent implements OnInit {
       fullName: '',
       phoneNumber: '',
       email: '',
-      notes: ''
+      gender: 0,
+      birthDate: null,
+      heightCm: null,
+      weightKg: null,
+      activityLevel: 'Moderate',
+      fitnessGoal: '',
+      medicalHistory: ''
     });
     this.showAddDialog = true;
   }
 
   openEditDialog(trainee: Trainee): void {
     this.editingTrainee = trainee;
+    // Note: Edit dialog only shows basic info since API only allows updating isActive/newCoachId
     this.traineeForm.patchValue({
       fullName: trainee.clientName || trainee.fullName || '',
       phoneNumber: trainee.clientPhone || trainee.phoneNumber || '',
       email: trainee.clientEmail || trainee.email || '',
-      notes: trainee.notes || ''
+      gender: trainee.gender || 0,
+      birthDate: trainee.birthDate ? new Date(trainee.birthDate) : null,
+      heightCm: trainee.heightCm || null,
+      weightKg: trainee.weightKg || null,
+      activityLevel: trainee.activityLevel || 'Moderate',
+      fitnessGoal: trainee.fitnessGoal || '',
+      medicalHistory: trainee.medicalHistory || ''
     });
     this.showAddDialog = true;
   }
@@ -1347,6 +1473,30 @@ export class TraineesListComponent implements OnInit {
     this.showAddDialog = false;
     this.editingTrainee = null;
     this.traineeForm.reset();
+  }
+
+  toggleTraineeStatus(trainee: Trainee): void {
+    const traineeId = trainee.id || trainee.clientId;
+    const newStatus = !trainee.isActive;
+
+    this.coachService.updateTrainee(traineeId, { isActive: newStatus }).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'تم بنجاح',
+          detail: newStatus ? 'تم تفعيل المتدرب' : 'تم تعطيل المتدرب'
+        });
+        this.loadTrainees();
+      },
+      error: (err: any) => {
+        console.error('Error toggling trainee status:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'خطأ',
+          detail: 'حدث خطأ أثناء تحديث حالة المتدرب'
+        });
+      }
+    });
   }
 
   saveTrainee(): void {
@@ -1359,15 +1509,10 @@ export class TraineesListComponent implements OnInit {
     const formValue = this.traineeForm.value;
 
     if (this.editingTrainee) {
-      // Update existing trainee
-      const updateData = {
-        phoneNumber: formValue.phoneNumber,
-        fullName: formValue.fullName || undefined,
-        email: formValue.email || undefined
-      };
-
-      const traineeId = this.editingTrainee.clientId || this.editingTrainee.id;
-      this.coachService.updateTrainee(traineeId, updateData).subscribe({
+      // For editing, API only allows updating isActive or transferring to another coach
+      // We can only toggle status here
+      const traineeId = this.editingTrainee.id || this.editingTrainee.clientId;
+      this.coachService.updateTrainee(traineeId, { isActive: true }).subscribe({
         next: () => {
           this.saving.set(false);
           this.showAddDialog = false;
@@ -1376,7 +1521,7 @@ export class TraineesListComponent implements OnInit {
           this.messageService.add({
             severity: 'success',
             summary: 'تم بنجاح',
-            detail: 'تم تعديل بيانات المتدرب بنجاح'
+            detail: 'تم تحديث بيانات المتدرب بنجاح'
           });
           this.loadTrainees();
         },
@@ -1392,20 +1537,18 @@ export class TraineesListComponent implements OnInit {
         }
       });
     } else {
-      // Create new trainee
-      const traineeData: {
-        phoneNumber: string;
-        email?: string;
-        fullName?: string;
-        gender?: number;
-        birthDate?: string;
-        heightCm?: number;
-        activityLevel?: string;
-        medicalHistory?: string;
-      } = {
+      // Create new trainee with all fields
+      const traineeData = {
         phoneNumber: formValue.phoneNumber,
         fullName: formValue.fullName || undefined,
-        email: formValue.email || undefined
+        email: formValue.email || undefined,
+        gender: formValue.gender,
+        birthDate: formValue.birthDate ? this.formatDateForApi(formValue.birthDate) : undefined,
+        heightCm: formValue.heightCm || undefined,
+        weightKg: formValue.weightKg || undefined,
+        activityLevel: formValue.activityLevel || undefined,
+        fitnessGoal: formValue.fitnessGoal || undefined,
+        medicalHistory: formValue.medicalHistory || undefined
       };
 
       this.coachService.createTrainee(traineeData).subscribe({
@@ -1449,13 +1592,14 @@ export class TraineesListComponent implements OnInit {
   }
 
   deleteTrainee(trainee: Trainee): void {
+    // Use clientId for DELETE as per API documentation
     const traineeId = trainee.clientId || trainee.id;
     this.coachService.deleteTrainee(traineeId).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',
           summary: 'تم بنجاح',
-          detail: 'تم حذف المتدرب بنجاح'
+          detail: 'تم إلغاء ربط المتدرب بنجاح'
         });
         this.loadTrainees();
       },
@@ -1469,5 +1613,13 @@ export class TraineesListComponent implements OnInit {
         });
       }
     });
+  }
+
+  formatDateForApi(date: Date): string {
+    if (!date) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 }
