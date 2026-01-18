@@ -1141,8 +1141,20 @@ export class TraineesListComponent implements OnInit {
 
     this.coachService.getTrainees().subscribe({
       next: (data) => {
-        this.trainees.set(data);
-        this.filteredTrainees.set(data);
+        // Map the API response to ensure name fields are properly set
+        const mappedData = data.map((t: any) => ({
+          ...t,
+          // Try different possible name fields from API
+          clientName: t.clientName || t.fullName || t.name || t.userName || t.displayName || '',
+          fullName: t.fullName || t.clientName || t.name || t.userName || t.displayName || '',
+          clientPhone: t.clientPhone || t.phoneNumber || t.phone || '',
+          phoneNumber: t.phoneNumber || t.clientPhone || t.phone || '',
+          clientEmail: t.clientEmail || t.email || '',
+          email: t.email || t.clientEmail || ''
+        }));
+        console.log('Trainees data from API:', data); // Debug log
+        this.trainees.set(mappedData);
+        this.filteredTrainees.set(mappedData);
         this.loading.set(false);
       },
       error: () => {
