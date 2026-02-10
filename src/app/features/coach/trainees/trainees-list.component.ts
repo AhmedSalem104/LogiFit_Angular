@@ -1556,6 +1556,8 @@ export class TraineesListComponent implements OnInit {
         medicalHistory: formValue.medicalHistory || undefined
       };
 
+      console.log('Creating trainee with data:', JSON.stringify(traineeData, null, 2));
+
       this.coachService.createTrainee(traineeData).subscribe({
         next: (clientId: string) => {
           this.saving.set(false);
@@ -1571,7 +1573,9 @@ export class TraineesListComponent implements OnInit {
         error: (err: any) => {
           this.saving.set(false);
           console.error('Error creating trainee:', err);
-          const errorMessage = err?.translatedMessage || err?.error?.message || err?.message || 'حدث خطأ أثناء إضافة المتدرب';
+          console.error('Error details:', JSON.stringify(err?.error, null, 2));
+          console.error('Error status:', err?.status);
+          const errorMessage = err?.translatedMessage || err?.error?.message || err?.error?.title || err?.message || 'حدث خطأ أثناء إضافة المتدرب';
           this.messageService.add({
             severity: 'error',
             summary: 'خطأ',

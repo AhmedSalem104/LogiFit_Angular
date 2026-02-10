@@ -76,7 +76,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         status: error.status,
         message: errorMessage,
         url: req.url,
-        error: error.error
+        error: error.error,
+        errorBody: JSON.stringify(error.error, null, 2)
       });
 
       // Return error with translated message
