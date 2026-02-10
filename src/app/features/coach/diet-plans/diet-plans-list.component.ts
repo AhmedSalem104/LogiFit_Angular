@@ -12,6 +12,7 @@ import { DialogModule } from 'primeng/dialog';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { CoachService, DietPlan } from '../services/coach.service';
+import { AuthService } from '../../../core/auth/services/auth.service';
 
 @Component({
   selector: 'app-diet-plans-list',
@@ -334,6 +335,12 @@ import { CoachService, DietPlan } from '../services/coach.service';
                   <span class="info-label">الاسم:</span>
                   <span class="info-value">{{ printingPlan.coachName || coachName || 'غير محدد' }}</span>
                 </div>
+                @if (authService.user()?.phoneNumber) {
+                  <div class="info-row">
+                    <span class="info-label">الهاتف:</span>
+                    <span class="info-value">{{ authService.user()?.phoneNumber }}</span>
+                  </div>
+                }
               </div>
             </div>
             <div class="info-card trainee">
@@ -346,6 +353,18 @@ import { CoachService, DietPlan } from '../services/coach.service';
                   <span class="info-label">الاسم:</span>
                   <span class="info-value">{{ printingPlan.clientName || 'غير محدد' }}</span>
                 </div>
+                @if (printingPlan.clientPhone) {
+                  <div class="info-row">
+                    <span class="info-label">الهاتف:</span>
+                    <span class="info-value">{{ printingPlan.clientPhone }}</span>
+                  </div>
+                }
+                @if (printingPlan.clientEmail) {
+                  <div class="info-row">
+                    <span class="info-label">البريد:</span>
+                    <span class="info-value">{{ printingPlan.clientEmail }}</span>
+                  </div>
+                }
               </div>
             </div>
           </div>
@@ -1181,6 +1200,7 @@ import { CoachService, DietPlan } from '../services/coach.service';
 })
 export class DietPlansListComponent implements OnInit {
   private coachService = inject(CoachService);
+  authService = inject(AuthService);
 
   loading = signal(true);
   plans = signal<DietPlan[]>([]);

@@ -12,6 +12,7 @@ import { DialogModule } from 'primeng/dialog';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { CoachService, WorkoutProgram } from '../services/coach.service';
+import { AuthService } from '../../../core/auth/services/auth.service';
 
 @Component({
   selector: 'app-programs-list',
@@ -270,6 +271,12 @@ import { CoachService, WorkoutProgram } from '../services/coach.service';
                   <span class="info-label">الاسم:</span>
                   <span class="info-value">{{ printingProgram.coachName || coachName || 'غير محدد' }}</span>
                 </div>
+                @if (authService.user()?.phoneNumber) {
+                  <div class="info-row">
+                    <span class="info-label">الهاتف:</span>
+                    <span class="info-value">{{ authService.user()?.phoneNumber }}</span>
+                  </div>
+                }
               </div>
             </div>
             <div class="info-card trainee">
@@ -282,6 +289,18 @@ import { CoachService, WorkoutProgram } from '../services/coach.service';
                   <span class="info-label">الاسم:</span>
                   <span class="info-value">{{ printingProgram.clientName || 'غير محدد' }}</span>
                 </div>
+                @if (printingProgram.clientPhone) {
+                  <div class="info-row">
+                    <span class="info-label">الهاتف:</span>
+                    <span class="info-value">{{ printingProgram.clientPhone }}</span>
+                  </div>
+                }
+                @if (printingProgram.clientEmail) {
+                  <div class="info-row">
+                    <span class="info-label">البريد:</span>
+                    <span class="info-value">{{ printingProgram.clientEmail }}</span>
+                  </div>
+                }
               </div>
             </div>
           </div>
@@ -1035,6 +1054,7 @@ import { CoachService, WorkoutProgram } from '../services/coach.service';
 })
 export class ProgramsListComponent implements OnInit {
   private coachService = inject(CoachService);
+  authService = inject(AuthService);
 
   loading = signal(true);
   programs = signal<WorkoutProgram[]>([]);

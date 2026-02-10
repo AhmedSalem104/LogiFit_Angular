@@ -106,6 +106,8 @@ export interface WorkoutProgram {
   coachName?: string;
   clientId?: string;
   clientName?: string;
+  clientPhone?: string;
+  clientEmail?: string;
   name: string;
   description?: string;
   startDate?: string;
@@ -177,6 +179,8 @@ export interface DietPlan {
   coachName?: string;
   clientId?: string;
   clientName?: string;
+  clientPhone?: string;
+  clientEmail?: string;
   name: string;
   description?: string;
   startDate?: string;

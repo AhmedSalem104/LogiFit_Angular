@@ -79,6 +79,7 @@ export interface AuthResponse {
   userId: string;
   email?: string;
   phoneNumber?: string;
+  fullName?: string;
   role: string | number;  // Can be string or number depending on endpoint
   tenantId: string;
   accessToken: string;

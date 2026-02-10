@@ -2913,10 +2913,14 @@ export class ProgramBuilderComponent implements OnInit {
     const previewWindow = window.open('', '_blank');
     if (!previewWindow) return;
 
-    // Get coach and client names
-    const coachName = this.authService.user()?.fullName || 'المدرب';
+    // Get coach and client details
+    const user = this.authService.user();
+    const coachName = user?.fullName || 'المدرب';
+    const coachPhone = user?.phoneNumber || '';
     const client = this.trainees().find(t => t.id === formValue.clientId || t.clientId === formValue.clientId);
     const clientName = client?.fullName || client?.clientName || 'المتدرب';
+    const clientPhone = client?.phoneNumber || client?.clientPhone || '';
+    const clientEmail = client?.email || client?.clientEmail || '';
     const startDate = formValue.startDate ? new Date(formValue.startDate).toLocaleDateString('ar-EG') : '-';
     const endDate = this.calculateEndDate(formValue.startDate, formValue.durationWeeks);
     const today = new Date().toLocaleDateString('ar-EG');
@@ -3382,6 +3386,14 @@ export class ProgramBuilderComponent implements OnInit {
                 <span class="info-label">الاسم</span>
                 <span class="info-value client-name">${clientName}</span>
               </div>
+              ${clientPhone ? `<div class="info-row">
+                <span class="info-label">رقم الهاتف</span>
+                <span class="info-value">${clientPhone}</span>
+              </div>` : ''}
+              ${clientEmail ? `<div class="info-row">
+                <span class="info-label">البريد الإلكتروني</span>
+                <span class="info-value">${clientEmail}</span>
+              </div>` : ''}
               <div class="info-row">
                 <span class="info-label">تاريخ البداية</span>
                 <span class="info-value">${startDate}</span>
@@ -3397,13 +3409,17 @@ export class ProgramBuilderComponent implements OnInit {
                 <span class="info-label">المدرب</span>
                 <span class="info-value coach-name">${coachName}</span>
               </div>
-              <div class="info-row">
-                <span class="info-label">تاريخ الإنشاء</span>
-                <span class="info-value">${today}</span>
-              </div>
+              ${coachPhone ? `<div class="info-row">
+                <span class="info-label">رقم الهاتف</span>
+                <span class="info-value">${coachPhone}</span>
+              </div>` : ''}
               <div class="info-row">
                 <span class="info-label">الهدف</span>
                 <span class="info-value">${goalLabel}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">تاريخ الإنشاء</span>
+                <span class="info-value">${today}</span>
               </div>
             </div>
           </div>

@@ -268,6 +268,7 @@ export class AuthService {
       id: response.userId,
       email: response.email,
       phoneNumber: response.phoneNumber,
+      fullName: response.fullName,
       role: mappedRole,
       tenantId: response.tenantId
     };
