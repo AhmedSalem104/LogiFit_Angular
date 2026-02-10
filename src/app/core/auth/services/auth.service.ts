@@ -320,11 +320,11 @@ export class AuthService {
       const expirationDate = new Date(decoded.exp * 1000);
 
       if (expirationDate < new Date()) {
-        console.log('Token expired, clearing session');
-        this.clearSession();
+        console.log('Token expired, redirecting to login');
+        this.logout();
       }
     } catch {
-      this.clearSession();
+      this.logout();
     }
   }
 
