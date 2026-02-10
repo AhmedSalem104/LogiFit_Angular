@@ -689,6 +689,9 @@ interface Meal {
 
             <!-- Sidebar -->
             @if (currentStep === 1) {
+              @if (!sidebarCollapsed) {
+                <div class="sidebar-backdrop" (click)="sidebarCollapsed = true"></div>
+              }
               <app-live-summary-sidebar
                 [type]="'diet'"
                 [dietData]="dietSummaryData"
@@ -1003,6 +1006,21 @@ interface Meal {
 
       &.with-sidebar {
         max-width: 1500px;
+      }
+    }
+
+    .sidebar-backdrop {
+      display: none;
+    }
+
+    @media (max-width: 1200px) {
+      .sidebar-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
       }
     }
 
@@ -2673,7 +2691,7 @@ export class DietPlanBuilderComponent implements OnInit {
   trainees = signal<Trainee[]>([]);
   expandedMeal: number | null = 0;
   showBmrCalculator = false;
-  sidebarCollapsed = false;
+  sidebarCollapsed = window.innerWidth < 1200;
 
   // Wizard State
   currentStep = 0;

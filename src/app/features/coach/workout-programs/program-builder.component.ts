@@ -618,6 +618,9 @@ interface WorkoutDay {
 
           <!-- Live Summary Sidebar (Step 2 only) -->
           @if (currentStep === 1) {
+            @if (!sidebarCollapsed) {
+              <div class="sidebar-backdrop" (click)="sidebarCollapsed = true"></div>
+            }
             <app-live-summary-sidebar
               [type]="'workout'"
               [workoutData]="workoutSummaryData"
@@ -2049,8 +2052,21 @@ interface WorkoutDay {
       }
     }
 
+    .sidebar-backdrop {
+      display: none;
+    }
+
     /* Responsive */
     @media (max-width: 1200px) {
+      .sidebar-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+      }
+
       .wizard-main.with-sidebar {
         max-width: 100%;
       }
@@ -2152,7 +2168,7 @@ export class ProgramBuilderComponent implements OnInit {
   showSummary = false;
 
   // Wizard state
-  sidebarCollapsed = false;
+  sidebarCollapsed = window.innerWidth < 1200;
   currentStep = 0;
   wizardSteps: WizardStep[] = [
     { label: 'المعلومات الأساسية', icon: 'pi-info-circle' },
