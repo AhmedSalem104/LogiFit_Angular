@@ -2491,9 +2491,52 @@ interface Meal {
       }
     }
 
-    @media (max-width: 600px) {
+    @media (max-width: 768px) {
+      .macros-summary {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .activity-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .bmr-inputs-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .wizard-footer {
+        padding: 12px 16px;
+      }
+
+      .nav-btn {
+        padding: 12px 20px;
+        font-size: 0.9rem;
+      }
+
+      .gender-options button {
+        padding: 12px;
+        font-size: 0.9rem;
+      }
+
       .wizard-body {
         padding: 16px;
+        padding-bottom: 80px;
+      }
+
+      .meals-summary {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      }
+
+      .bmr-modal {
+        padding: 20px;
+        max-width: 95vw;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .wizard-body {
+        padding: 12px;
+        padding-bottom: 80px;
       }
 
       .panel-header {
@@ -2508,6 +2551,11 @@ interface Meal {
 
       .macros-grid {
         grid-template-columns: 1fr;
+      }
+
+      .macros-summary {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
       }
 
       .meals-selector {
@@ -2538,7 +2586,7 @@ interface Meal {
 
       .meal-info .meal-meta {
         flex-wrap: wrap;
-        gap: 10px;
+        gap: 8px;
       }
 
       .bmr-inputs-grid {
@@ -2546,12 +2594,12 @@ interface Meal {
       }
 
       .activity-grid {
-        grid-template-columns: repeat(3, 1fr) !important;
+        grid-template-columns: repeat(2, 1fr) !important;
       }
 
       .nav-btn {
-        padding: 12px 20px;
-        font-size: 0.9rem;
+        padding: 10px 16px;
+        font-size: 0.85rem;
 
         span {
           display: none;
@@ -2560,6 +2608,36 @@ interface Meal {
 
       .nav-btn.save span {
         display: inline;
+      }
+
+      .wizard-footer {
+        padding: 10px 12px;
+      }
+
+      .food-select {
+        min-width: 0;
+      }
+
+      .meals-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .gender-options {
+        flex-direction: column;
+
+        button {
+          padding: 10px;
+        }
+      }
+
+      .bmr-modal {
+        padding: 16px;
+        max-width: 100vw;
+        margin: 10px;
+      }
+
+      .modal-overlay {
+        padding: 10px;
       }
     }
 
