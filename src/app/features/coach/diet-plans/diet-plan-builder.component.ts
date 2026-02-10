@@ -698,6 +698,11 @@ interface Meal {
                 [collapsed]="sidebarCollapsed"
                 (collapsedChange)="sidebarCollapsed = $event"
               ></app-live-summary-sidebar>
+              @if (sidebarCollapsed) {
+                <button class="sidebar-fab" (click)="sidebarCollapsed = false">
+                  <i class="pi pi-chart-pie"></i>
+                </button>
+              }
             }
           </div>
         </form>
@@ -1013,6 +1018,10 @@ interface Meal {
       display: none;
     }
 
+    .sidebar-fab {
+      display: none;
+    }
+
     @media (max-width: 1200px) {
       .sidebar-backdrop {
         display: block;
@@ -1021,6 +1030,30 @@ interface Meal {
         z-index: 999;
         background: rgba(0, 0, 0, 0.6);
         backdrop-filter: blur(4px);
+      }
+
+      .sidebar-fab {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        bottom: 80px;
+        left: 16px;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        border: none;
+        background: var(--premium-gradient-diet);
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 998;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        transition: transform 0.2s ease;
+
+        &:active {
+          transform: scale(0.9);
+        }
       }
     }
 
