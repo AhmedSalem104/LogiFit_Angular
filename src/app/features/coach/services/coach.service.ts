@@ -588,17 +588,17 @@ export class CoachService {
   }
 
   // POST /api/coach-clients - إضافة متدرب جديد
+  // Backend expects: ClientName, ClientPhone, ClientEmail, Gender, BirthDate, HeightCm, ActivityLevel, MedicalHistory, Notes
   createTrainee(trainee: {
-    phoneNumber: string;
-    email?: string;
-    fullName?: string;
+    clientName: string;
+    clientPhone: string;
+    clientEmail?: string;
     gender?: number; // 0=Male, 1=Female
     birthDate?: string;
     heightCm?: number;
-    weightKg?: number;
     activityLevel?: string;
-    fitnessGoal?: string;
     medicalHistory?: string;
+    notes?: string;
   }): Observable<string> {
     return this.http.post<string>(`${this.apiUrl}/coach-clients`, trainee);
   }

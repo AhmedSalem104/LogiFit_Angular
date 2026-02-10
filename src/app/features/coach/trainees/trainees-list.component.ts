@@ -1542,17 +1542,15 @@ export class TraineesListComponent implements OnInit {
         }
       });
     } else {
-      // Create new trainee with all fields
+      // Create new trainee - field names must match backend AddTraineeCommand
       const traineeData = {
-        phoneNumber: formValue.phoneNumber,
-        fullName: formValue.fullName || undefined,
-        email: formValue.email || undefined,
+        clientPhone: formValue.phoneNumber,
+        clientName: formValue.fullName || '',
+        clientEmail: formValue.email || undefined,
         gender: formValue.gender,
         birthDate: formValue.birthDate ? this.formatDateForApi(formValue.birthDate) : undefined,
         heightCm: formValue.heightCm || undefined,
-        weightKg: formValue.weightKg || undefined,
         activityLevel: formValue.activityLevel || undefined,
-        fitnessGoal: formValue.fitnessGoal || undefined,
         medicalHistory: formValue.medicalHistory || undefined
       };
 
