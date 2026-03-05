@@ -551,72 +551,8 @@ export class MyDietComponent implements OnInit {
         }
         this.loading.set(false);
       },
-      error: () => {
-        // Mock data
-        this.dietPlan.set({
-          id: '1',
-          name: 'خطة بناء العضلات',
-          description: 'خطة غذائية عالية البروتين مصممة لدعم بناء الكتلة العضلية مع الحفاظ على نسبة دهون منخفضة.',
-          coachName: 'أحمد المدرب',
-          totalCalories: 2800,
-          proteinGrams: 180,
-          carbsGrams: 320,
-          fatGrams: 80,
-          meals: [
-            {
-              id: '1',
-              name: 'الإفطار',
-              time: '8:00 ص',
-              isCompleted: true,
-              foods: [
-                { id: '1', foodName: 'شوفان', quantity: 100, unit: 'g', calories: 389, protein: 17, carbs: 66, fat: 7 },
-                { id: '2', foodName: 'بيض', quantity: 3, unit: 'حبة', calories: 234, protein: 18, carbs: 2, fat: 16 },
-                { id: '3', foodName: 'موز', quantity: 1, unit: 'حبة', calories: 105, protein: 1, carbs: 27, fat: 0 }
-              ]
-            },
-            {
-              id: '2',
-              name: 'وجبة خفيفة',
-              time: '11:00 ص',
-              isCompleted: true,
-              foods: [
-                { id: '4', foodName: 'زبادي يوناني', quantity: 200, unit: 'g', calories: 118, protein: 20, carbs: 7, fat: 1 },
-                { id: '5', foodName: 'لوز', quantity: 30, unit: 'g', calories: 174, protein: 6, carbs: 7, fat: 15 }
-              ]
-            },
-            {
-              id: '3',
-              name: 'الغداء',
-              time: '2:00 م',
-              isCompleted: false,
-              foods: [
-                { id: '6', foodName: 'صدر دجاج مشوي', quantity: 200, unit: 'g', calories: 330, protein: 62, carbs: 0, fat: 7 },
-                { id: '7', foodName: 'أرز', quantity: 200, unit: 'g', calories: 260, protein: 5, carbs: 56, fat: 1 },
-                { id: '8', foodName: 'سلطة خضراء', quantity: 150, unit: 'g', calories: 30, protein: 2, carbs: 6, fat: 0 }
-              ]
-            },
-            {
-              id: '4',
-              name: 'قبل التمرين',
-              time: '5:00 م',
-              isCompleted: false,
-              foods: [
-                { id: '9', foodName: 'بطاطا حلوة', quantity: 200, unit: 'g', calories: 172, protein: 3, carbs: 40, fat: 0 },
-                { id: '10', foodName: 'واي بروتين', quantity: 30, unit: 'g', calories: 120, protein: 24, carbs: 3, fat: 1 }
-              ]
-            },
-            {
-              id: '5',
-              name: 'العشاء',
-              time: '8:00 م',
-              isCompleted: false,
-              foods: [
-                { id: '11', foodName: 'سلمون مشوي', quantity: 200, unit: 'g', calories: 416, protein: 40, carbs: 0, fat: 26 },
-                { id: '12', foodName: 'خضروات مشوية', quantity: 200, unit: 'g', calories: 80, protein: 4, carbs: 16, fat: 1 }
-              ]
-            }
-          ]
-        });
+      error: (err) => {
+        console.error('Error loading diet plan:', err);
         this.loading.set(false);
       }
     });

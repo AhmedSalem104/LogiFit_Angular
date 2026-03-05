@@ -9,6 +9,7 @@ import { FileUploadModule } from 'primeng/fileupload';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { ClientService, ClientProfile } from '../services/client.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-my-profile',
@@ -426,6 +427,7 @@ import { ClientService, ClientProfile } from '../services/client.service';
 export class MyProfileComponent implements OnInit {
   private fb = inject(FormBuilder);
   private clientService = inject(ClientService);
+  private notificationService = inject(NotificationService);
 
   loading = signal(true);
   saving = signal(false);
@@ -474,26 +476,10 @@ export class MyProfileComponent implements OnInit {
         });
         this.loading.set(false);
       },
-      error: () => {
-        // Mock data - using numeric gender values (0=Male, 1=Female) as per API
-        const mockProfile: ClientProfile = {
-          id: '1',
-          fullName: 'أحمد محمد علي',
-          email: 'ahmed@email.com',
-          phoneNumber: '01012345678',
-          birthDate: '1995-05-15',
-          gender: '0', // Male = 0
-          coachId: 'c1',
-          coachName: 'محمد المدرب'
-        };
-        this.profile.set(mockProfile);
-        this.form.patchValue({
-          fullName: mockProfile.fullName,
-          phoneNumber: mockProfile.phoneNumber,
-          email: mockProfile.email,
-          dateOfBirth: mockProfile.birthDate ? new Date(mockProfile.birthDate) : null,
-          gender: Number(mockProfile.gender)
-        });
+      error: (err) => {
+        console.error('Error loading profile:', err);
+        this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.profile.set(null);
         this.loading.set(false);
       }
     });

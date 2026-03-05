@@ -13,6 +13,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { CoachService, WorkoutProgram } from '../services/coach.service';
 import { AuthService } from '../../../core/auth/services/auth.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-programs-list',
@@ -1055,6 +1056,7 @@ import { AuthService } from '../../../core/auth/services/auth.service';
 export class ProgramsListComponent implements OnInit {
   private coachService = inject(CoachService);
   authService = inject(AuthService);
+  private notificationService = inject(NotificationService);
 
   loading = signal(true);
   programs = signal<WorkoutProgram[]>([]);
@@ -1131,63 +1133,11 @@ export class ProgramsListComponent implements OnInit {
         this.filteredPrograms.set(data);
         this.loading.set(false);
       },
-      error: () => {
-        const mockData: WorkoutProgram[] = [
-          {
-            id: '1',
-            name: 'برنامج بناء العضلات - مبتدئ',
-            description: 'برنامج مصمم للمبتدئين لبناء أساس قوي من القوة والعضلات',
-            durationWeeks: 8,
-            daysPerWeek: 3,
-            difficulty: 'beginner',
-            goal: 'بناء العضلات',
-            isActive: true,
-            assignedTraineesCount: 12,
-            createdAt: '2024-01-01',
-            updatedAt: '2024-01-15'
-          },
-          {
-            id: '2',
-            name: 'برنامج القوة المتوسط',
-            description: 'برنامج لزيادة القوة والتحمل للمستوى المتوسط',
-            durationWeeks: 12,
-            daysPerWeek: 4,
-            difficulty: 'intermediate',
-            goal: 'زيادة القوة',
-            isActive: true,
-            assignedTraineesCount: 8,
-            createdAt: '2024-01-05',
-            updatedAt: '2024-01-14'
-          },
-          {
-            id: '3',
-            name: 'برنامج التنشيف المتقدم',
-            description: 'برنامج مكثف لحرق الدهون والحفاظ على الكتلة العضلية',
-            durationWeeks: 10,
-            daysPerWeek: 5,
-            difficulty: 'advanced',
-            goal: 'حرق الدهون',
-            isActive: true,
-            assignedTraineesCount: 5,
-            createdAt: '2024-01-10',
-            updatedAt: '2024-01-15'
-          },
-          {
-            id: '4',
-            name: 'برنامج اللياقة العامة',
-            description: 'برنامج متوازن لتحسين اللياقة البدنية العامة',
-            durationWeeks: 6,
-            daysPerWeek: 3,
-            difficulty: 'beginner',
-            goal: 'لياقة عامة',
-            isActive: false,
-            assignedTraineesCount: 0,
-            createdAt: '2023-12-01',
-            updatedAt: '2023-12-20'
-          }
-        ];
-        this.programs.set(mockData);
-        this.filteredPrograms.set(mockData);
+      error: (err) => {
+        console.error('Error loading programs:', err);
+        this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.programs.set([]);
+        this.filteredPrograms.set([]);
         this.loading.set(false);
       }
     });

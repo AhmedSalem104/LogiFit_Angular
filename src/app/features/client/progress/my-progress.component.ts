@@ -6,6 +6,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { ChartCardComponent } from '../../../shared/components/chart-card/chart-card.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { ClientService, ProgressData } from '../services/client.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-my-progress',
@@ -426,6 +427,7 @@ import { ClientService, ProgressData } from '../services/client.service';
 })
 export class MyProgressComponent implements OnInit {
   private clientService = inject(ClientService);
+  private notificationService = inject(NotificationService);
 
   loading = signal(true);
   progressData = signal<ProgressData | null>(null);
@@ -496,32 +498,8 @@ export class MyProgressComponent implements OnInit {
         this.progressData.set(mappedData);
         this.loading.set(false);
       },
-      error: () => {
-        // Mock data
-        this.progressData.set({
-          weightProgress: [
-            { date: '2023-12-01', value: 83 },
-            { date: '2023-12-15', value: 82 },
-            { date: '2024-01-01', value: 80 },
-            { date: '2024-01-15', value: 78 }
-          ],
-          bodyFatProgress: [
-            { date: '2023-12-01', value: 23 },
-            { date: '2023-12-15', value: 22 },
-            { date: '2024-01-01', value: 20 },
-            { date: '2024-01-15', value: 18 }
-          ],
-          sessionsCompleted: 24,
-          totalSessions: 28,
-          caloriesConsumed: 2100,
-          caloriesTarget: 2800,
-          streakDays: 12,
-          achievements: [
-            { id: '1', title: 'الأسبوع الأول', description: 'أكملت أسبوعك الأول من التمارين', icon: 'pi pi-star', earnedDate: '2024-01-07' },
-            { id: '2', title: '10 جلسات', description: 'أكملت 10 جلسات تمرين', icon: 'pi pi-check-circle', earnedDate: '2024-01-12' },
-            { id: '3', title: 'خسارة 5 كجم', description: 'خسرت 5 كيلوجرام من وزنك', icon: 'pi pi-chart-line', earnedDate: '2024-01-15' }
-          ]
-        });
+      error: (err) => {
+        console.error('Error loading progress data:', err);
         this.loading.set(false);
       }
     });

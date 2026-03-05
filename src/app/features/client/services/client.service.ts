@@ -501,6 +501,51 @@ export class ClientService {
     return this.http.post<void>(`${this.apiUrl}/workoutsessions/${sessionId}/end`, { notes });
   }
 
+  // Get a specific workout routine by ID (fetches programs and finds the routine)
+  getWorkoutDay(routineId: string): Observable<WorkoutDay> {
+    return new Observable(subscriber => {
+      this.getMyWorkoutProgram().subscribe({
+        next: (programs) => {
+          for (const program of programs) {
+            const routine = (program.routines || []).find(r => r.id === routineId);
+            if (routine) {
+              const day: WorkoutDay = {
+                id: routine.id,
+                dayNumber: routine.dayOfWeek ?? 0,
+                name: routine.name || 'تمرين',
+                isCompleted: false,
+                isToday: true,
+                exercises: (routine.exercises || []).map(ex => ({
+                  id: ex.id,
+                  exerciseId: ex.exerciseId.toString(),
+                  exerciseName: ex.exerciseName || '',
+                  muscleGroup: '',
+                  sets: ex.sets,
+                  reps: ex.repsMax || ex.repsMin,
+                  restSeconds: ex.restSec,
+                  isCompleted: false,
+                  completedSets: []
+                }))
+              };
+              subscriber.next(day);
+              subscriber.complete();
+              return;
+            }
+          }
+          subscriber.error(new Error('Routine not found'));
+        },
+        error: (err) => subscriber.error(err)
+      });
+    });
+  }
+
+  // Meal Logs
+  getMealLogs(date: Date): Observable<MealLog[]> {
+    const userId = this.getCurrentUserId();
+    const dateStr = date.toISOString().split('T')[0];
+    return this.http.get<MealLog[]>(`${this.apiUrl}/meallog?clientId=${userId}&date=${dateStr}`);
+  }
+
   // Diet Plan - status=Active as string per API docs
   getMyDietPlan(): Observable<DietPlan[]> {
     const userId = this.getCurrentUserId();

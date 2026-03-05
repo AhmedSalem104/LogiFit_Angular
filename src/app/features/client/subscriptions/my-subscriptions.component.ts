@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { ClientService, ClientSubscription, SubscriptionStatus } from '../services/client.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-my-subscriptions',
@@ -381,6 +382,7 @@ import { ClientService, ClientSubscription, SubscriptionStatus } from '../servic
 })
 export class MySubscriptionsComponent implements OnInit {
   private clientService = inject(ClientService);
+  private notificationService = inject(NotificationService);
 
   loading = signal(true);
   subscriptions = signal<ClientSubscription[]>([]);
@@ -413,37 +415,10 @@ export class MySubscriptionsComponent implements OnInit {
         this.subscriptions.set(data);
         this.loading.set(false);
       },
-      error: () => {
-        // Mock data
-        this.subscriptions.set([
-          {
-            id: '1',
-            planName: 'الاشتراك الشهري',
-            startDate: '2024-01-01',
-            endDate: '2024-01-31',
-            status: SubscriptionStatus.Active,
-            price: 500,
-            remainingDays: 16
-          },
-          {
-            id: '2',
-            planName: 'الاشتراك الشهري',
-            startDate: '2023-12-01',
-            endDate: '2023-12-31',
-            status: SubscriptionStatus.Expired,
-            price: 500,
-            remainingDays: 0
-          },
-          {
-            id: '3',
-            planName: 'الاشتراك الشهري',
-            startDate: '2023-11-01',
-            endDate: '2023-11-30',
-            status: SubscriptionStatus.Expired,
-            price: 450,
-            remainingDays: 0
-          }
-        ]);
+      error: (err) => {
+        console.error('Error loading subscriptions:', err);
+        this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.subscriptions.set([]);
         this.loading.set(false);
       }
     });

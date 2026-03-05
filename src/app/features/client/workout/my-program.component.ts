@@ -5,6 +5,7 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { ClientService, WorkoutProgram, WorkoutDay, ProgramRoutine } from '../services/client.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-my-program',
@@ -432,6 +433,7 @@ import { ClientService, WorkoutProgram, WorkoutDay, ProgramRoutine } from '../se
 })
 export class MyProgramComponent implements OnInit {
   private clientService = inject(ClientService);
+  private notificationService = inject(NotificationService);
 
   loading = signal(true);
   program = signal<WorkoutProgram | null>(null);
@@ -465,69 +467,10 @@ export class MyProgramComponent implements OnInit {
         }
         this.loading.set(false);
       },
-      error: () => {
-        // Mock data for development
-        this.program.set({
-          id: '1',
-          name: 'برنامج بناء العضلات',
-          description: 'برنامج مصمم لبناء الكتلة العضلية وزيادة القوة',
-          coachName: 'أحمد المدرب',
-          durationWeeks: 8,
-          currentWeek: 3,
-          daysPerWeek: 4,
-          goal: 'بناء العضلات',
-          workoutDays: [
-            {
-              id: '1',
-              dayNumber: 1,
-              name: 'صدر وترايسبس',
-              isCompleted: true,
-              isToday: false,
-              exercises: [
-                { id: '1', exerciseId: '1', exerciseName: 'بنش برس', muscleGroup: 'صدر', sets: 4, reps: 12, restSeconds: 90, isCompleted: true, completedSets: [] },
-                { id: '2', exerciseId: '2', exerciseName: 'بنش مائل', muscleGroup: 'صدر', sets: 3, reps: 12, restSeconds: 90, isCompleted: true, completedSets: [] },
-                { id: '3', exerciseId: '3', exerciseName: 'فلاي', muscleGroup: 'صدر', sets: 3, reps: 15, restSeconds: 60, isCompleted: true, completedSets: [] },
-                { id: '4', exerciseId: '4', exerciseName: 'ترايسبس بوش داون', muscleGroup: 'ترايسبس', sets: 3, reps: 12, restSeconds: 60, isCompleted: true, completedSets: [] }
-              ]
-            },
-            {
-              id: '2',
-              dayNumber: 2,
-              name: 'ظهر وبايسبس',
-              isCompleted: true,
-              isToday: false,
-              exercises: [
-                { id: '5', exerciseId: '5', exerciseName: 'لات بول داون', muscleGroup: 'ظهر', sets: 4, reps: 12, restSeconds: 90, isCompleted: true, completedSets: [] },
-                { id: '6', exerciseId: '6', exerciseName: 'رو بالكيبل', muscleGroup: 'ظهر', sets: 3, reps: 12, restSeconds: 90, isCompleted: true, completedSets: [] },
-                { id: '7', exerciseId: '7', exerciseName: 'بايسبس كيرل', muscleGroup: 'بايسبس', sets: 3, reps: 12, restSeconds: 60, isCompleted: true, completedSets: [] }
-              ]
-            },
-            {
-              id: '3',
-              dayNumber: 3,
-              name: 'أكتاف وترابيس',
-              isCompleted: false,
-              isToday: true,
-              exercises: [
-                { id: '8', exerciseId: '8', exerciseName: 'شولدر برس', muscleGroup: 'أكتاف', sets: 4, reps: 12, restSeconds: 90, isCompleted: false, completedSets: [] },
-                { id: '9', exerciseId: '9', exerciseName: 'لاترال ريز', muscleGroup: 'أكتاف', sets: 3, reps: 15, restSeconds: 60, isCompleted: false, completedSets: [] },
-                { id: '10', exerciseId: '10', exerciseName: 'شراجز', muscleGroup: 'ترابيس', sets: 3, reps: 15, restSeconds: 60, isCompleted: false, completedSets: [] }
-              ]
-            },
-            {
-              id: '4',
-              dayNumber: 4,
-              name: 'أرجل',
-              isCompleted: false,
-              isToday: false,
-              exercises: [
-                { id: '11', exerciseId: '11', exerciseName: 'سكوات', muscleGroup: 'أرجل', sets: 4, reps: 12, restSeconds: 120, isCompleted: false, completedSets: [] },
-                { id: '12', exerciseId: '12', exerciseName: 'ليج برس', muscleGroup: 'أرجل', sets: 3, reps: 15, restSeconds: 90, isCompleted: false, completedSets: [] },
-                { id: '13', exerciseId: '13', exerciseName: 'ليج كيرل', muscleGroup: 'أرجل', sets: 3, reps: 12, restSeconds: 60, isCompleted: false, completedSets: [] }
-              ]
-            }
-          ]
-        });
+      error: (err) => {
+        console.error('Error loading workout program:', err);
+        this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.program.set(null);
         this.loading.set(false);
       }
     });

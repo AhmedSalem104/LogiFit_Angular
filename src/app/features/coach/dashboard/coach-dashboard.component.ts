@@ -9,6 +9,7 @@ import { LoadingSkeletonComponent } from '../../../shared/components/loading-ske
 import { CoachService, CoachDashboardStats, TraineeProgress, CoachActivity } from '../services/coach.service';
 import { ThemeState } from '../../../state/theme.state';
 import { AuthService } from '../../../core/auth/services/auth.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -1160,6 +1161,7 @@ export class CoachDashboardComponent implements OnInit {
   private coachService = inject(CoachService);
   private themeState = inject(ThemeState);
   private authService = inject(AuthService);
+  private notificationService = inject(NotificationService);
 
   loading = signal(true);
   stats = signal<CoachDashboardStats | null>(null);
@@ -1214,30 +1216,10 @@ export class CoachDashboardComponent implements OnInit {
         this.loading.set(false);
       },
       error: (err) => {
-        // Mock data for development
-        this.stats.set({
-          totalTrainees: 23,
-          activeTrainees: 18,
-          totalWorkoutPrograms: 12,
-          totalDietPlans: 8,
-          totalSessionsThisMonth: 67,
-          totalVolumeThisMonth: 125430,
-          averageTraineeProgress: 72,
-          topTraineesByProgress: [
-            { traineeId: '1', traineeName: 'أحمد محمد', progressPercentage: 92, sessionsCompleted: 24, lastActivityDate: '2024-01-15' },
-            { traineeId: '2', traineeName: 'خالد علي', progressPercentage: 85, sessionsCompleted: 20, lastActivityDate: '2024-01-14' },
-            { traineeId: '3', traineeName: 'محمود حسن', progressPercentage: 78, sessionsCompleted: 18, lastActivityDate: '2024-01-15' },
-            { traineeId: '4', traineeName: 'عمر السيد', progressPercentage: 65, sessionsCompleted: 15, lastActivityDate: '2024-01-13' },
-            { traineeId: '5', traineeName: 'يوسف إبراهيم', progressPercentage: 58, sessionsCompleted: 12, lastActivityDate: '2024-01-12' },
-          ],
-          recentActivities: [
-            { id: '1', type: 'session', description: 'أكمل جلسة تمرين الصدر والكتف', traineeId: '1', traineeName: 'أحمد محمد', date: '2024-01-15T10:30:00' },
-            { id: '2', type: 'measurement', description: 'تم تسجيل قياسات جسم جديدة', traineeId: '2', traineeName: 'خالد علي', date: '2024-01-14T14:00:00' },
-            { id: '3', type: 'program', description: 'تم تعيين برنامج تمرين جديد', traineeId: '3', traineeName: 'محمود حسن', date: '2024-01-14T09:15:00' },
-            { id: '4', type: 'diet', description: 'تم تحديث خطة التغذية', traineeId: '4', traineeName: 'عمر السيد', date: '2024-01-13T16:45:00' },
-            { id: '5', type: 'session', description: 'أكمل جلسة تمرين الظهر', traineeId: '1', traineeName: 'أحمد محمد', date: '2024-01-13T11:00:00' },
-          ]
-        });
+        console.error('Error loading dashboard data:', err);
+        this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.stats.set(null);
+        this.error.set('حدث خطأ في تحميل البيانات');
         this.loading.set(false);
       }
     });

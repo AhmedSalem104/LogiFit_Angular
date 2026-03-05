@@ -437,14 +437,8 @@ export class ClientsListComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading clients:', err);
-        // Fallback to mock data for development
-        this.clients.set([
-          { id: '1', fullName: 'محمد أحمد علي', phoneNumber: '01012345678', email: 'mohamed@email.com', isActive: true, hasActiveSubscription: true, assignedCoachName: 'أحمد المدرب' },
-          { id: '2', fullName: 'خالد محمود', phoneNumber: '01098765432', email: 'khaled@email.com', isActive: true, hasActiveSubscription: true, assignedCoachName: 'أحمد المدرب' },
-          { id: '3', fullName: 'عمر حسن', phoneNumber: '01155566677', email: 'omar@email.com', isActive: true, hasActiveSubscription: false },
-          { id: '4', fullName: 'أحمد سمير', phoneNumber: '01288899900', email: 'ahmed@email.com', isActive: false, hasActiveSubscription: false },
-          { id: '5', fullName: 'يوسف كريم', phoneNumber: '01011122233', email: 'youssef@email.com', isActive: true, hasActiveSubscription: true, assignedCoachName: 'محمد المدرب' },
-        ]);
+        this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.clients.set([]);
         this.loading.set(false);
       }
     });

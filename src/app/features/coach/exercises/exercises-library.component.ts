@@ -1246,19 +1246,11 @@ export class ExercisesLibraryComponent implements OnInit {
         this.filteredExercises.set(data);
         this.loading.set(false);
       },
-      error: () => {
-        const mockData: Exercise[] = [
-          { id: '1', name: 'بنش برس بالبار', muscleGroupId: 'chest', muscleGroupName: 'صدر', equipmentType: 'بار', description: 'تمرين أساسي لبناء عضلات الصدر', isGlobal: true },
-          { id: '2', name: 'بنش برس بالدمبل', muscleGroupId: 'chest', muscleGroupName: 'صدر', equipmentType: 'دمبل', description: 'تمرين لعزل عضلات الصدر', isGlobal: true },
-          { id: '3', name: 'ديد ليفت', muscleGroupId: 'back', muscleGroupName: 'ظهر', equipmentType: 'بار', description: 'تمرين مركب للظهر السفلي', isGlobal: true },
-          { id: '4', name: 'لات بول داون', muscleGroupId: 'back', muscleGroupName: 'ظهر', equipmentType: 'كيبل', description: 'تمرين للظهر العلوي', isGlobal: true },
-          { id: '5', name: 'شولدر برس', muscleGroupId: 'shoulders', muscleGroupName: 'أكتاف', equipmentType: 'دمبل', description: 'تمرين أساسي للأكتاف', isGlobal: true },
-          { id: '6', name: 'سكوات', muscleGroupId: 'legs', muscleGroupName: 'أرجل', equipmentType: 'بار', description: 'ملك التمارين للأرجل', isGlobal: true },
-          { id: '7', name: 'بايسبس كيرل', muscleGroupId: 'arms', muscleGroupName: 'ذراعين', equipmentType: 'دمبل', description: 'تمرين عزل للبايسبس', isGlobal: false },
-          { id: '8', name: 'كرانش', muscleGroupId: 'abs', muscleGroupName: 'بطن', equipmentType: 'بدون معدات', description: 'تمرين أساسي للبطن', isGlobal: false },
-        ];
-        this.exercises.set(mockData);
-        this.filteredExercises.set(mockData);
+      error: (err) => {
+        console.error('Error loading exercises:', err);
+        this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.exercises.set([]);
+        this.filteredExercises.set([]);
         this.loading.set(false);
       }
     });

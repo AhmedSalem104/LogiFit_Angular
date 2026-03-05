@@ -1254,15 +1254,7 @@ export class FoodsDatabaseComponent implements OnInit {
       error: (err) => {
         console.error('Error loading foods:', err);
         this.notificationService.error('حدث خطأ أثناء تحميل الأطعمة');
-        // Use mock data as fallback
-        const mockData: Food[] = [
-          { id: 1, name: 'صدر دجاج مشوي', caloriesPer100g: 165, proteinPer100g: 31, carbsPer100g: 0, fatsPer100g: 3.6, fatPer100g: 3.6, category: 'دواجن', servingSize: 100, servingUnit: 'g', isGlobal: true },
-          { id: 2, name: 'أرز أبيض مطبوخ', caloriesPer100g: 130, proteinPer100g: 2.7, carbsPer100g: 28, fatsPer100g: 0.3, fatPer100g: 0.3, category: 'حبوب', servingSize: 100, servingUnit: 'g', isGlobal: true },
-          { id: 3, name: 'بيض مسلوق', caloriesPer100g: 155, proteinPer100g: 13, carbsPer100g: 1.1, fatsPer100g: 11, fatPer100g: 11, category: 'بيض', servingSize: 50, servingUnit: 'piece', isGlobal: true },
-          { id: 4, name: 'شوفان', caloriesPer100g: 389, proteinPer100g: 16.9, carbsPer100g: 66, fatsPer100g: 6.9, fatPer100g: 6.9, category: 'حبوب', servingSize: 40, servingUnit: 'g', isGlobal: true },
-          { id: 5, name: 'سلمون مشوي', caloriesPer100g: 208, proteinPer100g: 20, carbsPer100g: 0, fatsPer100g: 13, fatPer100g: 13, category: 'أسماك', servingSize: 100, servingUnit: 'g', isGlobal: true },
-        ];
-        this.foods.set(mockData);
+        this.foods.set([]);
         this.loading.set(false);
       }
     });

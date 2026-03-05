@@ -925,15 +925,11 @@ export class MeasurementsListComponent implements OnInit {
         this.filteredMeasurements.set(data);
         this.loading.set(false);
       },
-      error: () => {
-        const mockData: BodyMeasurement[] = [
-          { id: '1', traineeId: '1', traineeName: 'أحمد محمد', measurementDate: '2024-01-15', weight: 78, height: 175, bodyFatPercentage: 18, chest: 102, waist: 84, hips: 98 },
-          { id: '2', traineeId: '1', traineeName: 'أحمد محمد', measurementDate: '2024-01-01', weight: 80, height: 175, bodyFatPercentage: 20, chest: 100, waist: 86, hips: 99 },
-          { id: '3', traineeId: '2', traineeName: 'خالد علي', measurementDate: '2024-01-14', weight: 85, height: 180, bodyFatPercentage: 22, chest: 108, waist: 90, hips: 102 },
-          { id: '4', traineeId: '3', traineeName: 'محمود حسن', measurementDate: '2024-01-10', weight: 72, height: 170, bodyFatPercentage: 15, chest: 95, waist: 78, hips: 92 },
-        ];
-        this.measurements.set(mockData);
-        this.filteredMeasurements.set(mockData);
+      error: (err) => {
+        console.error('Error loading measurements:', err);
+        this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.measurements.set([]);
+        this.filteredMeasurements.set([]);
         this.loading.set(false);
       }
     });

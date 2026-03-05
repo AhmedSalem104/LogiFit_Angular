@@ -13,6 +13,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { CoachService, DietPlan } from '../services/coach.service';
 import { AuthService } from '../../../core/auth/services/auth.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-diet-plans-list',
@@ -1201,6 +1202,7 @@ import { AuthService } from '../../../core/auth/services/auth.service';
 export class DietPlansListComponent implements OnInit {
   private coachService = inject(CoachService);
   authService = inject(AuthService);
+  private notificationService = inject(NotificationService);
 
   loading = signal(true);
   plans = signal<DietPlan[]>([]);
@@ -1282,67 +1284,11 @@ export class DietPlansListComponent implements OnInit {
         this.filteredPlans.set(mappedData);
         this.loading.set(false);
       },
-      error: () => {
-        const mockData: DietPlan[] = [
-          {
-            id: '1',
-            name: 'خطة بناء العضلات',
-            description: 'خطة غذائية عالية البروتين لبناء الكتلة العضلية',
-            totalCalories: 2800,
-            proteinGrams: 180,
-            carbsGrams: 320,
-            fatGrams: 80,
-            mealsPerDay: 5,
-            isActive: true,
-            assignedTraineesCount: 8,
-            createdAt: '2024-01-01',
-            updatedAt: '2024-01-15'
-          },
-          {
-            id: '2',
-            name: 'خطة خسارة الوزن',
-            description: 'خطة منخفضة السعرات لحرق الدهون مع الحفاظ على العضلات',
-            totalCalories: 1800,
-            proteinGrams: 150,
-            carbsGrams: 150,
-            fatGrams: 60,
-            mealsPerDay: 4,
-            isActive: true,
-            assignedTraineesCount: 12,
-            createdAt: '2024-01-05',
-            updatedAt: '2024-01-14'
-          },
-          {
-            id: '3',
-            name: 'خطة الحفاظ على الوزن',
-            description: 'خطة متوازنة للحفاظ على الوزن الحالي',
-            totalCalories: 2200,
-            proteinGrams: 130,
-            carbsGrams: 250,
-            fatGrams: 70,
-            mealsPerDay: 4,
-            isActive: true,
-            assignedTraineesCount: 5,
-            createdAt: '2024-01-10',
-            updatedAt: '2024-01-15'
-          },
-          {
-            id: '4',
-            name: 'خطة كيتو',
-            description: 'خطة منخفضة الكربوهيدرات عالية الدهون',
-            totalCalories: 2000,
-            proteinGrams: 120,
-            carbsGrams: 30,
-            fatGrams: 150,
-            mealsPerDay: 3,
-            isActive: false,
-            assignedTraineesCount: 0,
-            createdAt: '2023-12-01',
-            updatedAt: '2023-12-20'
-          }
-        ];
-        this.plans.set(mockData);
-        this.filteredPlans.set(mockData);
+      error: (err) => {
+        console.error('Error loading diet plans:', err);
+        this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.plans.set([]);
+        this.filteredPlans.set([]);
         this.loading.set(false);
       }
     });

@@ -432,12 +432,8 @@ export class CoachesListComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading coaches:', err);
-        // Fallback to mock data for development
-        this.coaches.set([
-          { id: '1', fullName: 'أحمد المدرب', phoneNumber: '01011111111', email: 'ahmed.coach@email.com', isActive: true, traineesCount: 15, activePrograms: 12 },
-          { id: '2', fullName: 'محمد المدرب', phoneNumber: '01022222222', email: 'mohamed.coach@email.com', isActive: true, traineesCount: 8, activePrograms: 6 },
-          { id: '3', fullName: 'خالد المدرب', phoneNumber: '01033333333', email: 'khaled.coach@email.com', isActive: false, traineesCount: 0, activePrograms: 0 },
-        ]);
+        this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.coaches.set([]);
         this.loading.set(false);
       }
     });

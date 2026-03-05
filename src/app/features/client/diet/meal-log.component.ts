@@ -386,56 +386,19 @@ export class MealLogComponent implements OnInit {
   loadMealLogs(): void {
     this.loading.set(true);
 
-    // Note: Meal log API endpoint doesn't exist yet - using mock data
-    setTimeout(() => {
-      // Mock data
-        const mockLogs: MealLog[] = [
-          {
-            id: '1',
-            date: '2024-01-15T08:00:00',
-            mealName: 'الإفطار',
-            foods: [
-              { foodName: 'شوفان', quantity: 100, unit: 'g', calories: 389 },
-              { foodName: 'بيض مسلوق', quantity: 3, unit: 'حبة', calories: 234 },
-              { foodName: 'موز', quantity: 1, unit: 'حبة', calories: 105 }
-            ],
-            totalCalories: 728,
-            totalProtein: 36,
-            totalCarbs: 95,
-            totalFat: 23
-          },
-          {
-            id: '2',
-            date: '2024-01-15T11:00:00',
-            mealName: 'وجبة خفيفة',
-            foods: [
-              { foodName: 'زبادي يوناني', quantity: 200, unit: 'g', calories: 118 },
-              { foodName: 'لوز', quantity: 30, unit: 'g', calories: 174 }
-            ],
-            totalCalories: 292,
-            totalProtein: 26,
-            totalCarbs: 14,
-            totalFat: 16
-          },
-          {
-            id: '3',
-            date: '2024-01-15T14:00:00',
-            mealName: 'الغداء',
-            foods: [
-              { foodName: 'صدر دجاج مشوي', quantity: 200, unit: 'g', calories: 330 },
-              { foodName: 'أرز', quantity: 200, unit: 'g', calories: 260 },
-              { foodName: 'سلطة خضراء', quantity: 150, unit: 'g', calories: 30 }
-            ],
-            totalCalories: 620,
-            totalProtein: 69,
-            totalCarbs: 62,
-            totalFat: 8
-          }
-        ];
-        this.mealLogs.set(mockLogs);
-        this.calculateTotals(mockLogs);
+    this.clientService.getMealLogs(this.selectedDate).subscribe({
+      next: (data) => {
+        this.mealLogs.set(data);
+        this.calculateTotals(data);
         this.loading.set(false);
-    }, 500);
+      },
+      error: (err) => {
+        console.error('Error loading meal logs:', err);
+        this.mealLogs.set([]);
+        this.calculateTotals([]);
+        this.loading.set(false);
+      }
+    });
   }
 
   calculateTotals(logs: MealLog[]): void {

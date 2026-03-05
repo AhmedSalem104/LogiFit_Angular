@@ -843,20 +843,7 @@ export class MusclesListComponent implements OnInit {
       error: (err) => {
         console.error('Error loading muscles:', err);
         this.notificationService.error('حدث خطأ أثناء تحميل العضلات');
-        // Use mock data as fallback
-        const mockData: Muscle[] = [
-          { id: 1, name: 'Chest', nameAr: 'الصدر', bodyPart: 'Upper Body', description: 'Pectoralis major and minor', icon: '💪' },
-          { id: 2, name: 'Back', nameAr: 'الظهر', bodyPart: 'Upper Body', description: 'Latissimus dorsi, trapezius, rhomboids', icon: '🔙' },
-          { id: 3, name: 'Shoulders', nameAr: 'الأكتاف', bodyPart: 'Upper Body', description: 'Deltoids (anterior, lateral, posterior)', icon: '🦾' },
-          { id: 4, name: 'Biceps', nameAr: 'العضلة ذات الرأسين', bodyPart: 'Arms', description: 'Biceps brachii', icon: '💪' },
-          { id: 5, name: 'Triceps', nameAr: 'العضلة ثلاثية الرؤوس', bodyPart: 'Arms', description: 'Triceps brachii', icon: '💪' },
-          { id: 6, name: 'Quadriceps', nameAr: 'عضلات الفخذ الأمامية', bodyPart: 'Lower Body', description: 'Rectus femoris, vastus muscles', icon: '🦵' },
-          { id: 7, name: 'Hamstrings', nameAr: 'عضلات الفخذ الخلفية', bodyPart: 'Lower Body', description: 'Biceps femoris, semitendinosus', icon: '🦵' },
-          { id: 8, name: 'Glutes', nameAr: 'عضلات الأرداف', bodyPart: 'Lower Body', description: 'Gluteus maximus, medius, minimus', icon: '🍑' },
-          { id: 9, name: 'Calves', nameAr: 'عضلات الساق', bodyPart: 'Lower Body', description: 'Gastrocnemius, soleus', icon: '🦵' },
-          { id: 10, name: 'Abs', nameAr: 'عضلات البطن', bodyPart: 'Core', description: 'Rectus abdominis, obliques', icon: '🎯' },
-        ];
-        this.muscles.set(mockData);
+        this.muscles.set([]);
         this.loading.set(false);
       }
     });

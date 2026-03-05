@@ -9,6 +9,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { ChartCardComponent } from '../../../shared/components/chart-card/chart-card.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { CoachService, Trainee, BodyMeasurement } from '../services/coach.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 interface TraineeProgress {
   trainee: Trainee;
@@ -672,6 +673,7 @@ interface TraineeProgress {
 export class TraineeDetailsComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private coachService = inject(CoachService);
+  private notificationService = inject(NotificationService);
 
   loading = signal(true);
   trainee = signal<Trainee | null>(null);
@@ -740,43 +742,12 @@ export class TraineeDetailsComponent implements OnInit {
         this.trainee.set(data);
         this.loading.set(false);
       },
-      error: () => {
-        // Mock data
-        this.trainee.set({
-          id: id,
-          clientId: id,
-          clientName: 'أحمد محمد علي',
-          clientPhone: '01012345678',
-          fullName: 'أحمد محمد علي',
-          phoneNumber: '01012345678',
-          email: 'ahmed@email.com',
-          isActive: true,
-          hasActiveSubscription: true,
-          subscriptionStatus: 'active',
-          currentWorkoutProgramId: 'prog1',
-          currentDietPlanId: 'diet1',
-          workoutProgramsCount: 2,
-          dietPlansCount: 1,
-          startDate: '2024-01-01',
-          lastActivityDate: '2024-01-15',
-          progressPercentage: 85,
-          sessionsCompleted: 24,
-          totalSessions: 28
-        });
-
-        this.measurements.set([
-          { id: '1', traineeId: id, traineeName: 'أحمد', measurementDate: '2024-01-15', weight: 78, height: 175, bodyFatPercentage: 18, chest: 102, waist: 84 },
-          { id: '2', traineeId: id, traineeName: 'أحمد', measurementDate: '2024-01-01', weight: 80, height: 175, bodyFatPercentage: 20, chest: 100, waist: 86 },
-          { id: '3', traineeId: id, traineeName: 'أحمد', measurementDate: '2023-12-15', weight: 82, height: 175, bodyFatPercentage: 22, chest: 98, waist: 88 },
-        ]);
-
-        this.workoutHistory.set([
-          { date: '2024-01-15', workout: 'تمرين الصدر والترايسبس', duration: 65 },
-          { date: '2024-01-14', workout: 'تمرين الظهر والبايسبس', duration: 70 },
-          { date: '2024-01-12', workout: 'تمرين الأرجل', duration: 55 },
-          { date: '2024-01-10', workout: 'تمرين الكتف والترابيس', duration: 50 },
-        ]);
-
+      error: (err) => {
+        console.error('Error loading trainee data:', err);
+        this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.trainee.set(null);
+        this.measurements.set([]);
+        this.workoutHistory.set([]);
         this.loading.set(false);
       }
     });

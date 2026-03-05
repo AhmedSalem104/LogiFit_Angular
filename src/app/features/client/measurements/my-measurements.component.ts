@@ -5,6 +5,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { ChartCardComponent } from '../../../shared/components/chart-card/chart-card.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { ClientService, BodyMeasurement } from '../services/client.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-my-measurements',
@@ -374,6 +375,7 @@ import { ClientService, BodyMeasurement } from '../services/client.service';
 })
 export class MyMeasurementsComponent implements OnInit {
   private clientService = inject(ClientService);
+  private notificationService = inject(NotificationService);
 
   loading = signal(true);
   measurements = signal<BodyMeasurement[]>([]);
@@ -461,14 +463,10 @@ export class MyMeasurementsComponent implements OnInit {
         this.measurements.set(data);
         this.loading.set(false);
       },
-      error: () => {
-        // Mock data
-        this.measurements.set([
-          { id: '1', measurementDate: '2024-01-15', weight: 78, height: 175, bodyFatPercentage: 18, chest: 102, waist: 84, hips: 98, bicepsRight: 36, bicepsLeft: 35, thighRight: 58, thighLeft: 57 },
-          { id: '2', measurementDate: '2024-01-01', weight: 80, height: 175, bodyFatPercentage: 20, chest: 100, waist: 86, hips: 99, bicepsRight: 35, bicepsLeft: 34, thighRight: 57, thighLeft: 56 },
-          { id: '3', measurementDate: '2023-12-15', weight: 82, height: 175, bodyFatPercentage: 22, chest: 98, waist: 88, hips: 100, bicepsRight: 34, bicepsLeft: 33, thighRight: 56, thighLeft: 55 },
-          { id: '4', measurementDate: '2023-12-01', weight: 83, height: 175, bodyFatPercentage: 23, chest: 97, waist: 90, hips: 101, bicepsRight: 33, bicepsLeft: 32, thighRight: 55, thighLeft: 54 },
-        ]);
+      error: (err) => {
+        console.error('Error loading measurements:', err);
+        this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.measurements.set([]);
         this.loading.set(false);
       }
     });

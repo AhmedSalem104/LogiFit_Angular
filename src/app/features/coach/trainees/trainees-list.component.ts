@@ -1,7 +1,7 @@
 import { Component, signal, OnInit, inject, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
@@ -1175,6 +1175,7 @@ export class TraineesListComponent implements OnInit {
   private fb = inject(FormBuilder);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
+  private router = inject(Router);
 
   loading = signal(true);
   saving = signal(false);
@@ -1257,7 +1258,6 @@ export class TraineesListComponent implements OnInit {
 
     this.coachService.getTrainees().subscribe({
       next: (data) => {
-        console.log('Trainees data from API:', data); // Debug log
         // API returns: id, coachId, coachName, clientId, clientName, clientPhone, assignedAt, isActive
         const mappedData = data.map((t: any) => ({
           ...t,
@@ -1270,109 +1270,15 @@ export class TraineesListComponent implements OnInit {
         this.filteredTrainees.set(mappedData);
         this.loading.set(false);
       },
-      error: () => {
-        // Mock data
-        const mockData: Trainee[] = [
-          {
-            id: '1',
-            clientId: '1',
-            clientName: 'أحمد محمد علي',
-            clientPhone: '01012345678',
-            fullName: 'أحمد محمد علي',
-            phoneNumber: '01012345678',
-            email: 'ahmed@email.com',
-            isActive: true,
-            subscriptionStatus: 'active',
-            hasActiveSubscription: true,
-            currentWorkoutProgramId: 'prog1',
-            currentDietPlanId: 'diet1',
-            workoutProgramsCount: 2,
-            dietPlansCount: 1,
-            startDate: '2024-01-01',
-            lastActivityDate: '2024-01-15',
-            progressPercentage: 85,
-            sessionsCompleted: 24,
-            totalSessions: 28
-          },
-          {
-            id: '2',
-            clientId: '2',
-            clientName: 'خالد أحمد حسن',
-            clientPhone: '01123456789',
-            fullName: 'خالد أحمد حسن',
-            phoneNumber: '01123456789',
-            email: 'khaled@email.com',
-            isActive: true,
-            subscriptionStatus: 'active',
-            hasActiveSubscription: true,
-            currentWorkoutProgramId: 'prog2',
-            workoutProgramsCount: 1,
-            dietPlansCount: 0,
-            startDate: '2024-01-05',
-            lastActivityDate: '2024-01-14',
-            progressPercentage: 72,
-            sessionsCompleted: 18,
-            totalSessions: 25
-          },
-          {
-            id: '3',
-            clientId: '3',
-            clientName: 'محمود السيد',
-            clientPhone: '01234567890',
-            fullName: 'محمود السيد',
-            phoneNumber: '01234567890',
-            email: 'mahmoud@email.com',
-            isActive: false,
-            subscriptionStatus: 'expired',
-            hasActiveSubscription: false,
-            workoutProgramsCount: 0,
-            dietPlansCount: 1,
-            startDate: '2023-10-01',
-            lastActivityDate: '2023-12-28',
-            progressPercentage: 100,
-            sessionsCompleted: 30,
-            totalSessions: 30
-          },
-          {
-            id: '4',
-            clientId: '4',
-            clientName: 'عمر إبراهيم',
-            clientPhone: '01098765432',
-            fullName: 'عمر إبراهيم',
-            phoneNumber: '01098765432',
-            email: 'omar@email.com',
-            isActive: true,
-            subscriptionStatus: 'active',
-            hasActiveSubscription: true,
-            currentDietPlanId: 'diet2',
-            workoutProgramsCount: 0,
-            dietPlansCount: 1,
-            startDate: '2024-01-10',
-            progressPercentage: 35,
-            sessionsCompleted: 8,
-            totalSessions: 24
-          },
-          {
-            id: '5',
-            clientId: '5',
-            clientName: 'يوسف محمد',
-            clientPhone: '01187654321',
-            fullName: 'يوسف محمد',
-            phoneNumber: '01187654321',
-            email: 'youssef@email.com',
-            isActive: true,
-            subscriptionStatus: 'pending',
-            hasActiveSubscription: false,
-            workoutProgramsCount: 0,
-            dietPlansCount: 0,
-            startDate: '2024-01-14',
-            progressPercentage: 0,
-            sessionsCompleted: 0,
-            totalSessions: 20
-          }
-        ];
-        this.trainees.set(mockData);
-        this.filteredTrainees.set(mockData);
+      error: (err: any) => {
+        console.error('Error loading trainees:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'خطأ',
+          detail: 'حدث خطأ في تحميل بيانات المتدربين'
+        });
+        this.trainees.set([]);
+        this.filteredTrainees.set([]);
         this.loading.set(false);
       }
     });
@@ -1425,13 +1331,15 @@ export class TraineesListComponent implements OnInit {
   }
 
   assignProgram(trainee: Trainee): void {
-    // Navigate to program builder with trainee pre-selected
-    console.log('Assign program to trainee', trainee);
+    this.router.navigate(['/coach/workout-programs/create'], {
+      queryParams: { clientId: trainee.clientId || trainee.id }
+    });
   }
 
   messageTrainee(trainee: Trainee): void {
-    // Open messaging dialog or navigate to messages
-    console.log('Message trainee', trainee);
+    this.router.navigate(['/coach/chat'], {
+      queryParams: { recipientId: trainee.clientId || trainee.id }
+    });
   }
 
   openAddDialog(): void {

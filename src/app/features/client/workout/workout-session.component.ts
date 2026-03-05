@@ -685,20 +685,18 @@ export class WorkoutSessionComponent implements OnInit {
   }
 
   loadDay(routineId: string | null): void {
-    // Mock data - in real app would fetch routine details from API using routineId
-    // and start a workout session via clientService.startWorkoutSession(routineId)
-    this.currentDay.set({
-      id: routineId || '1',
-      dayNumber: 3,
-      name: 'أكتاف وترابيس',
-      isCompleted: false,
-      isToday: true,
-      exercises: [
-        { id: '8', exerciseId: '8', exerciseName: 'شولدر برس', muscleGroup: 'أكتاف', sets: 4, reps: 12, restSeconds: 90, isCompleted: false, completedSets: [] },
-        { id: '9', exerciseId: '9', exerciseName: 'لاترال ريز', muscleGroup: 'أكتاف', sets: 3, reps: 15, restSeconds: 60, isCompleted: false, completedSets: [] },
-        { id: '10', exerciseId: '10', exerciseName: 'فرونت ريز', muscleGroup: 'أكتاف', sets: 3, reps: 12, restSeconds: 60, isCompleted: false, completedSets: [] },
-        { id: '11', exerciseId: '11', exerciseName: 'شراجز', muscleGroup: 'ترابيس', sets: 3, reps: 15, restSeconds: 60, isCompleted: false, completedSets: [] }
-      ]
+    if (!routineId) {
+      console.error('No routine ID provided for workout session');
+      return;
+    }
+
+    this.clientService.getWorkoutDay(routineId).subscribe({
+      next: (data) => {
+        this.currentDay.set(data);
+      },
+      error: (err) => {
+        console.error('Error loading workout day:', err);
+      }
     });
   }
 
