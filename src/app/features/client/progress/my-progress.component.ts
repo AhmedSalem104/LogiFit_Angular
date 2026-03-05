@@ -500,6 +500,8 @@ export class MyProgressComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading progress data:', err);
+        this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.progressData.set(null);
         this.loading.set(false);
       }
     });

@@ -5,6 +5,7 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { ClientService, DietPlan, DietMeal, MealFood } from '../services/client.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-my-diet',
@@ -472,6 +473,7 @@ import { ClientService, DietPlan, DietMeal, MealFood } from '../services/client.
 })
 export class MyDietComponent implements OnInit {
   private clientService = inject(ClientService);
+  private notificationService = inject(NotificationService);
 
   loading = signal(true);
   dietPlan = signal<DietPlan | null>(null);
@@ -553,6 +555,8 @@ export class MyDietComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading diet plan:', err);
+        this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.dietPlan.set(null);
         this.loading.set(false);
       }
     });

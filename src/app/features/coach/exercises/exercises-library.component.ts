@@ -497,6 +497,169 @@ import Swal from 'sweetalert2';
           </button>
         </ng-template>
       </p-dialog>
+
+      <!-- Exercise Detail Dialog -->
+      <p-dialog
+        [(visible)]="detailDialogVisible"
+        [header]="selectedExercise()?.nameAr || selectedExercise()?.name || 'تفاصيل التمرين'"
+        [modal]="true"
+        [style]="{ width: '750px', maxWidth: '95vw' }"
+        [maximizable]="true"
+        styleClass="exercise-detail-dialog"
+        [closable]="true">
+
+        <div class="detail-content" *ngIf="selectedExercise() as ex">
+          <!-- Header with icon and badges -->
+          <div class="detail-header">
+            <div class="detail-title-row">
+              <span class="detail-icon" *ngIf="ex.icon">{{ ex.icon }}</span>
+              <div>
+                <h3 class="detail-name">{{ ex.nameAr || ex.name }}</h3>
+                <span class="detail-name-en" *ngIf="ex.nameAr && ex.name">{{ ex.name }}</span>
+              </div>
+            </div>
+            <div class="detail-badges">
+              <p-tag *ngIf="ex.difficulty" [value]="getDifficultyLabel(ex.difficulty)" [severity]="getDifficultySeverity(ex.difficulty)"></p-tag>
+              <span class="category-badge" *ngIf="ex.category">{{ ex.category }}</span>
+              <span class="high-impact-tag" *ngIf="ex.isHighImpact"><i class="pi pi-bolt"></i> عالي الشدة</span>
+            </div>
+          </div>
+
+          <!-- Image -->
+          <div class="detail-image" *ngIf="ex.imageUrl">
+            <img [src]="ex.imageUrl" [alt]="ex.name" />
+          </div>
+
+          <!-- Basic Info Grid -->
+          <div class="detail-section">
+            <h4 class="section-title"><i class="pi pi-info-circle"></i> المعلومات الأساسية</h4>
+            <div class="info-grid">
+              <div class="info-item" *ngIf="ex.targetMuscleName || ex.muscleGroupName">
+                <span class="info-label">العضلة المستهدفة</span>
+                <span class="info-value muscle-badge primary">{{ ex.targetMuscleName || ex.muscleGroupName }}</span>
+              </div>
+              <div class="info-item" *ngIf="ex.equipment || ex.equipmentType">
+                <span class="info-label">المعدات</span>
+                <span class="info-value">{{ ex.equipment || ex.equipmentType }}</span>
+              </div>
+              <div class="info-item" *ngIf="ex.mechanic">
+                <span class="info-label">النوع</span>
+                <span class="info-value">{{ ex.mechanic === 'Compound' ? 'مركب' : ex.mechanic === 'Isolation' ? 'عزل' : ex.mechanic }}</span>
+              </div>
+              <div class="info-item" *ngIf="ex.force">
+                <span class="info-label">القوة</span>
+                <span class="info-value">{{ ex.force === 'Push' ? 'دفع' : ex.force === 'Pull' ? 'سحب' : ex.force }}</span>
+              </div>
+              <div class="info-item" *ngIf="ex.movementPattern">
+                <span class="info-label">نمط الحركة</span>
+                <span class="info-value">{{ ex.movementPattern }}</span>
+              </div>
+              <div class="info-item" *ngIf="ex.repsRange">
+                <span class="info-label">عدد التكرارات</span>
+                <span class="info-value">{{ ex.repsRange }}</span>
+              </div>
+              <div class="info-item" *ngIf="ex.setsRange">
+                <span class="info-label">عدد المجموعات</span>
+                <span class="info-value">{{ ex.setsRange }}</span>
+              </div>
+              <div class="info-item" *ngIf="ex.restSeconds">
+                <span class="info-label">وقت الراحة</span>
+                <span class="info-value">{{ ex.restSeconds }} ثانية</span>
+              </div>
+              <div class="info-item" *ngIf="ex.tempo">
+                <span class="info-label">الإيقاع</span>
+                <span class="info-value">{{ ex.tempo }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Secondary Muscles -->
+          <div class="detail-section" *ngIf="ex.secondaryMuscles?.length">
+            <h4 class="section-title"><i class="pi pi-sitemap"></i> العضلات الثانوية</h4>
+            <div class="secondary-muscles-list">
+              <span class="muscle-badge secondary" *ngFor="let sm of ex.secondaryMuscles">
+                {{ sm.muscleName }}
+                <span class="contribution-percent" *ngIf="sm.contributionPercent">({{ sm.contributionPercent }}%)</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="detail-section" *ngIf="ex.descriptionAr || ex.description">
+            <h4 class="section-title"><i class="pi pi-align-right"></i> الوصف</h4>
+            <p class="detail-text">{{ ex.descriptionAr || ex.description }}</p>
+            <p class="detail-text-secondary" *ngIf="ex.descriptionAr && ex.description">{{ ex.description }}</p>
+          </div>
+
+          <!-- Instructions -->
+          <div class="detail-section" *ngIf="ex.instructionsAr?.length || ex.instructions?.length">
+            <h4 class="section-title"><i class="pi pi-list"></i> خطوات التنفيذ</h4>
+            <ol class="detail-list" *ngIf="ex.instructionsAr?.length">
+              <li *ngFor="let step of ex.instructionsAr">{{ step }}</li>
+            </ol>
+            <ol class="detail-list secondary-list" *ngIf="!ex.instructionsAr?.length && ex.instructions?.length">
+              <li *ngFor="let step of ex.instructions">{{ step }}</li>
+            </ol>
+            <div class="en-version" *ngIf="ex.instructionsAr?.length && ex.instructions?.length">
+              <span class="en-label">English:</span>
+              <ol class="detail-list secondary-list">
+                <li *ngFor="let step of ex.instructions">{{ step }}</li>
+              </ol>
+            </div>
+          </div>
+
+          <!-- Tips -->
+          <div class="detail-section" *ngIf="ex.tipsAr?.length || ex.tips?.length">
+            <h4 class="section-title"><i class="pi pi-lightbulb"></i> نصائح</h4>
+            <ul class="detail-list tips-list" *ngIf="ex.tipsAr?.length">
+              <li *ngFor="let tip of ex.tipsAr">{{ tip }}</li>
+            </ul>
+            <ul class="detail-list tips-list secondary-list" *ngIf="!ex.tipsAr?.length && ex.tips?.length">
+              <li *ngFor="let tip of ex.tips">{{ tip }}</li>
+            </ul>
+            <div class="en-version" *ngIf="ex.tipsAr?.length && ex.tips?.length">
+              <span class="en-label">English:</span>
+              <ul class="detail-list tips-list secondary-list">
+                <li *ngFor="let tip of ex.tips">{{ tip }}</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Common Mistakes -->
+          <div class="detail-section" *ngIf="ex.commonMistakesAr?.length || ex.commonMistakes?.length">
+            <h4 class="section-title"><i class="pi pi-exclamation-triangle"></i> أخطاء شائعة</h4>
+            <ul class="detail-list mistakes-list" *ngIf="ex.commonMistakesAr?.length">
+              <li *ngFor="let mistake of ex.commonMistakesAr">{{ mistake }}</li>
+            </ul>
+            <ul class="detail-list mistakes-list secondary-list" *ngIf="!ex.commonMistakesAr?.length && ex.commonMistakes?.length">
+              <li *ngFor="let mistake of ex.commonMistakes">{{ mistake }}</li>
+            </ul>
+            <div class="en-version" *ngIf="ex.commonMistakesAr?.length && ex.commonMistakes?.length">
+              <span class="en-label">English:</span>
+              <ul class="detail-list mistakes-list secondary-list">
+                <li *ngFor="let mistake of ex.commonMistakes">{{ mistake }}</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Video -->
+          <div class="detail-section" *ngIf="ex.videoUrl">
+            <h4 class="section-title"><i class="pi pi-video"></i> فيديو التمرين</h4>
+            <a [href]="ex.videoUrl" target="_blank" class="video-link">
+              <i class="pi pi-external-link"></i>
+              مشاهدة الفيديو
+            </a>
+          </div>
+        </div>
+
+        <ng-template pTemplate="footer">
+          <button class="btn btn-outline" (click)="detailDialogVisible = false">إغلاق</button>
+          <button class="btn btn-primary" (click)="detailDialogVisible = false; editExercise(selectedExercise()!)">
+            <i class="pi pi-pencil"></i>
+            تعديل
+          </button>
+        </ng-template>
+      </p-dialog>
     </div>
   `,
   styles: [`
@@ -1069,6 +1232,201 @@ import Swal from 'sweetalert2';
           }
         }
       }
+
+      .info-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    /* Exercise Detail Dialog */
+    .detail-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .detail-title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .detail-icon {
+      font-size: 2rem;
+    }
+
+    .detail-name {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .detail-name-en {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .detail-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .detail-image {
+      img {
+        max-width: 100%;
+        max-height: 300px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        object-fit: cover;
+      }
+    }
+
+    .detail-section {
+      border-top: 1px solid var(--border-color);
+      padding-top: 1rem;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0 0 0.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+
+      i {
+        color: #8b5cf6;
+        font-size: 1.1rem;
+      }
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 0.65rem 0.85rem;
+      background: var(--bg-secondary);
+      border-radius: 10px;
+    }
+
+    .info-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .info-value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .secondary-muscles-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .detail-text {
+      margin: 0;
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      line-height: 1.7;
+    }
+
+    .detail-text-secondary {
+      margin: 0.5rem 0 0;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      direction: ltr;
+      text-align: left;
+    }
+
+    .detail-list {
+      margin: 0;
+      padding-right: 1.25rem;
+      padding-left: 0;
+
+      li {
+        padding: 0.35rem 0;
+        font-size: 0.95rem;
+        color: var(--text-primary);
+        line-height: 1.6;
+      }
+    }
+
+    .tips-list li::marker {
+      color: #22c55e;
+    }
+
+    .mistakes-list li::marker {
+      color: #ef4444;
+    }
+
+    .secondary-list {
+      li {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+      }
+    }
+
+    .en-version {
+      margin-top: 0.75rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed var(--border-color);
+    }
+
+    .en-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      display: block;
+      margin-bottom: 0.25rem;
+      direction: ltr;
+      text-align: left;
+    }
+
+    .video-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.25rem;
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      color: white;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+      }
+    }
+
+    :host ::ng-deep .exercise-detail-dialog {
+      .p-dialog-content {
+        padding: 1rem 1.5rem;
+      }
     }
   `]
 })
@@ -1098,6 +1456,8 @@ export class ExercisesLibraryComponent implements OnInit {
   selectedMuscleGroup: string | null = null;
 
   dialogVisible = false;
+  detailDialogVisible = false;
+  selectedExercise = signal<Exercise | null>(null);
   editingExercise: Exercise | null = null;
   exerciseForm: {
     name: string;
@@ -1216,23 +1576,8 @@ export class ExercisesLibraryComponent implements OnInit {
       next: (data) => {
         this.muscles.set(data);
       },
-      error: () => {
-        // Use fallback data if API fails
-        const fallbackMuscles: Muscle[] = [
-          { id: 1, name: 'Chest', nameAr: 'الصدر', bodyPart: 'Upper Body' },
-          { id: 2, name: 'Back', nameAr: 'الظهر', bodyPart: 'Upper Body' },
-          { id: 3, name: 'Shoulders', nameAr: 'الأكتاف', bodyPart: 'Upper Body' },
-          { id: 4, name: 'Biceps', nameAr: 'البايسبس', bodyPart: 'Arms' },
-          { id: 5, name: 'Triceps', nameAr: 'الترايسبس', bodyPart: 'Arms' },
-          { id: 6, name: 'Forearms', nameAr: 'الساعد', bodyPart: 'Arms' },
-          { id: 7, name: 'Quadriceps', nameAr: 'الفخذ الأمامي', bodyPart: 'Lower Body' },
-          { id: 8, name: 'Hamstrings', nameAr: 'الفخذ الخلفي', bodyPart: 'Lower Body' },
-          { id: 9, name: 'Glutes', nameAr: 'الأرداف', bodyPart: 'Lower Body' },
-          { id: 10, name: 'Calves', nameAr: 'السمانة', bodyPart: 'Lower Body' },
-          { id: 11, name: 'Abs', nameAr: 'البطن', bodyPart: 'Core' },
-          { id: 12, name: 'Obliques', nameAr: 'الجوانب', bodyPart: 'Core' }
-        ];
-        this.muscles.set(fallbackMuscles);
+      error: (err) => {
+        console.error('Error loading muscles:', err);
       }
     });
   }
@@ -1285,7 +1630,8 @@ export class ExercisesLibraryComponent implements OnInit {
   }
 
   viewExercise(exercise: Exercise): void {
-    console.log('View exercise', exercise);
+    this.selectedExercise.set(exercise);
+    this.detailDialogVisible = true;
   }
 
   editExercise(exercise: Exercise): void {
