@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { DashboardReport, ClientsReport, FinancialReport } from '../../../shared/models/api.models';
 
 // ==================== Client Interfaces ====================
 export interface Client {
@@ -268,6 +269,35 @@ export interface PaymentMethodRevenue {
   totalRevenue: number;
 }
 
+// ==================== Gym Profile Interfaces ====================
+export interface GymProfile {
+  id: string;
+  name: string;
+  description?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  logoUrl?: string;
+  coverImageUrl?: string;
+  galleryImages?: string[];
+  facebook?: string;
+  instagram?: string;
+  website?: string;
+  openingHours?: string;
+}
+
+export interface UpdateGymProfileRequest {
+  name?: string;
+  description?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  facebook?: string;
+  instagram?: string;
+  website?: string;
+  openingHours?: string;
+}
+
 // ==================== Enums ====================
 export const SubscriptionStatus = {
   Active: 1,
@@ -468,7 +498,51 @@ export class OwnerService {
 
   // ==================== REPORTS ====================
 
+  getDashboardReport(): Observable<DashboardReport> {
+    return this.http.get<DashboardReport>(`${this.apiUrl}/reports/dashboard`);
+  }
+
+  getClientsReport(): Observable<ClientsReport> {
+    return this.http.get<ClientsReport>(`${this.apiUrl}/reports/clients`);
+  }
+
   getSubscriptionReport(): Observable<SubscriptionReport> {
     return this.http.get<SubscriptionReport>(`${this.apiUrl}/reports/subscriptions`);
+  }
+
+  getFinancialReport(): Observable<FinancialReport> {
+    return this.http.get<FinancialReport>(`${this.apiUrl}/reports/financial`);
+  }
+
+  // ==================== GYM PROFILE ====================
+
+  getGymProfile(): Observable<GymProfile> {
+    return this.http.get<GymProfile>(`${this.apiUrl}/gymprofile`);
+  }
+
+  updateGymProfile(data: UpdateGymProfileRequest): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/gymprofile`, data);
+  }
+
+  uploadGymLogo(file: File): Observable<{ url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ url: string }>(`${this.apiUrl}/gymprofile/logo`, formData);
+  }
+
+  uploadGymCover(file: File): Observable<{ url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ url: string }>(`${this.apiUrl}/gymprofile/cover`, formData);
+  }
+
+  uploadGymGallery(file: File): Observable<{ url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ url: string }>(`${this.apiUrl}/gymprofile/gallery`, formData);
+  }
+
+  deleteGymGalleryImage(imageUrl: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/gymprofile/gallery`, { body: { imageUrl } });
   }
 }
