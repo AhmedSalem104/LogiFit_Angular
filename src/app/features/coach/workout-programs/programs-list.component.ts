@@ -8,10 +8,9 @@ import { TagModule } from 'primeng/tag';
 import { DropdownModule } from 'primeng/dropdown';
 import { TableModule } from 'primeng/table';
 import { TooltipModule } from 'primeng/tooltip';
-import { DialogModule } from 'primeng/dialog';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
-import { CoachService, WorkoutProgram } from '../services/coach.service';
+import { CoachService, WorkoutProgram, Exercise } from '../services/coach.service';
 import { AuthService } from '../../../core/auth/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 
@@ -28,7 +27,6 @@ import { NotificationService } from '../../../core/services/notification.service
     DropdownModule,
     TableModule,
     TooltipModule,
-    DialogModule,
     PageHeaderComponent,
     LoadingSkeletonComponent
   ],
@@ -227,170 +225,7 @@ import { NotificationService } from '../../../core/services/notification.service
       }
     </div>
 
-    <!-- Print Dialog -->
-    <p-dialog
-      [(visible)]="showPrintDialog"
-      [modal]="true"
-      [style]="{width: '90vw', maxWidth: '900px'}"
-      [draggable]="false"
-      [resizable]="false"
-      styleClass="print-dialog"
-    >
-      <ng-template pTemplate="header">
-        <div class="print-dialog-header">
-          <i class="pi pi-print"></i>
-          <span>معاينة الطباعة - {{ printingProgram?.name }}</span>
-        </div>
-      </ng-template>
-
-      <div class="print-content" id="printArea">
-        @if (printingProgram) {
-          <!-- Header -->
-          <div class="print-header">
-            <div class="print-logo">
-              <i class="pi pi-bolt"></i>
-              <span>LogicFit</span>
-            </div>
-            <div class="print-title">
-              <h1>برنامج التمرين</h1>
-              <h2>{{ printingProgram.name }}</h2>
-            </div>
-            <div class="print-date">
-              <span>تاريخ الطباعة: {{ today | date:'yyyy/MM/dd' }}</span>
-            </div>
-          </div>
-
-          <!-- Coach & Trainee Info -->
-          <div class="print-info-section">
-            <div class="info-card coach">
-              <div class="info-header">
-                <i class="pi pi-user"></i>
-                <span>بيانات المدرب</span>
-              </div>
-              <div class="info-body">
-                <div class="info-row">
-                  <span class="info-label">الاسم:</span>
-                  <span class="info-value">{{ printingProgram.coachName || coachName || 'غير محدد' }}</span>
-                </div>
-                @if (authService.user()?.phoneNumber) {
-                  <div class="info-row">
-                    <span class="info-label">الهاتف:</span>
-                    <span class="info-value">{{ authService.user()?.phoneNumber }}</span>
-                  </div>
-                }
-              </div>
-            </div>
-            <div class="info-card trainee">
-              <div class="info-header">
-                <i class="pi pi-users"></i>
-                <span>بيانات المتدرب</span>
-              </div>
-              <div class="info-body">
-                <div class="info-row">
-                  <span class="info-label">الاسم:</span>
-                  <span class="info-value">{{ printingProgram.clientName || 'غير محدد' }}</span>
-                </div>
-                @if (printingProgram.clientPhone) {
-                  <div class="info-row">
-                    <span class="info-label">الهاتف:</span>
-                    <span class="info-value">{{ printingProgram.clientPhone }}</span>
-                  </div>
-                }
-                @if (printingProgram.clientEmail) {
-                  <div class="info-row">
-                    <span class="info-label">البريد:</span>
-                    <span class="info-value">{{ printingProgram.clientEmail }}</span>
-                  </div>
-                }
-              </div>
-            </div>
-          </div>
-
-          <!-- Program Details -->
-          <div class="print-program-details">
-            <div class="detail-item">
-              <i class="pi pi-calendar"></i>
-              <span>المدة: {{ printingProgram.durationWeeks ?? calculateDurationWeeks(printingProgram) }} أسبوع</span>
-            </div>
-            <div class="detail-item">
-              <i class="pi pi-clock"></i>
-              <span>الأيام: {{ printingProgram.daysPerWeek ?? printingProgram.routines?.length ?? 0 }} أيام/أسبوع</span>
-            </div>
-            <div class="detail-item">
-              <i class="pi pi-flag"></i>
-              <span>الهدف: {{ printingProgram.goal || 'غير محدد' }}</span>
-            </div>
-            <div class="detail-item">
-              <i class="pi pi-chart-line"></i>
-              <span>المستوى: {{ getDifficultyLabel(printingProgram.difficulty || '') }}</span>
-            </div>
-          </div>
-
-          @if (printingProgram.description) {
-            <div class="print-description">
-              <strong>الوصف:</strong> {{ printingProgram.description }}
-            </div>
-          }
-
-          <!-- Routines/Days -->
-          @if (printingProgram.routines?.length) {
-            <div class="print-routines">
-              <h3>تفاصيل التمارين</h3>
-              @for (routine of printingProgram.routines; track routine.id; let i = $index) {
-                <div class="routine-card">
-                  <div class="routine-header">
-                    <span class="routine-number">{{ i + 1 }}</span>
-                    <span class="routine-name">{{ routine.name || getDayName(routine.dayOfWeek) }}</span>
-                    <span class="routine-day">{{ getDayName(routine.dayOfWeek) }}</span>
-                  </div>
-                  @if (routine.exercises?.length) {
-                    <table class="exercises-table">
-                      <thead>
-                        <tr>
-                          <th>#</th>
-                          <th>التمرين</th>
-                          <th>المجموعات</th>
-                          <th>التكرارات</th>
-                          <th>الراحة</th>
-                          <th>ملاحظات</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        @for (exercise of routine.exercises; track exercise.id; let j = $index) {
-                          <tr>
-                            <td>{{ j + 1 }}</td>
-                            <td>{{ exercise.exerciseName || 'تمرين ' + (j + 1) }}</td>
-                            <td>{{ exercise.sets }}</td>
-                            <td>{{ exercise.repsMin }}-{{ exercise.repsMax }}</td>
-                            <td>{{ exercise.restSec }}ث</td>
-                            <td>{{ exercise.notes || '-' }}</td>
-                          </tr>
-                        }
-                      </tbody>
-                    </table>
-                  } @else {
-                    <p class="no-exercises">لا توجد تمارين</p>
-                  }
-                </div>
-              }
-            </div>
-          }
-
-          <!-- Footer -->
-          <div class="print-footer">
-            <p>تم إنشاء هذا البرنامج بواسطة LogicFit</p>
-          </div>
-        }
-      </div>
-
-      <ng-template pTemplate="footer">
-        <button class="btn btn-secondary" (click)="showPrintDialog = false">إغلاق</button>
-        <button class="btn btn-primary" (click)="executePrint()">
-          <i class="pi pi-print"></i>
-          طباعة
-        </button>
-      </ng-template>
-    </p-dialog>
+    <!-- Print Dialog removed - using standalone preview window like builder -->
   `,
   styles: [`
     .programs-page {
@@ -737,253 +572,6 @@ import { NotificationService } from '../../../core/services/notification.service
       }
     }
 
-    /* Print Dialog Styles */
-    .print-dialog-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 600;
-      color: var(--text-primary);
-
-      i {
-        color: #8b5cf6;
-      }
-    }
-
-    .print-content {
-      direction: rtl;
-      padding: 20px;
-      background: white;
-      color: #1a1a2e;
-      font-family: 'Segoe UI', Tahoma, sans-serif;
-    }
-
-    .print-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 20px;
-      border-bottom: 2px solid #8b5cf6;
-      margin-bottom: 20px;
-    }
-
-    .print-logo {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #8b5cf6;
-
-      i {
-        font-size: 2rem;
-      }
-    }
-
-    .print-title {
-      text-align: center;
-
-      h1 {
-        font-size: 1.25rem;
-        color: #666;
-        margin: 0;
-        font-weight: 500;
-      }
-
-      h2 {
-        font-size: 1.5rem;
-        color: #1a1a2e;
-        margin: 5px 0 0;
-      }
-    }
-
-    .print-date {
-      font-size: 0.85rem;
-      color: #666;
-    }
-
-    .print-info-section {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 20px;
-    }
-
-    .info-card {
-      border: 1px solid #e0e0e0;
-      border-radius: 10px;
-      overflow: hidden;
-
-      .info-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 15px;
-        font-weight: 600;
-        color: white;
-
-        i {
-          font-size: 1rem;
-        }
-      }
-
-      &.coach .info-header {
-        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-      }
-
-      &.trainee .info-header {
-        background: linear-gradient(135deg, #3b82f6, #2563eb);
-      }
-
-      .info-body {
-        padding: 15px;
-      }
-
-      .info-row {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 8px;
-
-        &:last-child {
-          margin-bottom: 0;
-        }
-      }
-
-      .info-label {
-        font-weight: 600;
-        color: #666;
-        min-width: 60px;
-      }
-
-      .info-value {
-        color: #1a1a2e;
-      }
-    }
-
-    .print-program-details {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      padding: 15px;
-      background: #f8f9fa;
-      border-radius: 10px;
-      margin-bottom: 20px;
-
-      .detail-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 15px;
-        background: white;
-        border-radius: 8px;
-        font-size: 0.9rem;
-
-        i {
-          color: #8b5cf6;
-        }
-      }
-    }
-
-    .print-description {
-      padding: 15px;
-      background: #f8f9fa;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      line-height: 1.6;
-    }
-
-    .print-routines {
-      h3 {
-        font-size: 1.1rem;
-        color: #1a1a2e;
-        margin-bottom: 15px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid #e0e0e0;
-      }
-    }
-
-    .routine-card {
-      margin-bottom: 20px;
-      border: 1px solid #e0e0e0;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
-    .routine-header {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      padding: 12px 15px;
-      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-      color: white;
-
-      .routine-number {
-        width: 28px;
-        height: 28px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-      }
-
-      .routine-name {
-        flex: 1;
-        font-weight: 600;
-      }
-
-      .routine-day {
-        font-size: 0.85rem;
-        opacity: 0.9;
-      }
-    }
-
-    .exercises-table {
-      width: 100%;
-      border-collapse: collapse;
-
-      th, td {
-        padding: 10px 12px;
-        text-align: right;
-        border-bottom: 1px solid #e0e0e0;
-      }
-
-      th {
-        background: #f8f9fa;
-        font-weight: 600;
-        color: #666;
-        font-size: 0.85rem;
-      }
-
-      td {
-        font-size: 0.9rem;
-      }
-
-      tr:last-child td {
-        border-bottom: none;
-      }
-
-      tr:hover {
-        background: #f8f9fa;
-      }
-    }
-
-    .no-exercises {
-      padding: 20px;
-      text-align: center;
-      color: #666;
-    }
-
-    .print-footer {
-      margin-top: 30px;
-      padding-top: 15px;
-      border-top: 1px solid #e0e0e0;
-      text-align: center;
-      color: #666;
-      font-size: 0.85rem;
-    }
-
     /* Empty Table */
     .empty-table {
       text-align: center;
@@ -1072,10 +660,10 @@ export class ProgramsListComponent implements OnInit {
   ];
 
   // Print-related properties
-  showPrintDialog = false;
-  printingProgram: WorkoutProgram | null = null;
+  exercises = signal<Exercise[]>([]);
   today = new Date();
   coachName = '';
+  coachPhone = '';
 
   dayNames: Record<number, string> = {
     0: 'الأحد',
@@ -1110,17 +698,25 @@ export class ProgramsListComponent implements OnInit {
   ngOnInit(): void {
     this.loadPrograms();
     this.loadCoachProfile();
+    this.loadExercises();
   }
 
   loadCoachProfile(): void {
     this.coachService.getProfile().subscribe({
       next: (profile) => {
         this.coachName = profile.profile?.fullName || '';
+        this.coachPhone = profile.phoneNumber || '';
       },
       error: () => {
-        // Fallback
         this.coachName = '';
       }
+    });
+  }
+
+  loadExercises(): void {
+    this.coachService.getExercises().subscribe({
+      next: (data) => this.exercises.set(data),
+      error: () => {}
     });
   }
 
@@ -1230,17 +826,9 @@ export class ProgramsListComponent implements OnInit {
 
   // Print methods
   printProgram(program: WorkoutProgram): void {
-    // Fetch full program details
     this.coachService.getWorkoutProgramById(program.id).subscribe({
-      next: (fullProgram) => {
-        this.printingProgram = fullProgram;
-        this.showPrintDialog = true;
-      },
-      error: () => {
-        // Use the program from list if API fails
-        this.printingProgram = program;
-        this.showPrintDialog = true;
-      }
+      next: (fullProgram) => this.openPreviewWindow(fullProgram),
+      error: () => this.openPreviewWindow(program)
     });
   }
 
@@ -1248,211 +836,389 @@ export class ProgramsListComponent implements OnInit {
     return this.dayNames[dayOfWeek] || `يوم ${dayOfWeek}`;
   }
 
-  executePrint(): void {
-    const printContent = document.getElementById('printArea');
-    if (!printContent) return;
+  private openPreviewWindow(program: WorkoutProgram): void {
+    const previewWindow = window.open('', '_blank');
+    if (!previewWindow) return;
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('يرجى السماح بالنوافذ المنبثقة للطباعة');
-      return;
-    }
+    const user = this.authService.user();
+    const cName = program.coachName || this.coachName || user?.fullName || 'المدرب';
+    const cPhone = user?.phoneNumber || this.coachPhone || '';
+    const clientName = program.clientName || 'المتدرب';
+    const clientPhone = program.clientPhone || '';
+    const clientEmail = program.clientEmail || '';
+    const startDate = program.startDate ? new Date(program.startDate).toLocaleDateString('ar-EG') : '-';
+    const endDate = program.endDate ? new Date(program.endDate).toLocaleDateString('ar-EG') : '-';
+    const today = new Date().toLocaleDateString('ar-EG');
+    const durationWeeks = program.durationWeeks ?? this.calculateDurationWeeks(program);
+    const goalLabel = program.goal || 'غير محدد';
+    const diffLabel = this.getDifficultyLabel(program.difficulty || '');
+    const totalDays = program.routines?.length || 0;
+    const totalExercises = program.routines?.reduce((sum, r) => sum + (r.exercises?.length || 0), 0) || 0;
 
-    printWindow.document.write(`
+    const daysHtml = (program.routines || []).map((routine, i) => {
+      const exercisesHtml = (routine.exercises || []).map((ex, j) => {
+        const fullEx = this.exercises().find(e => e.id === ex.exerciseId || e.id?.toString() === ex.exerciseId?.toString());
+        const instructions = fullEx?.instructionsAr?.length ? fullEx.instructionsAr : fullEx?.instructions || [];
+        const tips = fullEx?.tipsAr?.length ? fullEx.tipsAr : fullEx?.tips || [];
+        const mistakes = fullEx?.commonMistakesAr?.length ? fullEx.commonMistakesAr : fullEx?.commonMistakes || [];
+        const hasDetails = instructions.length > 0 || tips.length > 0 || mistakes.length > 0;
+
+        const instructionsHtml = instructions.length > 0 ? `
+          <div class="ex-detail-section">
+            <span class="ex-detail-title">📋 خطوات التنفيذ:</span>
+            <ol class="ex-detail-list">${instructions.map((s: string) => `<li>${s}</li>`).join('')}</ol>
+          </div>` : '';
+        const tipsHtml = tips.length > 0 ? `
+          <div class="ex-detail-section">
+            <span class="ex-detail-title tips">💡 نصائح:</span>
+            <ul class="ex-detail-list tips-list">${tips.map((t: string) => `<li>${t}</li>`).join('')}</ul>
+          </div>` : '';
+        const mistakesHtml = mistakes.length > 0 ? `
+          <div class="ex-detail-section">
+            <span class="ex-detail-title mistakes">⚠️ أخطاء شائعة:</span>
+            <ul class="ex-detail-list mistakes-list">${mistakes.map((m: string) => `<li>${m}</li>`).join('')}</ul>
+          </div>` : '';
+
+        const detailsRow = hasDetails ? `
+          <tr class="details-row">
+            <td colspan="6">
+              <div class="ex-details-container">${instructionsHtml}${tipsHtml}${mistakesHtml}</div>
+            </td>
+          </tr>` : '';
+
+        return `
+          <tr>
+            <td class="num">${j + 1}</td>
+            <td class="exercise-name">${ex.exerciseName || fullEx?.nameAr || fullEx?.name || 'تمرين ' + (j + 1)}</td>
+            <td class="muscle">${fullEx?.targetMuscleName || fullEx?.muscleGroupName || '-'}</td>
+            <td class="sets">${ex.sets}</td>
+            <td class="reps">${ex.repsMin}${ex.repsMax && ex.repsMax !== ex.repsMin ? '-' + ex.repsMax : ''}</td>
+            <td class="rest">${ex.restSec || ex.restSeconds || 0}ث</td>
+          </tr>${detailsRow}`;
+      }).join('');
+
+      return `
+        <div class="day-card">
+          <div class="day-header">
+            <div class="day-title">
+              <span class="day-icon">💪</span>
+              <span class="day-name">${routine.name || this.getDayName(routine.dayOfWeek)}</span>
+            </div>
+            <div class="day-badge">${routine.exercises?.length || 0} تمرين</div>
+          </div>
+          <table class="exercises-table">
+            <thead>
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>التمرين</th>
+                <th>العضلة</th>
+                <th style="width: 80px;">مجموعات</th>
+                <th style="width: 80px;">تكرارات</th>
+                <th style="width: 70px;">راحة</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${exercisesHtml || '<tr><td colspan="6" style="text-align: center; color: #94a3b8;">لا توجد تمارين</td></tr>'}
+            </tbody>
+          </table>
+        </div>`;
+    }).join('');
+
+    const html = `
       <!DOCTYPE html>
       <html dir="rtl" lang="ar">
       <head>
         <meta charset="UTF-8">
-        <title>طباعة برنامج التمرين - ${this.printingProgram?.name}</title>
+        <title>برنامج التمرين - ${clientName}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
         <style>
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
           body {
-            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-            direction: rtl;
-            padding: 20px;
-            color: #1a1a2e;
-            background: white;
-          }
-          .print-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #8b5cf6;
-            margin-bottom: 25px;
-          }
-          .print-logo {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #8b5cf6;
-          }
-          .print-title {
-            text-align: center;
-          }
-          .print-title h1 {
-            font-size: 1.2rem;
-            color: #666;
-            font-weight: 500;
-          }
-          .print-title h2 {
-            font-size: 1.6rem;
-            color: #1a1a2e;
-            margin-top: 5px;
-          }
-          .print-date {
-            font-size: 0.85rem;
-            color: #666;
-          }
-          .print-info-section {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 25px;
-          }
-          .info-card {
-            flex: 1;
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            overflow: hidden;
-          }
-          .info-header {
-            padding: 10px 15px;
-            font-weight: 600;
-            color: white;
-          }
-          .info-card.coach .info-header {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-          }
-          .info-card.trainee .info-header {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-          }
-          .info-body {
-            padding: 15px;
-          }
-          .info-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 8px;
-          }
-          .info-label {
-            font-weight: 600;
-            color: #666;
-          }
-          .print-program-details {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            margin-bottom: 25px;
-          }
-          .detail-item {
-            padding: 8px 15px;
-            background: white;
-            border-radius: 8px;
-            font-size: 0.9rem;
-          }
-          .print-description {
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            margin-bottom: 25px;
+            font-family: 'Cairo', sans-serif;
+            background: #f8fafc;
+            padding: 0;
+            color: #1e293b;
             line-height: 1.6;
           }
-          .print-routines h3 {
-            font-size: 1.1rem;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #e0e0e0;
-          }
-          .routine-card {
-            margin-bottom: 25px;
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
+          .page { max-width: 950px; margin: 0 auto; padding: 40px; }
+
+          .document-header {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 24px;
+            margin-bottom: 30px;
+            position: relative;
             overflow: hidden;
-            page-break-inside: avoid;
           }
-          .routine-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 12px 15px;
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+          .document-header::before {
+            content: '';
+            position: absolute;
+            top: -50%; right: -50%;
+            width: 100%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+          }
+          .brand {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 25px; position: relative;
+          }
+          .brand-logo {
+            width: 50px; height: 50px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+          }
+          .brand-text { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
+          .document-title {
+            font-size: 32px; font-weight: 800;
+            margin-bottom: 10px; position: relative;
+          }
+          .document-subtitle {
+            font-size: 16px; opacity: 0.85;
+            position: relative;
+          }
+
+          .info-section {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 20px; margin-bottom: 30px;
+          }
+          .info-card {
+            background: white; border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            overflow: hidden; border: 1px solid #e2e8f0;
+          }
+          .info-card-title {
+            padding: 14px 20px; font-weight: 700; font-size: 15px;
             color: white;
           }
-          .routine-number {
-            width: 28px;
-            height: 28px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
+          .info-card:first-child .info-card-title {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
           }
-          .routine-name {
-            flex: 1;
-            font-weight: 600;
+          .info-card:last-child .info-card-title {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
           }
-          .routine-day {
-            font-size: 0.85rem;
-            opacity: 0.9;
+          .info-row {
+            display: flex; justify-content: space-between;
+            padding: 10px 20px;
+            border-bottom: 1px solid #f1f5f9;
           }
-          .exercises-table {
-            width: 100%;
-            border-collapse: collapse;
+          .info-row:last-child { border-bottom: none; }
+          .info-label { color: #64748b; font-size: 13px; }
+          .info-value { font-weight: 600; color: #1e293b; }
+          .coach-name { color: #7c3aed; font-weight: 700; }
+          .client-name { color: #3b82f6; font-weight: 700; }
+
+          .stats-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 16px; margin-bottom: 30px;
           }
-          .exercises-table th, .exercises-table td {
-            padding: 10px 12px;
-            text-align: right;
-            border-bottom: 1px solid #e0e0e0;
+          .stat-card {
+            background: white; border-radius: 16px;
+            padding: 24px 16px; text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 2px solid transparent;
           }
+          .stat-card:nth-child(1) { border-color: #a78bfa; background: linear-gradient(135deg, #f5f3ff, white); }
+          .stat-card:nth-child(2) { border-color: #60a5fa; background: linear-gradient(135deg, #eff6ff, white); }
+          .stat-card:nth-child(3) { border-color: #4ade80; background: linear-gradient(135deg, #f0fdf4, white); }
+          .stat-card:nth-child(4) { border-color: #fbbf24; background: linear-gradient(135deg, #fffbeb, white); }
+          .stat-value { font-size: 32px; font-weight: 800; color: #1e293b; display: block; }
+          .stat-label { font-size: 14px; color: #64748b; margin-top: 5px; display: block; }
+
+          .days-section-title {
+            font-size: 22px; font-weight: 700; color: #1e293b;
+            margin-bottom: 20px; padding-bottom: 12px;
+            border-bottom: 3px solid #7c3aed;
+          }
+          .day-card {
+            background: white; border-radius: 16px;
+            margin-bottom: 24px; overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid #e2e8f0;
+          }
+          .day-header {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            padding: 18px 24px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #e2e8f0;
+          }
+          .day-title { display: flex; align-items: center; gap: 12px; }
+          .day-icon { font-size: 28px; }
+          .day-name { font-size: 20px; font-weight: 700; color: #1e293b; }
+          .day-badge {
+            background: #7c3aed; color: white;
+            padding: 8px 18px; border-radius: 25px;
+            font-size: 14px; font-weight: 600;
+          }
+
+          .exercises-table { width: 100%; border-collapse: collapse; }
           .exercises-table th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #666;
-            font-size: 0.85rem;
+            background: #f8fafc; padding: 14px 20px;
+            text-align: right; font-size: 13px; font-weight: 600;
+            color: #475569; text-transform: uppercase; letter-spacing: 0.5px;
           }
           .exercises-table td {
-            font-size: 0.9rem;
+            padding: 16px 20px; border-bottom: 1px solid #f1f5f9; font-size: 14px;
           }
-          .exercises-table tr:last-child td {
-            border-bottom: none;
+          .exercises-table tr:last-child td { border-bottom: none; }
+          .exercises-table tr:hover { background: #fafafa; }
+          .exercises-table .num { font-weight: 700; color: #7c3aed; text-align: center; }
+          .exercises-table .exercise-name { font-weight: 600; color: #1e293b; }
+          .exercises-table .muscle { color: #64748b; font-size: 13px; }
+          .exercises-table .sets, .exercises-table .reps {
+            font-weight: 700; color: #2563eb; text-align: center;
           }
-          .no-exercises {
-            padding: 20px;
-            text-align: center;
-            color: #666;
+          .exercises-table .rest { color: #16a34a; font-weight: 600; text-align: center; }
+
+          .details-row td { padding: 0 20px 16px !important; border-bottom: 2px solid #e2e8f0 !important; }
+          .details-row:hover { background: transparent !important; }
+          .ex-details-container {
+            display: flex; flex-wrap: wrap; gap: 16px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 12px; border: 1px solid #e2e8f0;
           }
-          .print-footer {
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 1px solid #e0e0e0;
-            text-align: center;
-            color: #666;
-            font-size: 0.85rem;
+          .ex-detail-section { flex: 1; min-width: 200px; }
+          .ex-detail-title {
+            font-size: 12px; font-weight: 700; color: #7c3aed;
+            display: block; margin-bottom: 6px;
           }
+          .ex-detail-title.tips { color: #16a34a; }
+          .ex-detail-title.mistakes { color: #dc2626; }
+          .ex-detail-list { margin: 0; padding-right: 18px; padding-left: 0; }
+          .ex-detail-list li { font-size: 12px; color: #334155; padding: 2px 0; line-height: 1.6; }
+          .ex-detail-list.tips-list li::marker { color: #16a34a; }
+          .ex-detail-list.mistakes-list li::marker { color: #dc2626; }
+
+          .document-footer {
+            margin-top: 40px; padding-top: 30px;
+            border-top: 2px dashed #e2e8f0; text-align: center;
+          }
+          .footer-note { font-size: 14px; color: #64748b; margin-bottom: 15px; }
+          .footer-brand { font-size: 18px; font-weight: 700; color: #7c3aed; }
+          .footer-date { font-size: 12px; color: #94a3b8; margin-top: 10px; }
+
+          .actions {
+            text-align: center; margin-top: 40px; padding: 20px;
+            background: white; border-radius: 16px;
+          }
+          .btn {
+            padding: 14px 40px; border: none; border-radius: 12px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            margin: 0 10px; font-family: 'Cairo', sans-serif; transition: all 0.3s;
+          }
+          .btn-print {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white;
+          }
+          .btn-print:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); }
+          .btn-close { background: #f1f5f9; color: #475569; }
+          .btn-close:hover { background: #e2e8f0; }
+
           @media print {
-            body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-            .routine-card { page-break-inside: avoid; }
+            body { background: white; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .page { padding: 20px; max-width: 100%; }
+            .document-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .actions { display: none !important; }
+            .day-card { break-inside: avoid; page-break-inside: avoid; }
+            .stat-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           }
         </style>
       </head>
       <body>
-        ${printContent.innerHTML}
+        <div class="page">
+          <div class="document-header">
+            <div class="brand">
+              <div class="brand-logo">🏋️</div>
+              <div class="brand-text">LogicFit</div>
+            </div>
+            <h1 class="document-title">💪 ${program.name || 'برنامج التمرين'}</h1>
+            <p class="document-subtitle">${program.description || 'برنامج تمرين مخصص لتحقيق أهدافك الرياضية'}</p>
+          </div>
+
+          <div class="info-section">
+            <div class="info-card">
+              <div class="info-card-title">معلومات المدرب</div>
+              <div class="info-row">
+                <span class="info-label">الاسم</span>
+                <span class="info-value coach-name">${cName}</span>
+              </div>
+              ${cPhone ? `<div class="info-row">
+                <span class="info-label">رقم الهاتف</span>
+                <span class="info-value">${cPhone}</span>
+              </div>` : ''}
+              <div class="info-row">
+                <span class="info-label">الهدف</span>
+                <span class="info-value">${goalLabel}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">تاريخ الإنشاء</span>
+                <span class="info-value">${today}</span>
+              </div>
+            </div>
+            <div class="info-card">
+              <div class="info-card-title">معلومات المتدرب</div>
+              <div class="info-row">
+                <span class="info-label">الاسم</span>
+                <span class="info-value client-name">${clientName}</span>
+              </div>
+              ${clientPhone ? `<div class="info-row">
+                <span class="info-label">رقم الهاتف</span>
+                <span class="info-value">${clientPhone}</span>
+              </div>` : ''}
+              ${clientEmail ? `<div class="info-row">
+                <span class="info-label">البريد الإلكتروني</span>
+                <span class="info-value">${clientEmail}</span>
+              </div>` : ''}
+              <div class="info-row">
+                <span class="info-label">تاريخ البداية</span>
+                <span class="info-value">${startDate}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">تاريخ النهاية</span>
+                <span class="info-value">${endDate}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-value">${durationWeeks}</span>
+              <span class="stat-label">أسبوع</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value">${totalDays}</span>
+              <span class="stat-label">أيام التمرين</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value">${totalExercises}</span>
+              <span class="stat-label">تمرين</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value">${diffLabel}</span>
+              <span class="stat-label">المستوى</span>
+            </div>
+          </div>
+
+          <div class="days-section-title">📋 جدول التمارين الأسبوعي</div>
+          ${daysHtml}
+
+          <div class="document-footer">
+            <p class="footer-note">💡 احرص على الإحماء قبل التمرين والتمدد بعده. استشر مدربك لأي تعديلات.</p>
+            <div class="footer-brand">LogicFit - نظامك الرياضي الذكي</div>
+            <p class="footer-date">تم إنشاء هذا المستند في ${today}</p>
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-print" onclick="window.print()">🖨️ طباعة</button>
+            <button class="btn btn-close" onclick="window.close()">إغلاق</button>
+          </div>
+        </div>
       </body>
       </html>
-    `);
+    `;
 
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 250);
+    previewWindow.document.write(html);
+    previewWindow.document.close();
   }
 }
