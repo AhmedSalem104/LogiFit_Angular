@@ -456,6 +456,44 @@ interface WorkoutDay {
                                 <span>{{ getExerciseVolume(dayIdx, j) | number:'1.0-0' }} kg</span>
                               </div>
                             </div>
+
+                            <!-- Exercise Instructions -->
+                            @if (getExerciseData(getExercisesArray(dayIdx).at(j).get('exerciseId')?.value); as exData) {
+                              @if (exData.instructionsAr?.length || exData.instructions?.length || exData.tipsAr?.length || exData.tips?.length) {
+                                <div class="exercise-instructions">
+                                  @if (exData.instructionsAr?.length || exData.instructions?.length) {
+                                    <div class="instructions-block">
+                                      <span class="instructions-label"><i class="pi pi-list"></i> خطوات التنفيذ</span>
+                                      <ol class="instructions-list">
+                                        @for (step of (exData.instructionsAr?.length ? exData.instructionsAr : exData.instructions)!; track $index) {
+                                          <li>{{ step }}</li>
+                                        }
+                                      </ol>
+                                    </div>
+                                  }
+                                  @if (exData.tipsAr?.length || exData.tips?.length) {
+                                    <div class="instructions-block tips-block">
+                                      <span class="instructions-label"><i class="pi pi-lightbulb"></i> نصائح</span>
+                                      <ul class="tips-list">
+                                        @for (tip of (exData.tipsAr?.length ? exData.tipsAr : exData.tips)!; track $index) {
+                                          <li>{{ tip }}</li>
+                                        }
+                                      </ul>
+                                    </div>
+                                  }
+                                  @if (exData.commonMistakesAr?.length || exData.commonMistakes?.length) {
+                                    <div class="instructions-block mistakes-block">
+                                      <span class="instructions-label"><i class="pi pi-exclamation-triangle"></i> أخطاء شائعة</span>
+                                      <ul class="mistakes-list">
+                                        @for (mistake of (exData.commonMistakesAr?.length ? exData.commonMistakesAr : exData.commonMistakes)!; track $index) {
+                                          <li>{{ mistake }}</li>
+                                        }
+                                      </ul>
+                                    </div>
+                                  }
+                                </div>
+                              }
+                            }
                           </div>
                         }
 
@@ -1543,6 +1581,90 @@ interface WorkoutDay {
       }
     }
 
+    /* Exercise Instructions */
+    .exercise-instructions {
+      padding: 14px 16px;
+      border-top: 1px solid var(--premium-border-default);
+      background: var(--premium-bg-base);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .instructions-block {
+      .instructions-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--premium-text-secondary);
+        margin-bottom: 6px;
+
+        i {
+          font-size: 0.85rem;
+          color: var(--workout-primary);
+        }
+      }
+    }
+
+    .instructions-list {
+      margin: 0;
+      padding-right: 1.25rem;
+      padding-left: 0;
+
+      li {
+        font-size: 0.85rem;
+        color: var(--premium-text-primary);
+        padding: 2px 0;
+        line-height: 1.5;
+      }
+    }
+
+    .tips-block .instructions-label i {
+      color: #22c55e !important;
+    }
+
+    .tips-list {
+      margin: 0;
+      padding-right: 1.25rem;
+      padding-left: 0;
+      list-style: disc;
+
+      li {
+        font-size: 0.85rem;
+        color: var(--premium-text-primary);
+        padding: 2px 0;
+        line-height: 1.5;
+      }
+
+      li::marker {
+        color: #22c55e;
+      }
+    }
+
+    .mistakes-block .instructions-label i {
+      color: #ef4444 !important;
+    }
+
+    .mistakes-list {
+      margin: 0;
+      padding-right: 1.25rem;
+      padding-left: 0;
+      list-style: disc;
+
+      li {
+        font-size: 0.85rem;
+        color: var(--premium-text-primary);
+        padding: 2px 0;
+        line-height: 1.5;
+      }
+
+      li::marker {
+        color: #ef4444;
+      }
+    }
+
     .empty-exercises {
       text-align: center;
       padding: 50px 20px;
@@ -2491,19 +2613,8 @@ export class ProgramBuilderComponent implements OnInit {
           trainee: t
         }));
       },
-      error: () => {
-        // Fallback mock data
-        const mockTrainees: Trainee[] = [
-          { id: '1', fullName: 'محمد أحمد', phoneNumber: '01012345678', email: '', subscriptionStatus: 'active', isActive: true, startDate: '', progressPercentage: 0, sessionsCompleted: 0, totalSessions: 0, workoutProgramsCount: 2, dietPlansCount: 1 } as Trainee,
-          { id: '2', fullName: 'خالد محمود', phoneNumber: '01123456789', email: '', subscriptionStatus: 'active', isActive: true, startDate: '', progressPercentage: 0, sessionsCompleted: 0, totalSessions: 0, workoutProgramsCount: 1, dietPlansCount: 0 } as Trainee,
-          { id: '3', fullName: 'أحمد سمير', phoneNumber: '01234567890', email: '', subscriptionStatus: 'expired', isActive: false, startDate: '', progressPercentage: 0, sessionsCompleted: 0, totalSessions: 0, workoutProgramsCount: 0, dietPlansCount: 1 } as Trainee,
-          { id: '4', fullName: 'يوسف كريم', phoneNumber: '01098765432', email: '', subscriptionStatus: 'pending', isActive: true, startDate: '', progressPercentage: 0, sessionsCompleted: 0, totalSessions: 0, workoutProgramsCount: 0, dietPlansCount: 0 } as Trainee
-        ];
-        this.traineeOptions = mockTrainees.map(t => ({
-          label: t.fullName || '',
-          value: t.id,
-          trainee: t
-        }));
+      error: (err) => {
+        console.error('Error loading trainees:', err);
       }
     });
   }
@@ -2522,27 +2633,8 @@ export class ProgramBuilderComponent implements OnInit {
           value: e.id
         }));
       },
-      error: () => {
-        // Fallback mock data
-        const mockExercises: Exercise[] = [
-          { id: '1', name: 'بنش برس', description: '', muscleGroupId: '1', muscleGroupName: 'صدر', equipmentType: 'بار', isGlobal: true },
-          { id: '2', name: 'بنش برس مائل', description: '', muscleGroupId: '1', muscleGroupName: 'صدر', equipmentType: 'بار', isGlobal: true },
-          { id: '3', name: 'فراشة', description: '', muscleGroupId: '1', muscleGroupName: 'صدر', equipmentType: 'كابل', isGlobal: true },
-          { id: '4', name: 'ديد ليفت', description: '', muscleGroupId: '2', muscleGroupName: 'ظهر', equipmentType: 'بار', isGlobal: true },
-          { id: '5', name: 'سحب علوي', description: '', muscleGroupId: '2', muscleGroupName: 'ظهر', equipmentType: 'كابل', isGlobal: true },
-          { id: '6', name: 'رو', description: '', muscleGroupId: '2', muscleGroupName: 'ظهر', equipmentType: 'بار', isGlobal: true },
-          { id: '7', name: 'سكوات', description: '', muscleGroupId: '3', muscleGroupName: 'أرجل', equipmentType: 'بار', isGlobal: true },
-          { id: '8', name: 'ليج برس', description: '', muscleGroupId: '3', muscleGroupName: 'أرجل', equipmentType: 'جهاز', isGlobal: true },
-          { id: '9', name: 'شولدر برس', description: '', muscleGroupId: '4', muscleGroupName: 'أكتاف', equipmentType: 'دمبل', isGlobal: true },
-          { id: '10', name: 'رفع جانبي', description: '', muscleGroupId: '4', muscleGroupName: 'أكتاف', equipmentType: 'دمبل', isGlobal: true },
-          { id: '11', name: 'بايسبس كيرل', description: '', muscleGroupId: '5', muscleGroupName: 'ذراع', equipmentType: 'بار', isGlobal: true },
-          { id: '12', name: 'ترايسبس بوش داون', description: '', muscleGroupId: '5', muscleGroupName: 'ذراع', equipmentType: 'كابل', isGlobal: true }
-        ];
-        this.exercises.set(mockExercises);
-        this.exerciseOptions = mockExercises.map(e => ({
-          label: `${e.name} (${e.muscleGroupName})`,  // Mock data already in Arabic
-          value: e.id
-        }));
+      error: (err) => {
+        console.error('Error loading exercises:', err);
       }
     });
   }
@@ -2716,6 +2808,11 @@ export class ProgramBuilderComponent implements OnInit {
 
   onExerciseSelect(event: any, dayIndex: number, exerciseIndex: number): void {
     // Can be used for additional logic when exercise is selected
+  }
+
+  getExerciseData(exerciseId: any): Exercise | null {
+    if (!exerciseId) return null;
+    return this.exercises().find(e => e.id === exerciseId) || null;
   }
 
   incrementSets(dayIndex: number, exerciseIndex: number): void {
@@ -2981,15 +3078,48 @@ export class ProgramBuilderComponent implements OnInit {
       const exercisesHtml = day.exercises.map((ex: any, j: number) => {
         const exercise = this.exercises().find(e => e.id === ex.exerciseId);
         const muscleGroup = exercise?.muscleGroupName || exercise?.targetMuscleName || '-';
+        const instructions = exercise?.instructionsAr?.length ? exercise.instructionsAr : exercise?.instructions || [];
+        const tips = exercise?.tipsAr?.length ? exercise.tipsAr : exercise?.tips || [];
+        const mistakes = exercise?.commonMistakesAr?.length ? exercise.commonMistakesAr : exercise?.commonMistakes || [];
+        const hasDetails = instructions.length > 0 || tips.length > 0 || mistakes.length > 0;
+
+        const instructionsHtml = instructions.length > 0 ? `
+          <div class="ex-detail-section">
+            <span class="ex-detail-title">📋 خطوات التنفيذ:</span>
+            <ol class="ex-detail-list">${instructions.map((s: string) => `<li>${s}</li>`).join('')}</ol>
+          </div>` : '';
+
+        const tipsHtml = tips.length > 0 ? `
+          <div class="ex-detail-section">
+            <span class="ex-detail-title tips">💡 نصائح:</span>
+            <ul class="ex-detail-list tips-list">${tips.map((t: string) => `<li>${t}</li>`).join('')}</ul>
+          </div>` : '';
+
+        const mistakesHtml = mistakes.length > 0 ? `
+          <div class="ex-detail-section">
+            <span class="ex-detail-title mistakes">⚠️ أخطاء شائعة:</span>
+            <ul class="ex-detail-list mistakes-list">${mistakes.map((m: string) => `<li>${m}</li>`).join('')}</ul>
+          </div>` : '';
+
+        const detailsRow = hasDetails ? `
+          <tr class="details-row">
+            <td colspan="6">
+              <div class="ex-details-container">
+                ${instructionsHtml}${tipsHtml}${mistakesHtml}
+              </div>
+            </td>
+          </tr>` : '';
+
         return `
           <tr>
             <td class="num">${j + 1}</td>
-            <td class="exercise-name">${exercise?.name || '-'}</td>
+            <td class="exercise-name">${exercise?.nameAr || exercise?.name || '-'}</td>
             <td class="muscle">${muscleGroup}</td>
             <td class="sets">${ex.sets}</td>
             <td class="reps">${ex.reps}</td>
             <td class="rest">${ex.restSeconds}ث</td>
           </tr>
+          ${detailsRow}
         `;
       }).join('');
 
@@ -3312,6 +3442,68 @@ export class ProgramBuilderComponent implements OnInit {
             color: #16a34a;
             font-weight: 600;
             text-align: center;
+          }
+
+          /* Exercise Details in Print */
+          .details-row td {
+            padding: 0 20px 16px !important;
+            border-bottom: 2px solid #e2e8f0 !important;
+          }
+
+          .details-row:hover {
+            background: transparent !important;
+          }
+
+          .ex-details-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+          }
+
+          .ex-detail-section {
+            flex: 1;
+            min-width: 200px;
+          }
+
+          .ex-detail-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #7c3aed;
+            display: block;
+            margin-bottom: 6px;
+          }
+
+          .ex-detail-title.tips {
+            color: #16a34a;
+          }
+
+          .ex-detail-title.mistakes {
+            color: #dc2626;
+          }
+
+          .ex-detail-list {
+            margin: 0;
+            padding-right: 18px;
+            padding-left: 0;
+          }
+
+          .ex-detail-list li {
+            font-size: 12px;
+            color: #334155;
+            padding: 2px 0;
+            line-height: 1.6;
+          }
+
+          .ex-detail-list.tips-list li::marker {
+            color: #16a34a;
+          }
+
+          .ex-detail-list.mistakes-list li::marker {
+            color: #dc2626;
           }
 
           /* Footer */
