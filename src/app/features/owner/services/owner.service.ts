@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
-// Client interfaces
+// ==================== Client Interfaces ====================
 export interface Client {
   id: string;
   tenantId?: string;
@@ -12,7 +12,6 @@ export interface Client {
   isActive: boolean;
   walletBalance?: number;
   profile?: ClientProfile;
-  // Computed/joined fields
   fullName?: string;
   hasActiveSubscription?: boolean;
   subscriptionEndDate?: string;
@@ -22,7 +21,7 @@ export interface Client {
 
 export interface ClientProfile {
   fullName?: string;
-  gender?: number; // 0 = Male, 1 = Female
+  gender?: number;
   birthDate?: string;
   heightCm?: number;
   activityLevel?: string;
@@ -50,7 +49,7 @@ export interface UpdateClientRequest {
   medicalHistory?: string;
 }
 
-// Coach interfaces
+// ==================== Coach Interfaces ====================
 export interface Coach {
   id: string;
   tenantId?: string;
@@ -58,7 +57,6 @@ export interface Coach {
   phoneNumber?: string;
   isActive: boolean;
   profile?: CoachProfile;
-  // Computed/joined fields
   fullName?: string;
   traineesCount?: number;
   activePrograms?: number;
@@ -86,17 +84,22 @@ export interface UpdateCoachRequest {
   gender?: number;
 }
 
-// Subscription Plan interfaces
+// ==================== Subscription Plan Interfaces ====================
 export interface SubscriptionPlan {
   id: string;
   tenantId?: string;
   name: string;
   price: number;
   durationMonths: number;
-  isActive?: boolean;
   description?: string;
-  // Computed
-  subscribersCount?: number;
+  features?: string[];
+  maxFreezeDays?: number;
+  maxFreezeCount?: number;
+  isActive?: boolean;
+  sessionsPerWeek?: number | null;
+  inBodyIncluded?: boolean;
+  privateCoach?: boolean;
+  activeSubscribersCount?: number;
 }
 
 export interface CreatePlanRequest {
@@ -104,6 +107,13 @@ export interface CreatePlanRequest {
   price: number;
   durationMonths: number;
   description?: string;
+  features?: string[];
+  maxFreezeDays?: number;
+  maxFreezeCount?: number;
+  isActive?: boolean;
+  sessionsPerWeek?: number | null;
+  inBodyIncluded?: boolean;
+  privateCoach?: boolean;
 }
 
 export interface UpdatePlanRequest {
@@ -111,8 +121,179 @@ export interface UpdatePlanRequest {
   price?: number;
   durationMonths?: number;
   description?: string;
+  features?: string[];
+  maxFreezeDays?: number;
+  maxFreezeCount?: number;
+  isActive?: boolean;
+  sessionsPerWeek?: number | null;
+  inBodyIncluded?: boolean;
+  privateCoach?: boolean;
+}
+
+// ==================== Subscription Interfaces ====================
+export interface SubscriptionFreeze {
+  id: string;
+  subscriptionId: string;
+  startDate: string;
+  endDate: string;
+  reason?: string;
   isActive?: boolean;
 }
+
+export interface ClientSubscription {
+  id: string;
+  tenantId?: string;
+  clientId: string;
+  clientName?: string;
+  clientPhone?: string;
+  clientEmail?: string;
+  planId: string;
+  planName?: string;
+  startDate: string;
+  endDate: string;
+  status: number; // 1=Active, 2=Suspended, 3=Trial, 4=Expired, 5=Cancelled
+  statusName?: string;
+  salesCoachId?: string;
+  salesCoachName?: string;
+  paymentMethod?: number; // 0=Cash, 1=Wallet, 2=Card, 3=BankTransfer
+  paymentMethodName?: string;
+  totalAmount?: number;
+  amountPaid?: number;
+  remainingAmount?: number;
+  discount?: number;
+  isPaid?: boolean;
+  notes?: string;
+  renewedFromId?: string | null;
+  remainingDays?: number;
+  totalFreezeDays?: number;
+  freezes?: SubscriptionFreeze[];
+  planDetails?: SubscriptionPlan;
+  renewalHistory?: RenewalHistoryItem[];
+}
+
+export interface RenewalHistoryItem {
+  id: string;
+  planName: string;
+  startDate: string;
+  endDate: string;
+  status: number;
+  amountPaid: number;
+}
+
+export interface CreateSubscriptionRequest {
+  clientId: string;
+  planId: string;
+  startDate: string;
+  paymentMethod?: number;
+  amountPaid?: number;
+  discount?: number;
+  notes?: string;
+  payFromWallet?: boolean;
+}
+
+export interface UpdateSubscriptionRequest {
+  endDate?: string;
+  notes?: string;
+  amountPaid?: number;
+  discount?: number;
+}
+
+export interface RenewSubscriptionRequest {
+  planId?: string;
+  startDate?: string;
+  paymentMethod?: number;
+  amountPaid?: number;
+  discount?: number;
+  notes?: string;
+  payFromWallet?: boolean;
+}
+
+export interface AddPaymentRequest {
+  amount: number;
+  paymentMethod?: number;
+  payFromWallet?: boolean;
+}
+
+export interface CancelSubscriptionRequest {
+  refundToWallet?: boolean;
+  refundAmount?: number | null;
+}
+
+export interface FreezeSubscriptionRequest {
+  startDate: string;
+  endDate: string;
+  reason?: string;
+}
+
+// ==================== Report Interfaces ====================
+export interface SubscriptionReport {
+  totalSubscriptions: number;
+  activeSubscriptions: number;
+  suspendedSubscriptions: number;
+  trialSubscriptions: number;
+  expiredSubscriptions: number;
+  cancelledSubscriptions: number;
+  expiringIn7Days: number;
+  expiringIn30Days: number;
+  totalRevenue: number;
+  revenueThisMonth: number;
+  renewalRate: number;
+  averageSubscriptionDurationDays: number;
+  planStatistics: PlanStatistic[];
+  monthlyRevenue: MonthlyRevenue[];
+  revenueByPaymentMethod: PaymentMethodRevenue[];
+}
+
+export interface PlanStatistic {
+  planId: string;
+  planName: string;
+  activeCount: number;
+  totalSold: number;
+  totalRevenue: number;
+}
+
+export interface MonthlyRevenue {
+  month: string;
+  revenue: number;
+  subscriptionCount: number;
+}
+
+export interface PaymentMethodRevenue {
+  paymentMethod: string;
+  count: number;
+  totalRevenue: number;
+}
+
+// ==================== Enums ====================
+export const SubscriptionStatus = {
+  Active: 1,
+  Suspended: 2,
+  Trial: 3,
+  Expired: 4,
+  Cancelled: 5
+} as const;
+
+export const PaymentMethod = {
+  Cash: 0,
+  Wallet: 1,
+  Card: 2,
+  BankTransfer: 3
+} as const;
+
+export const StatusLabels: Record<number, string> = {
+  1: 'نشط',
+  2: 'مجمد',
+  3: 'تجريبي',
+  4: 'منتهي',
+  5: 'ملغي'
+};
+
+export const PaymentMethodLabels: Record<number, string> = {
+  0: 'كاش',
+  1: 'محفظة',
+  2: 'كارت',
+  3: 'تحويل بنكي'
+};
 
 @Injectable({
   providedIn: 'root'
@@ -123,9 +304,6 @@ export class OwnerService {
 
   // ==================== CLIENTS ====================
 
-  /**
-   * Get all clients
-   */
   getClients(params?: { isActive?: boolean; hasSubscription?: boolean }): Observable<Client[]> {
     let httpParams = new HttpParams();
     if (params?.isActive !== undefined) {
@@ -137,46 +315,28 @@ export class OwnerService {
     return this.http.get<Client[]>(`${this.apiUrl}/clients`, { params: httpParams });
   }
 
-  /**
-   * Get client by ID
-   */
   getClientById(id: string): Observable<Client> {
     return this.http.get<Client>(`${this.apiUrl}/clients/${id}`);
   }
 
-  /**
-   * Create new client
-   */
   createClient(data: CreateClientRequest): Observable<string> {
     return this.http.post<string>(`${this.apiUrl}/clients`, data);
   }
 
-  /**
-   * Update client
-   */
   updateClient(id: string, data: UpdateClientRequest): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/clients/${id}`, data);
   }
 
-  /**
-   * Delete client
-   */
   deleteClient(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/clients/${id}`);
   }
 
-  /**
-   * Toggle client active status
-   */
   toggleClientStatus(id: string, isActive: boolean): Observable<void> {
     return this.http.patch<void>(`${this.apiUrl}/clients/${id}/status`, { isActive });
   }
 
   // ==================== COACHES ====================
 
-  /**
-   * Get all coaches
-   */
   getCoaches(params?: { isActive?: boolean }): Observable<Coach[]> {
     let httpParams = new HttpParams();
     if (params?.isActive !== undefined) {
@@ -185,44 +345,26 @@ export class OwnerService {
     return this.http.get<Coach[]>(`${this.apiUrl}/coaches`, { params: httpParams });
   }
 
-  /**
-   * Get coach by ID
-   */
   getCoachById(id: string): Observable<Coach> {
     return this.http.get<Coach>(`${this.apiUrl}/coaches/${id}`);
   }
 
-  /**
-   * Create new coach
-   */
   createCoach(data: CreateCoachRequest): Observable<string> {
     return this.http.post<string>(`${this.apiUrl}/coaches`, data);
   }
 
-  /**
-   * Update coach
-   */
   updateCoach(id: string, data: UpdateCoachRequest): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/coaches/${id}`, data);
   }
 
-  /**
-   * Delete coach
-   */
   deleteCoach(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/coaches/${id}`);
   }
 
-  /**
-   * Toggle coach active status
-   */
   toggleCoachStatus(id: string, isActive: boolean): Observable<void> {
     return this.http.patch<void>(`${this.apiUrl}/coaches/${id}/status`, { isActive });
   }
 
-  /**
-   * Get coach statistics (trainees count, active programs)
-   */
   getCoachStats(coachId: string): Observable<{ traineesCount: number; activePrograms: number }> {
     return this.http.get<{ traineesCount: number; activePrograms: number }>(
       `${this.apiUrl}/coaches/${coachId}/stats`
@@ -231,45 +373,95 @@ export class OwnerService {
 
   // ==================== SUBSCRIPTION PLANS ====================
 
-  /**
-   * Get all subscription plans
-   */
-  getSubscriptionPlans(): Observable<SubscriptionPlan[]> {
-    return this.http.get<SubscriptionPlan[]>(`${this.apiUrl}/subscriptionplans`);
+  getSubscriptionPlans(isActive?: boolean): Observable<SubscriptionPlan[]> {
+    let httpParams = new HttpParams();
+    if (isActive !== undefined) {
+      httpParams = httpParams.set('isActive', isActive.toString());
+    }
+    return this.http.get<SubscriptionPlan[]>(`${this.apiUrl}/subscriptions/plans`, { params: httpParams });
   }
 
-  /**
-   * Get plan by ID
-   */
   getPlanById(id: string): Observable<SubscriptionPlan> {
-    return this.http.get<SubscriptionPlan>(`${this.apiUrl}/subscriptionplans/${id}`);
+    return this.http.get<SubscriptionPlan>(`${this.apiUrl}/subscriptions/plans/${id}`);
   }
 
-  /**
-   * Create new plan
-   */
   createPlan(data: CreatePlanRequest): Observable<string> {
-    return this.http.post<string>(`${this.apiUrl}/subscriptionplans`, data);
+    return this.http.post<string>(`${this.apiUrl}/subscriptions/plans`, data);
   }
 
-  /**
-   * Update plan
-   */
   updatePlan(id: string, data: UpdatePlanRequest): Observable<void> {
-    return this.http.put<void>(`${this.apiUrl}/subscriptionplans/${id}`, data);
+    return this.http.put<void>(`${this.apiUrl}/subscriptions/plans/${id}`, data);
   }
 
-  /**
-   * Delete plan
-   */
   deletePlan(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/subscriptionplans/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/subscriptions/plans/${id}`);
   }
 
-  /**
-   * Toggle plan active status
-   */
   togglePlanStatus(id: string, isActive: boolean): Observable<void> {
-    return this.http.patch<void>(`${this.apiUrl}/subscriptionplans/${id}/status`, { isActive });
+    return this.http.put<void>(`${this.apiUrl}/subscriptions/plans/${id}`, { isActive });
+  }
+
+  // ==================== SUBSCRIPTIONS ====================
+
+  getSubscriptions(params?: {
+    clientId?: string;
+    status?: number;
+    planId?: string;
+    expiringWithinDays?: number;
+    searchTerm?: string;
+  }): Observable<ClientSubscription[]> {
+    let httpParams = new HttpParams();
+    if (params?.clientId) httpParams = httpParams.set('clientId', params.clientId);
+    if (params?.status !== undefined) httpParams = httpParams.set('status', params.status.toString());
+    if (params?.planId) httpParams = httpParams.set('planId', params.planId);
+    if (params?.expiringWithinDays !== undefined) httpParams = httpParams.set('expiringWithinDays', params.expiringWithinDays.toString());
+    if (params?.searchTerm) httpParams = httpParams.set('searchTerm', params.searchTerm);
+    return this.http.get<ClientSubscription[]>(`${this.apiUrl}/subscriptions`, { params: httpParams });
+  }
+
+  getSubscriptionById(id: string): Observable<ClientSubscription> {
+    return this.http.get<ClientSubscription>(`${this.apiUrl}/subscriptions/${id}`);
+  }
+
+  getExpiringSubscriptions(days: number = 7): Observable<ClientSubscription[]> {
+    return this.http.get<ClientSubscription[]>(`${this.apiUrl}/subscriptions/expiring`, {
+      params: new HttpParams().set('days', days.toString())
+    });
+  }
+
+  createSubscription(data: CreateSubscriptionRequest): Observable<string> {
+    return this.http.post<string>(`${this.apiUrl}/subscriptions`, data);
+  }
+
+  updateSubscription(id: string, data: UpdateSubscriptionRequest): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/subscriptions/${id}`, data);
+  }
+
+  renewSubscription(subscriptionId: string, data: RenewSubscriptionRequest): Observable<string> {
+    return this.http.post<string>(`${this.apiUrl}/subscriptions/${subscriptionId}/renew`, data);
+  }
+
+  addPayment(subscriptionId: string, data: AddPaymentRequest): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/subscriptions/${subscriptionId}/payment`, data);
+  }
+
+  cancelSubscription(subscriptionId: string, data: CancelSubscriptionRequest = {}): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/subscriptions/${subscriptionId}/cancel`, data);
+  }
+
+  // ==================== FREEZES ====================
+
+  freezeSubscription(subscriptionId: string, data: FreezeSubscriptionRequest): Observable<string> {
+    return this.http.post<string>(`${this.apiUrl}/subscriptions/${subscriptionId}/freeze`, data);
+  }
+
+  endFreeze(freezeId: string): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/subscriptions/freezes/${freezeId}/end`, {});
+  }
+
+  // ==================== REPORTS ====================
+
+  getSubscriptionReport(): Observable<SubscriptionReport> {
+    return this.http.get<SubscriptionReport>(`${this.apiUrl}/reports/subscriptions`);
   }
 }

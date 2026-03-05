@@ -8,14 +8,22 @@ import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
 import { CalendarModule } from 'primeng/calendar';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { ToastModule } from 'primeng/toast';
+import { InputSwitchModule } from 'primeng/inputswitch';
 import { TagModule } from 'primeng/tag';
-import { TabViewModule } from 'primeng/tabview';
 import { TooltipModule } from 'primeng/tooltip';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
-import { CoachService, SubscriptionPlan, ClientSubscription, Trainee } from '../../coach/services/coach.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import {
+  OwnerService,
+  ClientSubscription,
+  SubscriptionPlan,
+  Client,
+  SubscriptionStatus,
+  PaymentMethod,
+  StatusLabels,
+  PaymentMethodLabels
+} from '../services/owner.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -31,9 +39,8 @@ import Swal from 'sweetalert2';
     DropdownModule,
     CalendarModule,
     InputNumberModule,
-    ToastModule,
+    InputSwitchModule,
     TagModule,
-    TabViewModule,
     TooltipModule,
     PageHeaderComponent,
     LoadingSkeletonComponent
@@ -41,15 +48,11 @@ import Swal from 'sweetalert2';
   template: `
     <div class="subscriptions-page">
       <app-page-header
-        title="الاشتراكات"
-        subtitle="إدارة باقات واشتراكات العملاء"
+        title="إدارة الاشتراكات"
+        subtitle="إدارة اشتراكات العملاء والدفعات والتجميد"
         [breadcrumbs]="[{label: 'لوحة التحكم', route: '/owner/dashboard'}, {label: 'الاشتراكات'}]"
       >
         <div class="header-actions">
-          <button class="btn btn-outline" (click)="openPlanDialog()">
-            <i class="pi pi-box"></i>
-            <span>إضافة باقة</span>
-          </button>
           <button class="btn btn-primary" (click)="openSubscriptionDialog()">
             <i class="pi pi-plus"></i>
             <span>اشتراك جديد</span>
@@ -59,230 +62,230 @@ import Swal from 'sweetalert2';
 
       <!-- Stats Row -->
       <div class="stats-row">
-        <div class="stat-card blue">
-          <div class="stat-icon"><i class="pi pi-credit-card"></i></div>
+        <div class="stat-card" [class.active-stat]="selectedStatus === null" (click)="filterByStatus(null)">
+          <div class="stat-icon blue"><i class="pi pi-credit-card"></i></div>
           <div class="stat-info">
             <span class="stat-value">{{ subscriptions().length }}</span>
-            <span class="stat-label">إجمالي الاشتراكات</span>
+            <span class="stat-label">الكل</span>
           </div>
         </div>
-        <div class="stat-card green">
-          <div class="stat-icon"><i class="pi pi-check-circle"></i></div>
+        <div class="stat-card" [class.active-stat]="selectedStatus === 1" (click)="filterByStatus(1)">
+          <div class="stat-icon green"><i class="pi pi-check-circle"></i></div>
           <div class="stat-info">
             <span class="stat-value">{{ activeCount() }}</span>
             <span class="stat-label">نشط</span>
           </div>
         </div>
-        <div class="stat-card orange">
-          <div class="stat-icon"><i class="pi pi-pause-circle"></i></div>
+        <div class="stat-card" [class.active-stat]="selectedStatus === 2" (click)="filterByStatus(2)">
+          <div class="stat-icon orange"><i class="pi pi-pause-circle"></i></div>
           <div class="stat-info">
-            <span class="stat-value">{{ frozenCount() }}</span>
+            <span class="stat-value">{{ suspendedCount() }}</span>
             <span class="stat-label">مجمد</span>
           </div>
         </div>
-        <div class="stat-card red">
-          <div class="stat-icon"><i class="pi pi-times-circle"></i></div>
+        <div class="stat-card" [class.active-stat]="selectedStatus === 4" (click)="filterByStatus(4)">
+          <div class="stat-icon gray"><i class="pi pi-clock"></i></div>
           <div class="stat-info">
             <span class="stat-value">{{ expiredCount() }}</span>
             <span class="stat-label">منتهي</span>
           </div>
         </div>
+        <div class="stat-card" [class.active-stat]="selectedStatus === 5" (click)="filterByStatus(5)">
+          <div class="stat-icon red"><i class="pi pi-times-circle"></i></div>
+          <div class="stat-info">
+            <span class="stat-value">{{ cancelledCount() }}</span>
+            <span class="stat-label">ملغي</span>
+          </div>
+        </div>
       </div>
 
-      <p-tabView>
-        <!-- Subscriptions Tab -->
-        <p-tabPanel header="اشتراكات العملاء">
-          <!-- Loading State -->
-          <app-loading-skeleton *ngIf="loading()" type="table" [rows]="5"></app-loading-skeleton>
+      <!-- Expiring Alert -->
+      @if (expiringCount() > 0) {
+        <div class="expiring-alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <span>{{ expiringCount() }} اشتراك ستنتهي خلال 7 أيام</span>
+          <button class="alert-btn" (click)="showExpiringOnly = !showExpiringOnly">
+            {{ showExpiringOnly ? 'عرض الكل' : 'عرض المنتهية قريباً' }}
+          </button>
+        </div>
+      }
 
-          <!-- Subscriptions Table -->
-          <div class="table-card card" *ngIf="!loading()">
-            <div class="table-toolbar">
-              <div class="search-box">
-                <i class="pi pi-search"></i>
-                <input
-                  type="text"
-                  pInputText
-                  [(ngModel)]="searchQuery"
-                  placeholder="البحث باسم العميل..."
-                />
-              </div>
-              <div class="filter-chips">
-                <button
-                  class="chip"
-                  [class.active]="selectedStatus === null"
-                  (click)="filterByStatus(null)"
-                >
-                  الكل
-                </button>
-                <button
-                  class="chip active-chip"
-                  [class.active]="selectedStatus === 0"
-                  (click)="filterByStatus(0)"
-                >
-                  <i class="pi pi-check-circle"></i>
-                  نشط
-                </button>
-                <button
-                  class="chip frozen-chip"
-                  [class.active]="selectedStatus === 2"
-                  (click)="filterByStatus(2)"
-                >
-                  <i class="pi pi-pause-circle"></i>
-                  مجمد
-                </button>
-                <button
-                  class="chip expired-chip"
-                  [class.active]="selectedStatus === 1"
-                  (click)="filterByStatus(1)"
-                >
-                  <i class="pi pi-clock"></i>
-                  منتهي
-                </button>
-                <button
-                  class="chip cancelled-chip"
-                  [class.active]="selectedStatus === 3"
-                  (click)="filterByStatus(3)"
-                >
-                  <i class="pi pi-times-circle"></i>
-                  ملغي
-                </button>
-              </div>
-            </div>
+      <!-- Loading State -->
+      <app-loading-skeleton *ngIf="loading()" type="table" [rows]="5"></app-loading-skeleton>
 
-            <p-table
-              [value]="filteredSubscriptions()"
-              [paginator]="true"
-              [rows]="10"
-              [rowsPerPageOptions]="[5, 10, 25, 50]"
-              [showCurrentPageReport]="true"
-              currentPageReportTemplate="عرض {first} إلى {last} من {totalRecords} اشتراك"
-              styleClass="subscriptions-table"
-            >
-              <ng-template pTemplate="header">
-                <tr>
-                  <th pSortableColumn="clientName">العميل <p-sortIcon field="clientName"></p-sortIcon></th>
-                  <th pSortableColumn="planName">الباقة <p-sortIcon field="planName"></p-sortIcon></th>
-                  <th pSortableColumn="startDate">تاريخ البدء <p-sortIcon field="startDate"></p-sortIcon></th>
-                  <th pSortableColumn="endDate">تاريخ الانتهاء <p-sortIcon field="endDate"></p-sortIcon></th>
-                  <th>الحالة</th>
-                  <th>الإجراءات</th>
-                </tr>
-              </ng-template>
-              <ng-template pTemplate="body" let-sub>
-                <tr>
-                  <td>
-                    <div class="client-info">
-                      <div class="client-avatar">{{ getInitials(sub.clientName || '') }}</div>
-                      <div class="client-details">
-                        <span class="client-name">{{ sub.clientName || 'غير محدد' }}</span>
-                        <span class="coach-name" *ngIf="sub.salesCoachName">
-                          <i class="pi pi-user"></i> {{ sub.salesCoachName }}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span class="plan-badge">{{ sub.planName || 'غير محدد' }}</span>
-                  </td>
-                  <td>{{ sub.startDate | date:'yyyy-MM-dd' }}</td>
-                  <td>
-                    <span [class.expiring-soon]="isExpiringSoon(sub.endDate)">
-                      {{ sub.endDate | date:'yyyy-MM-dd' }}
-                    </span>
-                  </td>
-                  <td>
-                    <p-tag
-                      [value]="getStatusLabel(sub.status)"
-                      [severity]="getStatusSeverity(sub.status)"
-                    ></p-tag>
-                  </td>
-                  <td>
-                    <div class="action-buttons">
-                      <button
-                        class="action-btn freeze-btn"
-                        (click)="openFreezeDialog(sub)"
-                        [disabled]="sub.status !== 0"
-                        pTooltip="تجميد"
-                        tooltipPosition="top"
-                      >
-                        <i class="pi pi-pause"></i>
-                      </button>
-                      <button
-                        class="action-btn cancel-btn"
-                        (click)="cancelSubscription(sub)"
-                        [disabled]="sub.status === 3 || sub.status === 1"
-                        pTooltip="إلغاء"
-                        tooltipPosition="top"
-                      >
-                        <i class="pi pi-times"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </ng-template>
-              <ng-template pTemplate="emptymessage">
-                <tr>
-                  <td colspan="6">
-                    <div class="empty-state">
-                      <i class="pi pi-inbox"></i>
-                      <h4>لا توجد اشتراكات</h4>
-                      <p>لم يتم العثور على اشتراكات مطابقة</p>
-                    </div>
-                  </td>
-                </tr>
-              </ng-template>
-            </p-table>
+      <!-- Subscriptions Table -->
+      <div class="table-card" *ngIf="!loading()">
+        <div class="table-toolbar">
+          <div class="search-box">
+            <i class="pi pi-search"></i>
+            <input
+              type="text"
+              pInputText
+              [(ngModel)]="searchQuery"
+              (ngModelChange)="onSearch()"
+              placeholder="البحث باسم العميل أو الموبايل..."
+            />
           </div>
-        </p-tabPanel>
-
-        <!-- Plans Tab -->
-        <p-tabPanel header="باقات الاشتراك">
-          <div class="plans-grid">
-            <div class="plan-card" *ngFor="let plan of plans()">
-              <div class="plan-header">
-                <h3>{{ plan.name }}</h3>
-                <span class="plan-duration">{{ plan.durationMonths }} شهر</span>
-              </div>
-              <div class="plan-price">
-                <span class="amount">{{ plan.price }}</span>
-                <span class="currency">جنيه</span>
-              </div>
-              <div class="plan-features">
-                <div class="feature">
-                  <i class="pi pi-check"></i>
-                  <span>الوصول لجميع التمارين</span>
-                </div>
-                <div class="feature">
-                  <i class="pi pi-check"></i>
-                  <span>خطة غذائية مخصصة</span>
-                </div>
-                <div class="feature">
-                  <i class="pi pi-check"></i>
-                  <span>متابعة مع المدرب</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Add Plan Card -->
-            <div class="plan-card add-plan-card" (click)="openPlanDialog()">
-              <i class="pi pi-plus-circle"></i>
-              <span>إضافة باقة جديدة</span>
-            </div>
+          <div class="toolbar-filters">
+            <p-dropdown
+              [options]="planFilterOptions"
+              [(ngModel)]="selectedPlanFilter"
+              (onChange)="loadSubscriptions()"
+              placeholder="كل الباقات"
+              [style]="{minWidth: '180px'}"
+              [showClear]="true"
+            ></p-dropdown>
           </div>
-        </p-tabPanel>
-      </p-tabView>
+        </div>
+
+        <p-table
+          [value]="filteredSubscriptions()"
+          [paginator]="true"
+          [rows]="10"
+          [rowsPerPageOptions]="[5, 10, 25, 50]"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="عرض {first} إلى {last} من {totalRecords} اشتراك"
+          styleClass="subscriptions-table"
+          [rowHover]="true"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="clientName">العميل <p-sortIcon field="clientName"></p-sortIcon></th>
+              <th pSortableColumn="planName">الباقة <p-sortIcon field="planName"></p-sortIcon></th>
+              <th pSortableColumn="startDate">الفترة <p-sortIcon field="startDate"></p-sortIcon></th>
+              <th>المدفوعات</th>
+              <th>الحالة</th>
+              <th>الإجراءات</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-sub>
+            <tr>
+              <td>
+                <div class="client-info">
+                  <div class="client-avatar">{{ getInitials(sub.clientName || '') }}</div>
+                  <div class="client-details">
+                    <span class="client-name">{{ sub.clientName || 'غير محدد' }}</span>
+                    @if (sub.salesCoachName) {
+                      <span class="coach-name">
+                        <i class="pi pi-user"></i> {{ sub.salesCoachName }}
+                      </span>
+                    }
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="plan-badge">{{ sub.planName || 'غير محدد' }}</span>
+              </td>
+              <td>
+                <div class="date-range">
+                  <span class="date">{{ sub.startDate | date:'yyyy-MM-dd' }}</span>
+                  <i class="pi pi-arrow-left date-arrow"></i>
+                  <span class="date" [class.expiring-soon]="isExpiringSoon(sub)">
+                    {{ sub.endDate | date:'yyyy-MM-dd' }}
+                  </span>
+                </div>
+                @if (sub.remainingDays !== undefined && sub.status === 1) {
+                  <span class="remaining-days" [class.warning]="sub.remainingDays <= 7">
+                    {{ sub.remainingDays }} يوم متبقي
+                  </span>
+                }
+              </td>
+              <td>
+                <div class="payment-info">
+                  <span class="payment-amount">{{ sub.amountPaid || 0 | number:'1.0-0' }} / {{ sub.totalAmount || 0 | number:'1.0-0' }}</span>
+                  @if (sub.remainingAmount && sub.remainingAmount > 0) {
+                    <span class="payment-remaining">متبقي {{ sub.remainingAmount | number:'1.0-0' }}</span>
+                  }
+                  @if (sub.isPaid) {
+                    <span class="paid-badge"><i class="pi pi-check"></i> مدفوع</span>
+                  }
+                  @if (sub.discount && sub.discount > 0) {
+                    <span class="discount-badge">خصم {{ sub.discount | number:'1.0-0' }}</span>
+                  }
+                </div>
+              </td>
+              <td>
+                <p-tag
+                  [value]="getStatusLabel(sub.status)"
+                  [severity]="getStatusSeverity(sub.status)"
+                ></p-tag>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <button
+                    class="action-btn detail-btn"
+                    (click)="viewDetails(sub)"
+                    pTooltip="التفاصيل"
+                    tooltipPosition="top"
+                  >
+                    <i class="pi pi-eye"></i>
+                  </button>
+                  @if (sub.remainingAmount && sub.remainingAmount > 0) {
+                    <button
+                      class="action-btn payment-btn"
+                      (click)="openPaymentDialog(sub)"
+                      pTooltip="إضافة دفعة"
+                      tooltipPosition="top"
+                    >
+                      <i class="pi pi-wallet"></i>
+                    </button>
+                  }
+                  <button
+                    class="action-btn renew-btn"
+                    (click)="openRenewDialog(sub)"
+                    [disabled]="sub.status === 1"
+                    pTooltip="تجديد"
+                    tooltipPosition="top"
+                  >
+                    <i class="pi pi-refresh"></i>
+                  </button>
+                  <button
+                    class="action-btn freeze-btn"
+                    (click)="openFreezeDialog(sub)"
+                    [disabled]="sub.status !== 1"
+                    pTooltip="تجميد"
+                    tooltipPosition="top"
+                  >
+                    <i class="pi pi-pause"></i>
+                  </button>
+                  <button
+                    class="action-btn cancel-btn"
+                    (click)="openCancelDialog(sub)"
+                    [disabled]="sub.status === 5 || sub.status === 4"
+                    pTooltip="إلغاء"
+                    tooltipPosition="top"
+                  >
+                    <i class="pi pi-times"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6">
+                <div class="empty-state">
+                  <i class="pi pi-inbox"></i>
+                  <h4>لا توجد اشتراكات</h4>
+                  <p>لم يتم العثور على اشتراكات مطابقة</p>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
 
       <!-- New Subscription Dialog -->
       <p-dialog
         [(visible)]="subscriptionDialogVisible"
         header="اشتراك جديد"
         [modal]="true"
-        [style]="{width: '500px'}"
+        [style]="{width: '550px'}"
+        [contentStyle]="{'overflow-y': 'auto'}"
       >
         <div class="dialog-content">
           <div class="form-group">
-            <label>العميل *</label>
+            <label>العميل <span class="required">*</span></label>
             <p-dropdown
               [options]="clientOptions"
               [(ngModel)]="subscriptionForm.clientId"
@@ -294,65 +297,210 @@ import Swal from 'sweetalert2';
           </div>
 
           <div class="form-group">
-            <label>الباقة *</label>
+            <label>الباقة <span class="required">*</span></label>
             <p-dropdown
               [options]="planOptions"
               [(ngModel)]="subscriptionForm.planId"
               placeholder="اختر الباقة"
               [style]="{width: '100%'}"
+              (onChange)="onPlanChange()"
             ></p-dropdown>
           </div>
 
-          <div class="form-group">
-            <label>تاريخ البدء *</label>
-            <p-calendar
-              [(ngModel)]="subscriptionForm.startDate"
-              dateFormat="yy-mm-dd"
-              [showIcon]="true"
-              [style]="{width: '100%'}"
-            ></p-calendar>
-          </div>
-        </div>
-        <ng-template pTemplate="footer">
-          <button class="btn btn-outline" (click)="subscriptionDialogVisible = false">إلغاء</button>
-          <button class="btn btn-primary" (click)="saveSubscription()" [disabled]="saving()">
-            <i class="pi pi-spin pi-spinner" *ngIf="saving()"></i>
-            حفظ
-          </button>
-        </ng-template>
-      </p-dialog>
+          @if (selectedPlanPrice > 0) {
+            <div class="plan-summary">
+              <span>سعر الباقة: <strong>{{ selectedPlanPrice | number:'1.0-0' }} جنيه</strong></span>
+            </div>
+          }
 
-      <!-- New Plan Dialog -->
-      <p-dialog
-        [(visible)]="planDialogVisible"
-        header="باقة جديدة"
-        [modal]="true"
-        [style]="{width: '450px'}"
-      >
-        <div class="dialog-content">
-          <div class="form-group">
-            <label>اسم الباقة *</label>
-            <input type="text" pInputText [(ngModel)]="planForm.name" placeholder="مثال: الباقة الشهرية" />
+          <div class="form-row">
+            <div class="form-group">
+              <label>تاريخ البدء <span class="required">*</span></label>
+              <p-calendar
+                [(ngModel)]="subscriptionForm.startDate"
+                dateFormat="yy-mm-dd"
+                [showIcon]="true"
+                [style]="{width: '100%'}"
+              ></p-calendar>
+            </div>
+
+            <div class="form-group">
+              <label>طريقة الدفع</label>
+              <p-dropdown
+                [options]="paymentMethodOptions"
+                [(ngModel)]="subscriptionForm.paymentMethod"
+                [style]="{width: '100%'}"
+              ></p-dropdown>
+            </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label>السعر (جنيه) *</label>
-              <p-inputNumber [(ngModel)]="planForm.price" [min]="0" mode="currency" currency="EGP" locale="ar-EG"></p-inputNumber>
+              <label>المبلغ المدفوع</label>
+              <p-inputNumber
+                [(ngModel)]="subscriptionForm.amountPaid"
+                [min]="0"
+                mode="decimal"
+                [maxFractionDigits]="2"
+                placeholder="0"
+              ></p-inputNumber>
             </div>
 
             <div class="form-group">
-              <label>المدة (شهور) *</label>
-              <p-inputNumber [(ngModel)]="planForm.durationMonths" [min]="1" [max]="24"></p-inputNumber>
+              <label>الخصم</label>
+              <p-inputNumber
+                [(ngModel)]="subscriptionForm.discount"
+                [min]="0"
+                mode="decimal"
+                [maxFractionDigits]="2"
+                placeholder="0"
+              ></p-inputNumber>
             </div>
+          </div>
+
+          <div class="form-group">
+            <label>ملاحظات</label>
+            <input type="text" pInputText [(ngModel)]="subscriptionForm.notes" placeholder="ملاحظات (اختياري)" />
           </div>
         </div>
         <ng-template pTemplate="footer">
-          <button class="btn btn-outline" (click)="planDialogVisible = false">إلغاء</button>
-          <button class="btn btn-primary" (click)="savePlan()" [disabled]="saving()">
-            <i class="pi pi-spin pi-spinner" *ngIf="saving()"></i>
-            حفظ
-          </button>
+          <div class="dialog-footer">
+            <button class="btn btn-outline" (click)="subscriptionDialogVisible = false">إلغاء</button>
+            <button class="btn btn-primary" (click)="saveSubscription()" [disabled]="saving()">
+              <i class="pi pi-spin pi-spinner" *ngIf="saving()"></i>
+              إنشاء الاشتراك
+            </button>
+          </div>
+        </ng-template>
+      </p-dialog>
+
+      <!-- Payment Dialog -->
+      <p-dialog
+        [(visible)]="paymentDialogVisible"
+        header="إضافة دفعة"
+        [modal]="true"
+        [style]="{width: '400px'}"
+      >
+        <div class="dialog-content">
+          @if (selectedSubscription) {
+            <div class="payment-summary">
+              <div class="summary-row">
+                <span>العميل:</span>
+                <strong>{{ selectedSubscription.clientName }}</strong>
+              </div>
+              <div class="summary-row">
+                <span>المتبقي:</span>
+                <strong class="remaining">{{ selectedSubscription.remainingAmount | number:'1.0-0' }} جنيه</strong>
+              </div>
+            </div>
+          }
+
+          <div class="form-group">
+            <label>المبلغ <span class="required">*</span></label>
+            <p-inputNumber
+              [(ngModel)]="paymentForm.amount"
+              [min]="1"
+              [max]="selectedSubscription?.remainingAmount || 99999"
+              mode="decimal"
+              [maxFractionDigits]="2"
+              placeholder="0"
+            ></p-inputNumber>
+          </div>
+
+          <div class="form-group">
+            <label>طريقة الدفع</label>
+            <p-dropdown
+              [options]="paymentMethodOptions"
+              [(ngModel)]="paymentForm.paymentMethod"
+              [style]="{width: '100%'}"
+            ></p-dropdown>
+          </div>
+        </div>
+        <ng-template pTemplate="footer">
+          <div class="dialog-footer">
+            <button class="btn btn-outline" (click)="paymentDialogVisible = false">إلغاء</button>
+            <button class="btn btn-primary" (click)="savePayment()" [disabled]="saving() || !paymentForm.amount">
+              <i class="pi pi-spin pi-spinner" *ngIf="saving()"></i>
+              تأكيد الدفع
+            </button>
+          </div>
+        </ng-template>
+      </p-dialog>
+
+      <!-- Renew Dialog -->
+      <p-dialog
+        [(visible)]="renewDialogVisible"
+        header="تجديد الاشتراك"
+        [modal]="true"
+        [style]="{width: '500px'}"
+        [contentStyle]="{'overflow-y': 'auto'}"
+      >
+        <div class="dialog-content">
+          @if (selectedSubscription) {
+            <div class="renew-info">
+              <i class="pi pi-info-circle"></i>
+              <p>سيتم إنشاء اشتراك جديد مربوط بالاشتراك الحالي لـ <strong>{{ selectedSubscription.clientName }}</strong></p>
+            </div>
+          }
+
+          <div class="form-group">
+            <label>الباقة</label>
+            <p-dropdown
+              [options]="planOptions"
+              [(ngModel)]="renewForm.planId"
+              placeholder="نفس الباقة الحالية"
+              [showClear]="true"
+              [style]="{width: '100%'}"
+            ></p-dropdown>
+            <small class="hint">اتركها فارغة لاستخدام نفس الباقة</small>
+          </div>
+
+          <div class="form-group">
+            <label>تاريخ البدء</label>
+            <p-calendar
+              [(ngModel)]="renewForm.startDate"
+              dateFormat="yy-mm-dd"
+              [showIcon]="true"
+              [style]="{width: '100%'}"
+            ></p-calendar>
+            <small class="hint">اتركه فارغ ليبدأ من نهاية الاشتراك الحالي</small>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>المبلغ المدفوع</label>
+              <p-inputNumber
+                [(ngModel)]="renewForm.amountPaid"
+                [min]="0"
+                mode="decimal"
+                [maxFractionDigits]="2"
+                placeholder="0"
+              ></p-inputNumber>
+            </div>
+
+            <div class="form-group">
+              <label>طريقة الدفع</label>
+              <p-dropdown
+                [options]="paymentMethodOptions"
+                [(ngModel)]="renewForm.paymentMethod"
+                [style]="{width: '100%'}"
+              ></p-dropdown>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>ملاحظات</label>
+            <input type="text" pInputText [(ngModel)]="renewForm.notes" placeholder="ملاحظات (اختياري)" />
+          </div>
+        </div>
+        <ng-template pTemplate="footer">
+          <div class="dialog-footer">
+            <button class="btn btn-outline" (click)="renewDialogVisible = false">إلغاء</button>
+            <button class="btn btn-success" (click)="saveRenew()" [disabled]="saving()">
+              <i class="pi pi-spin pi-spinner" *ngIf="saving()"></i>
+              تجديد الاشتراك
+            </button>
+          </div>
         </ng-template>
       </p-dialog>
 
@@ -371,7 +519,7 @@ import Swal from 'sweetalert2';
 
           <div class="form-row">
             <div class="form-group">
-              <label>من تاريخ *</label>
+              <label>من تاريخ <span class="required">*</span></label>
               <p-calendar
                 [(ngModel)]="freezeForm.startDate"
                 dateFormat="yy-mm-dd"
@@ -381,7 +529,7 @@ import Swal from 'sweetalert2';
             </div>
 
             <div class="form-group">
-              <label>إلى تاريخ *</label>
+              <label>إلى تاريخ <span class="required">*</span></label>
               <p-calendar
                 [(ngModel)]="freezeForm.endDate"
                 dateFormat="yy-mm-dd"
@@ -397,12 +545,221 @@ import Swal from 'sweetalert2';
           </div>
         </div>
         <ng-template pTemplate="footer">
-          <button class="btn btn-outline" (click)="freezeDialogVisible = false">إلغاء</button>
-          <button class="btn btn-warning" (click)="saveFreeze()" [disabled]="saving()">
-            <i class="pi pi-spin pi-spinner" *ngIf="saving()"></i>
-            تجميد
-          </button>
+          <div class="dialog-footer">
+            <button class="btn btn-outline" (click)="freezeDialogVisible = false">إلغاء</button>
+            <button class="btn btn-warning" (click)="saveFreeze()" [disabled]="saving()">
+              <i class="pi pi-spin pi-spinner" *ngIf="saving()"></i>
+              تجميد
+            </button>
+          </div>
         </ng-template>
+      </p-dialog>
+
+      <!-- Cancel Dialog -->
+      <p-dialog
+        [(visible)]="cancelDialogVisible"
+        header="إلغاء الاشتراك"
+        [modal]="true"
+        [style]="{width: '450px'}"
+      >
+        <div class="dialog-content">
+          <div class="cancel-warning">
+            <i class="pi pi-exclamation-triangle"></i>
+            <p>هل أنت متأكد من إلغاء اشتراك <strong>{{ selectedSubscription?.clientName }}</strong>؟</p>
+          </div>
+
+          <div class="form-group">
+            <div class="switch-row">
+              <label>استرداد المبلغ للمحفظة</label>
+              <p-inputSwitch [(ngModel)]="cancelForm.refundToWallet"></p-inputSwitch>
+            </div>
+          </div>
+
+          @if (cancelForm.refundToWallet) {
+            <div class="form-group">
+              <label>مبلغ الاسترداد</label>
+              <p-inputNumber
+                [(ngModel)]="cancelForm.refundAmount"
+                [min]="0"
+                mode="decimal"
+                [maxFractionDigits]="2"
+                placeholder="تلقائي حسب الأيام المتبقية"
+              ></p-inputNumber>
+              <small class="hint">اتركه فارغ لحساب المبلغ تلقائياً حسب الأيام المتبقية</small>
+            </div>
+          }
+        </div>
+        <ng-template pTemplate="footer">
+          <div class="dialog-footer">
+            <button class="btn btn-outline" (click)="cancelDialogVisible = false">تراجع</button>
+            <button class="btn btn-danger" (click)="confirmCancel()" [disabled]="saving()">
+              <i class="pi pi-spin pi-spinner" *ngIf="saving()"></i>
+              تأكيد الإلغاء
+            </button>
+          </div>
+        </ng-template>
+      </p-dialog>
+
+      <!-- Detail Dialog -->
+      <p-dialog
+        [(visible)]="detailDialogVisible"
+        header="تفاصيل الاشتراك"
+        [modal]="true"
+        [style]="{width: '650px'}"
+        [contentStyle]="{'overflow-y': 'auto', 'max-height': '75vh'}"
+      >
+        @if (detailSubscription) {
+          <div class="detail-content">
+            <!-- Client Info -->
+            <div class="detail-section">
+              <h4><i class="pi pi-user"></i> بيانات العميل</h4>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">الاسم</span>
+                  <span class="detail-value">{{ detailSubscription.clientName }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">الموبايل</span>
+                  <span class="detail-value">{{ detailSubscription.clientPhone || '-' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">الإيميل</span>
+                  <span class="detail-value">{{ detailSubscription.clientEmail || '-' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">المدرب</span>
+                  <span class="detail-value">{{ detailSubscription.salesCoachName || '-' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Subscription Info -->
+            <div class="detail-section">
+              <h4><i class="pi pi-credit-card"></i> بيانات الاشتراك</h4>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">الباقة</span>
+                  <span class="detail-value plan">{{ detailSubscription.planName }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">الحالة</span>
+                  <p-tag
+                    [value]="getStatusLabel(detailSubscription.status)"
+                    [severity]="getStatusSeverity(detailSubscription.status)"
+                  ></p-tag>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">من</span>
+                  <span class="detail-value">{{ detailSubscription.startDate | date:'yyyy-MM-dd' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">إلى</span>
+                  <span class="detail-value">{{ detailSubscription.endDate | date:'yyyy-MM-dd' }}</span>
+                </div>
+                @if (detailSubscription.remainingDays !== undefined) {
+                  <div class="detail-item">
+                    <span class="detail-label">أيام متبقية</span>
+                    <span class="detail-value">{{ detailSubscription.remainingDays }} يوم</span>
+                  </div>
+                }
+                @if (detailSubscription.totalFreezeDays) {
+                  <div class="detail-item">
+                    <span class="detail-label">أيام تجميد</span>
+                    <span class="detail-value">{{ detailSubscription.totalFreezeDays }} يوم</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Payment Info -->
+            <div class="detail-section">
+              <h4><i class="pi pi-wallet"></i> بيانات الدفع</h4>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">الإجمالي</span>
+                  <span class="detail-value">{{ detailSubscription.totalAmount | number:'1.0-0' }} جنيه</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">المدفوع</span>
+                  <span class="detail-value">{{ detailSubscription.amountPaid | number:'1.0-0' }} جنيه</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">المتبقي</span>
+                  <span class="detail-value" [class.remaining]="(detailSubscription.remainingAmount || 0) > 0">
+                    {{ detailSubscription.remainingAmount | number:'1.0-0' }} جنيه
+                  </span>
+                </div>
+                @if (detailSubscription.discount) {
+                  <div class="detail-item">
+                    <span class="detail-label">الخصم</span>
+                    <span class="detail-value discount">{{ detailSubscription.discount | number:'1.0-0' }} جنيه</span>
+                  </div>
+                }
+                <div class="detail-item">
+                  <span class="detail-label">طريقة الدفع</span>
+                  <span class="detail-value">{{ detailSubscription.paymentMethodName || getPaymentLabel(detailSubscription.paymentMethod) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Freezes -->
+            @if (detailSubscription.freezes && detailSubscription.freezes.length > 0) {
+              <div class="detail-section">
+                <h4><i class="pi pi-pause"></i> سجل التجميد</h4>
+                <div class="freeze-list">
+                  @for (freeze of detailSubscription.freezes; track freeze.id) {
+                    <div class="freeze-item">
+                      <div class="freeze-dates">
+                        <span>{{ freeze.startDate | date:'yyyy-MM-dd' }}</span>
+                        <i class="pi pi-arrow-left"></i>
+                        <span>{{ freeze.endDate | date:'yyyy-MM-dd' }}</span>
+                      </div>
+                      @if (freeze.reason) {
+                        <span class="freeze-reason">{{ freeze.reason }}</span>
+                      }
+                      @if (freeze.isActive) {
+                        <button class="btn btn-sm btn-outline" (click)="endFreeze(freeze.id)">
+                          إنهاء التجميد
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Renewal History -->
+            @if (detailSubscription.renewalHistory && detailSubscription.renewalHistory.length > 0) {
+              <div class="detail-section">
+                <h4><i class="pi pi-history"></i> سجل التجديدات</h4>
+                <div class="renewal-list">
+                  @for (renewal of detailSubscription.renewalHistory; track renewal.id) {
+                    <div class="renewal-item">
+                      <span class="renewal-plan">{{ renewal.planName }}</span>
+                      <span class="renewal-dates">
+                        {{ renewal.startDate | date:'yyyy-MM-dd' }} - {{ renewal.endDate | date:'yyyy-MM-dd' }}
+                      </span>
+                      <span class="renewal-amount">{{ renewal.amountPaid | number:'1.0-0' }} جنيه</span>
+                      <p-tag
+                        [value]="getStatusLabel(renewal.status)"
+                        [severity]="getStatusSeverity(renewal.status)"
+                        [style]="{fontSize: '0.7rem'}"
+                      ></p-tag>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Notes -->
+            @if (detailSubscription.notes) {
+              <div class="detail-section">
+                <h4><i class="pi pi-file"></i> ملاحظات</h4>
+                <p class="notes-text">{{ detailSubscription.notes }}</p>
+              </div>
+            }
+          </div>
+        }
       </p-dialog>
     </div>
   `,
@@ -418,34 +775,44 @@ import Swal from 'sweetalert2';
 
     .stats-row {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.75rem;
       margin-bottom: 1.5rem;
     }
 
     .stat-card {
       background: var(--bg-primary);
       border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 1.25rem;
+      border-radius: 14px;
+      padding: 1rem;
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
 
-      &.blue .stat-icon { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-      &.green .stat-icon { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
-      &.orange .stat-icon { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-      &.red .stat-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+      &:hover { border-color: rgba(59, 130, 246, 0.3); }
+      &.active-stat { border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }
+
+      .stat-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+      }
+
+      &:nth-child(1) .stat-icon { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
     }
 
     .stat-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
+      &.blue { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+      &.green { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+      &.orange { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+      &.gray { background: rgba(107, 114, 128, 0.1); color: #6b7280; }
+      &.red { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
     }
 
     .stat-info {
@@ -454,17 +821,50 @@ import Swal from 'sweetalert2';
     }
 
     .stat-value {
-      font-size: 1.5rem;
+      font-size: 1.35rem;
       font-weight: 700;
       color: var(--text-primary);
     }
 
     .stat-label {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: var(--text-secondary);
     }
 
-    .card {
+    .expiring-alert {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.875rem 1.25rem;
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      color: #f59e0b;
+      font-size: 0.9rem;
+
+      i { font-size: 1.1rem; }
+
+      .alert-btn {
+        margin-right: auto;
+        padding: 0.35rem 0.75rem;
+        background: rgba(245, 158, 11, 0.15);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        border-radius: 6px;
+        color: #f59e0b;
+        cursor: pointer;
+        font-size: 0.8rem;
+
+        &:hover { background: rgba(245, 158, 11, 0.25); }
+      }
+    }
+
+    :host-context([dir="ltr"]) .expiring-alert .alert-btn {
+      margin-right: 0;
+      margin-left: auto;
+    }
+
+    .table-card {
       background: var(--bg-primary);
       border: 1px solid var(--border-color);
       border-radius: 16px;
@@ -475,13 +875,15 @@ import Swal from 'sweetalert2';
       padding: 1.25rem;
       border-bottom: 1px solid var(--border-color);
       display: flex;
-      flex-direction: column;
       gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
     }
 
     .search-box {
       position: relative;
-      max-width: 400px;
+      flex: 1;
+      min-width: 250px;
 
       i {
         position: absolute;
@@ -501,32 +903,9 @@ import Swal from 'sweetalert2';
       }
     }
 
-    .filter-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-
-    .chip {
-      padding: 0.5rem 1rem;
-      border-radius: 20px;
-      border: 1px solid var(--border-color);
-      background: transparent;
-      color: var(--text-secondary);
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-
-      &:hover { border-color: #3b82f6; color: #3b82f6; }
-      &.active { background: #3b82f6; border-color: #3b82f6; color: white; }
-
-      &.active-chip.active { background: #22c55e; border-color: #22c55e; }
-      &.frozen-chip.active { background: #f59e0b; border-color: #f59e0b; }
-      &.expired-chip.active { background: #6b7280; border-color: #6b7280; }
-      &.cancelled-chip.active { background: #ef4444; border-color: #ef4444; }
+    :host-context([dir="ltr"]) .search-box {
+      i { right: auto; left: 1rem; }
+      input { padding: 0.75rem 1rem 0.75rem 2.5rem; }
     }
 
     :host ::ng-deep .subscriptions-table {
@@ -543,7 +922,7 @@ import Swal from 'sweetalert2';
       .p-datatable-tbody > tr {
         &:hover { background: var(--bg-secondary); }
         > td {
-          padding: 1rem;
+          padding: 0.875rem 1rem;
           border: none;
           border-bottom: 1px solid var(--border-color);
         }
@@ -573,6 +952,7 @@ import Swal from 'sweetalert2';
       justify-content: center;
       font-weight: 600;
       font-size: 0.85rem;
+      flex-shrink: 0;
     }
 
     .client-details {
@@ -583,6 +963,7 @@ import Swal from 'sweetalert2';
     .client-name {
       font-weight: 600;
       color: var(--text-primary);
+      font-size: 0.9rem;
     }
 
     .coach-name {
@@ -602,43 +983,84 @@ import Swal from 'sweetalert2';
       font-weight: 500;
     }
 
+    .date-range {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+
+      .date-arrow { font-size: 0.7rem; color: var(--text-muted); }
+    }
+
     .expiring-soon {
       color: #f59e0b;
       font-weight: 600;
     }
 
+    .remaining-days {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+
+      &.warning { color: #f59e0b; font-weight: 600; }
+    }
+
+    .payment-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      font-size: 0.85rem;
+    }
+
+    .payment-amount {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .payment-remaining {
+      font-size: 0.75rem;
+      color: #f59e0b;
+      font-weight: 500;
+    }
+
+    .paid-badge {
+      font-size: 0.7rem;
+      color: #22c55e;
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .discount-badge {
+      font-size: 0.7rem;
+      color: #8b5cf6;
+    }
+
     .action-buttons {
       display: flex;
-      gap: 0.5rem;
+      gap: 0.35rem;
     }
 
     .action-btn {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
       border: none;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: all 0.2s;
+      font-size: 0.85rem;
 
-      &:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-      }
+      &:disabled { opacity: 0.3; cursor: not-allowed; }
 
-      &.freeze-btn {
-        background: rgba(245, 158, 11, 0.1);
-        color: #f59e0b;
-        &:hover:not(:disabled) { background: #f59e0b; color: white; }
-      }
-
-      &.cancel-btn {
-        background: rgba(239, 68, 68, 0.1);
-        color: #ef4444;
-        &:hover:not(:disabled) { background: #ef4444; color: white; }
-      }
+      &.detail-btn { background: rgba(59, 130, 246, 0.1); color: #3b82f6; &:hover:not(:disabled) { background: #3b82f6; color: white; } }
+      &.payment-btn { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; &:hover:not(:disabled) { background: #8b5cf6; color: white; } }
+      &.renew-btn { background: rgba(34, 197, 94, 0.1); color: #22c55e; &:hover:not(:disabled) { background: #22c55e; color: white; } }
+      &.freeze-btn { background: rgba(245, 158, 11, 0.1); color: #f59e0b; &:hover:not(:disabled) { background: #f59e0b; color: white; } }
+      &.cancel-btn { background: rgba(239, 68, 68, 0.1); color: #ef4444; &:hover:not(:disabled) { background: #ef4444; color: white; } }
     }
 
     .empty-state {
@@ -651,102 +1073,7 @@ import Swal from 'sweetalert2';
       p { margin: 0; }
     }
 
-    /* Plans Grid */
-    .plans-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1.5rem;
-      padding: 1rem 0;
-    }
-
-    .plan-card {
-      background: var(--bg-primary);
-      border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 1.5rem;
-      transition: all 0.3s;
-
-      &:hover {
-        border-color: #8b5cf6;
-        box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
-      }
-
-      &.add-plan-card {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 250px;
-        cursor: pointer;
-        border-style: dashed;
-        color: var(--text-muted);
-
-        i { font-size: 3rem; margin-bottom: 1rem; }
-        &:hover { color: #8b5cf6; border-color: #8b5cf6; }
-      }
-    }
-
-    .plan-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-
-      h3 {
-        margin: 0;
-        font-size: 1.1rem;
-        color: var(--text-primary);
-      }
-    }
-
-    .plan-duration {
-      padding: 0.25rem 0.75rem;
-      background: rgba(139, 92, 246, 0.1);
-      color: #8b5cf6;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 500;
-    }
-
-    .plan-price {
-      text-align: center;
-      padding: 1.5rem 0;
-      border-bottom: 1px solid var(--border-color);
-      margin-bottom: 1rem;
-
-      .amount {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #8b5cf6;
-      }
-
-      .currency {
-        font-size: 1rem;
-        color: var(--text-secondary);
-        margin-right: 0.25rem;
-      }
-    }
-
-    .plan-features {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .feature {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: var(--text-secondary);
-      font-size: 0.9rem;
-
-      i {
-        color: #22c55e;
-        font-size: 0.85rem;
-      }
-    }
-
-    /* Dialog */
+    /* Dialog Styles */
     .dialog-content {
       display: flex;
       flex-direction: column;
@@ -768,24 +1095,85 @@ import Swal from 'sweetalert2';
         font-weight: 500;
         color: var(--text-secondary);
         font-size: 0.9rem;
+
+        .required { color: #ef4444; }
       }
 
       input, :host ::ng-deep .p-dropdown, :host ::ng-deep .p-calendar, :host ::ng-deep .p-inputnumber {
         width: 100%;
       }
+
+      .hint {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
     }
 
-    .freeze-info {
+    .plan-summary {
+      padding: 0.75rem 1rem;
+      background: rgba(139, 92, 246, 0.08);
+      border-radius: 8px;
+      color: #8b5cf6;
+      font-size: 0.9rem;
+    }
+
+    .payment-summary {
+      padding: 1rem;
+      background: var(--bg-secondary);
+      border-radius: 10px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.35rem 0;
+      font-size: 0.9rem;
+
+      .remaining { color: #f59e0b; }
+    }
+
+    .switch-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .freeze-info, .renew-info {
       display: flex;
       align-items: flex-start;
       gap: 0.75rem;
       padding: 1rem;
-      background: rgba(245, 158, 11, 0.1);
+      background: rgba(59, 130, 246, 0.08);
       border-radius: 10px;
-      color: #f59e0b;
+      color: #3b82f6;
 
       i { font-size: 1.25rem; margin-top: 2px; }
       p { margin: 0; font-size: 0.9rem; }
+    }
+
+    .freeze-info {
+      background: rgba(245, 158, 11, 0.08);
+      color: #f59e0b;
+    }
+
+    .cancel-warning {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: rgba(239, 68, 68, 0.08);
+      border-radius: 10px;
+      color: #ef4444;
+
+      i { font-size: 1.5rem; margin-top: 2px; }
+      p { margin: 0; font-size: 0.95rem; }
+    }
+
+    .dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
     }
 
     .btn {
@@ -798,11 +1186,32 @@ import Swal from 'sweetalert2';
       cursor: pointer;
       transition: all 0.2s;
       border: none;
+      font-family: inherit;
+
+      &.btn-sm { padding: 0.4rem 0.75rem; font-size: 0.8rem; }
 
       &.btn-primary {
         background: linear-gradient(135deg, #3b82f6, #2563eb);
         color: white;
         &:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+      }
+
+      &.btn-success {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: white;
+        &:hover { background: linear-gradient(135deg, #16a34a, #15803d); }
+      }
+
+      &.btn-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        &:hover { background: linear-gradient(135deg, #d97706, #b45309); }
+      }
+
+      &.btn-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+        &:hover { background: linear-gradient(135deg, #dc2626, #b91c1c); }
       }
 
       &.btn-outline {
@@ -812,67 +1221,208 @@ import Swal from 'sweetalert2';
         &:hover { border-color: #3b82f6; color: #3b82f6; }
       }
 
-      &.btn-warning {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-        color: white;
-        &:hover { background: linear-gradient(135deg, #d97706, #b45309); }
-      }
-
       &:disabled { opacity: 0.6; cursor: not-allowed; }
+    }
+
+    /* Detail Dialog */
+    .detail-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .detail-section {
+      h4 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0 0 1rem;
+        color: var(--text-primary);
+        font-size: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+
+        i { color: #3b82f6; }
+      }
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .detail-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .detail-value {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text-primary);
+
+      &.plan { color: #8b5cf6; }
+      &.remaining { color: #f59e0b; }
+      &.discount { color: #22c55e; }
+    }
+
+    .freeze-list, .renewal-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .freeze-item, .renewal-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      flex-wrap: wrap;
+    }
+
+    .freeze-dates {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .freeze-reason {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    .renewal-plan {
+      font-weight: 600;
+      color: #8b5cf6;
+    }
+
+    .renewal-dates {
+      color: var(--text-secondary);
+    }
+
+    .renewal-amount {
+      margin-right: auto;
+      font-weight: 500;
+    }
+
+    :host-context([dir="ltr"]) .renewal-amount {
+      margin-right: 0;
+      margin-left: auto;
+    }
+
+    .notes-text {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 1024px) {
+      .stats-row { grid-template-columns: repeat(3, 1fr); }
     }
 
     @media (max-width: 768px) {
       .stats-row { grid-template-columns: repeat(2, 1fr); }
       .form-row { grid-template-columns: 1fr; }
       .header-actions { flex-direction: column; }
+      .table-toolbar { flex-direction: column; }
+      .detail-grid { grid-template-columns: 1fr; }
+      .action-buttons { flex-wrap: wrap; }
     }
   `]
 })
 export class SubscriptionsListComponent implements OnInit {
-  private coachService = inject(CoachService);
+  private ownerService = inject(OwnerService);
   private notificationService = inject(NotificationService);
 
   loading = signal(true);
   saving = signal(false);
   subscriptions = signal<ClientSubscription[]>([]);
   plans = signal<SubscriptionPlan[]>([]);
-  clients = signal<Trainee[]>([]);
+  clients = signal<Client[]>([]);
 
   searchQuery = '';
   selectedStatus: number | null = null;
+  selectedPlanFilter: string | null = null;
+  showExpiringOnly = false;
+  private searchTimeout: any;
 
   // Dialogs
   subscriptionDialogVisible = false;
-  planDialogVisible = false;
+  paymentDialogVisible = false;
+  renewDialogVisible = false;
   freezeDialogVisible = false;
+  cancelDialogVisible = false;
+  detailDialogVisible = false;
+
   selectedSubscription: ClientSubscription | null = null;
+  detailSubscription: ClientSubscription | null = null;
 
   subscriptionForm = {
     clientId: '',
     planId: '',
-    startDate: new Date()
+    startDate: new Date(),
+    paymentMethod: 0,
+    amountPaid: 0,
+    discount: 0,
+    notes: ''
   };
 
-  planForm = {
-    name: '',
-    price: 0,
-    durationMonths: 1
+  paymentForm = {
+    amount: 0,
+    paymentMethod: 0
+  };
+
+  renewForm = {
+    planId: '' as string | null,
+    startDate: null as Date | null,
+    paymentMethod: 0,
+    amountPaid: 0,
+    notes: ''
   };
 
   freezeForm = {
     startDate: new Date(),
-    endDate: new Date(),
+    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     reason: ''
   };
 
+  cancelForm = {
+    refundToWallet: false,
+    refundAmount: null as number | null
+  };
+
+  selectedPlanPrice = 0;
+
   clientOptions: { label: string; value: string }[] = [];
   planOptions: { label: string; value: string }[] = [];
+  planFilterOptions: { label: string; value: string }[] = [];
+
+  paymentMethodOptions = [
+    { label: 'كاش', value: 0 },
+    { label: 'محفظة', value: 1 },
+    { label: 'كارت', value: 2 },
+    { label: 'تحويل بنكي', value: 3 }
+  ];
 
   // Computed stats
-  activeCount = computed(() => this.subscriptions().filter(s => s.status === 0).length);
-  frozenCount = computed(() => this.subscriptions().filter(s => s.status === 2).length);
-  expiredCount = computed(() => this.subscriptions().filter(s => s.status === 1).length);
-  cancelledCount = computed(() => this.subscriptions().filter(s => s.status === 3).length);
+  activeCount = computed(() => this.subscriptions().filter(s => s.status === SubscriptionStatus.Active).length);
+  suspendedCount = computed(() => this.subscriptions().filter(s => s.status === SubscriptionStatus.Suspended).length);
+  expiredCount = computed(() => this.subscriptions().filter(s => s.status === SubscriptionStatus.Expired).length);
+  cancelledCount = computed(() => this.subscriptions().filter(s => s.status === SubscriptionStatus.Cancelled).length);
+  expiringCount = computed(() => this.subscriptions().filter(s =>
+    s.status === SubscriptionStatus.Active && s.remainingDays !== undefined && s.remainingDays <= 7 && s.remainingDays > 0
+  ).length);
 
   ngOnInit(): void {
     this.loadData();
@@ -880,81 +1430,73 @@ export class SubscriptionsListComponent implements OnInit {
 
   loadData(): void {
     this.loading.set(true);
+    this.loadSubscriptions();
+    this.loadPlans();
+    this.loadClients();
+  }
 
-    // Load subscriptions
-    this.coachService.getSubscriptions().subscribe({
+  loadSubscriptions(): void {
+    const params: any = {};
+    if (this.selectedStatus !== null) params.status = this.selectedStatus;
+    if (this.selectedPlanFilter) params.planId = this.selectedPlanFilter;
+    if (this.searchQuery.trim()) params.searchTerm = this.searchQuery.trim();
+
+    this.ownerService.getSubscriptions(params).subscribe({
       next: (data) => {
         this.subscriptions.set(data);
         this.loading.set(false);
       },
-      error: () => {
-        // Mock data for development
-        this.subscriptions.set([
-          { id: '1', clientId: 'c1', clientName: 'أحمد محمد', planId: 'p1', planName: 'الباقة الشهرية', startDate: '2024-01-01', endDate: '2024-02-01', status: 0, salesCoachName: 'محمد المدرب' },
-          { id: '2', clientId: 'c2', clientName: 'خالد علي', planId: 'p2', planName: 'الباقة ربع السنوية', startDate: '2024-01-15', endDate: '2024-04-15', status: 0 },
-          { id: '3', clientId: 'c3', clientName: 'محمود حسن', planId: 'p1', planName: 'الباقة الشهرية', startDate: '2023-12-01', endDate: '2024-01-01', status: 1 },
-          { id: '4', clientId: 'c4', clientName: 'يوسف كريم', planId: 'p3', planName: 'الباقة السنوية', startDate: '2024-01-10', endDate: '2025-01-10', status: 2 },
-        ]);
+      error: (err) => {
+        console.error('Error loading subscriptions:', err);
+        this.subscriptions.set([]);
         this.loading.set(false);
       }
     });
+  }
 
-    // Load plans
-    this.coachService.getSubscriptionPlans().subscribe({
+  private loadPlans(): void {
+    this.ownerService.getSubscriptionPlans(true).subscribe({
       next: (data) => {
         this.plans.set(data);
         this.planOptions = data.map(p => ({ label: `${p.name} - ${p.price} جنيه`, value: p.id }));
+        this.planFilterOptions = data.map(p => ({ label: p.name, value: p.id }));
       },
-      error: () => {
-        const mockPlans: SubscriptionPlan[] = [
-          { id: 'p1', name: 'الباقة الشهرية', price: 299, durationMonths: 1 },
-          { id: 'p2', name: 'الباقة ربع السنوية', price: 799, durationMonths: 3 },
-          { id: 'p3', name: 'الباقة السنوية', price: 2499, durationMonths: 12 }
-        ];
-        this.plans.set(mockPlans);
-        this.planOptions = mockPlans.map(p => ({ label: `${p.name} - ${p.price} جنيه`, value: p.id }));
-      }
+      error: () => {}
     });
+  }
 
-    // Load clients
-    this.coachService.getTrainees().subscribe({
+  private loadClients(): void {
+    this.ownerService.getClients().subscribe({
       next: (data) => {
         this.clients.set(data);
         this.clientOptions = data.map(c => ({
-          label: c.clientName || c.fullName || c.profile?.fullName || '',
+          label: c.fullName || c.profile?.fullName || c.phoneNumber || '',
           value: c.id
         }));
       },
-      error: () => {
-        this.clientOptions = [
-          { label: 'أحمد محمد', value: 'c1' },
-          { label: 'خالد علي', value: 'c2' },
-          { label: 'محمود حسن', value: 'c3' }
-        ];
-      }
+      error: () => {}
     });
   }
 
   filteredSubscriptions(): ClientSubscription[] {
     let result = this.subscriptions();
-
-    if (this.searchQuery.trim()) {
-      const query = this.searchQuery.toLowerCase();
+    if (this.showExpiringOnly) {
       result = result.filter(s =>
-        (s.clientName || '').toLowerCase().includes(query) ||
-        (s.planName || '').toLowerCase().includes(query)
+        s.status === SubscriptionStatus.Active &&
+        s.remainingDays !== undefined && s.remainingDays <= 7 && s.remainingDays > 0
       );
     }
-
-    if (this.selectedStatus !== null) {
-      result = result.filter(s => s.status === this.selectedStatus);
-    }
-
     return result;
+  }
+
+  onSearch(): void {
+    clearTimeout(this.searchTimeout);
+    this.searchTimeout = setTimeout(() => this.loadSubscriptions(), 400);
   }
 
   filterByStatus(status: number | null): void {
     this.selectedStatus = status;
+    this.loadSubscriptions();
   }
 
   getInitials(name: string): string {
@@ -963,58 +1505,48 @@ export class SubscriptionsListComponent implements OnInit {
   }
 
   getStatusLabel(status: number): string {
-    const labels: Record<number, string> = {
-      0: 'نشط',
-      1: 'منتهي',
-      2: 'مجمد',
-      3: 'ملغي'
-    };
-    return labels[status] || 'غير معروف';
+    return StatusLabels[status] || 'غير معروف';
   }
 
   getStatusSeverity(status: number): 'success' | 'info' | 'warning' | 'danger' | 'secondary' {
-    const severities: Record<number, 'success' | 'warning' | 'danger' | 'secondary'> = {
-      0: 'success',
-      1: 'secondary',
-      2: 'warning',
-      3: 'danger'
+    const map: Record<number, 'success' | 'warning' | 'info' | 'danger' | 'secondary'> = {
+      [SubscriptionStatus.Active]: 'success',
+      [SubscriptionStatus.Suspended]: 'warning',
+      [SubscriptionStatus.Trial]: 'info',
+      [SubscriptionStatus.Expired]: 'secondary',
+      [SubscriptionStatus.Cancelled]: 'danger'
     };
-    return severities[status] || 'secondary';
+    return map[status] || 'secondary';
   }
 
-  isExpiringSoon(endDate: string): boolean {
-    const end = new Date(endDate);
-    const now = new Date();
-    const diffDays = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    return diffDays > 0 && diffDays <= 7;
+  getPaymentLabel(method?: number): string {
+    if (method === undefined || method === null) return '-';
+    return PaymentMethodLabels[method] || '-';
   }
 
+  isExpiringSoon(sub: ClientSubscription): boolean {
+    return sub.status === SubscriptionStatus.Active &&
+      sub.remainingDays !== undefined && sub.remainingDays <= 7 && sub.remainingDays > 0;
+  }
+
+  onPlanChange(): void {
+    const plan = this.plans().find(p => p.id === this.subscriptionForm.planId);
+    this.selectedPlanPrice = plan?.price || 0;
+  }
+
+  // ==================== Subscription Dialog ====================
   openSubscriptionDialog(): void {
     this.subscriptionForm = {
       clientId: '',
       planId: '',
-      startDate: new Date()
-    };
-    this.subscriptionDialogVisible = true;
-  }
-
-  openPlanDialog(): void {
-    this.planForm = {
-      name: '',
-      price: 0,
-      durationMonths: 1
-    };
-    this.planDialogVisible = true;
-  }
-
-  openFreezeDialog(subscription: ClientSubscription): void {
-    this.selectedSubscription = subscription;
-    this.freezeForm = {
       startDate: new Date(),
-      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days later
-      reason: ''
+      paymentMethod: 0,
+      amountPaid: 0,
+      discount: 0,
+      notes: ''
     };
-    this.freezeDialogVisible = true;
+    this.selectedPlanPrice = 0;
+    this.subscriptionDialogVisible = true;
   }
 
   saveSubscription(): void {
@@ -1028,49 +1560,107 @@ export class SubscriptionsListComponent implements OnInit {
       ? this.subscriptionForm.startDate.toISOString().split('T')[0]
       : this.subscriptionForm.startDate;
 
-    this.coachService.createSubscription({
+    this.ownerService.createSubscription({
       clientId: this.subscriptionForm.clientId,
       planId: this.subscriptionForm.planId,
-      startDate
+      startDate,
+      paymentMethod: this.subscriptionForm.paymentMethod,
+      amountPaid: this.subscriptionForm.amountPaid || undefined,
+      discount: this.subscriptionForm.discount || undefined,
+      notes: this.subscriptionForm.notes || undefined
     }).subscribe({
       next: () => {
         this.saving.set(false);
         this.subscriptionDialogVisible = false;
         this.notificationService.success('تم إنشاء الاشتراك بنجاح');
-        this.loadData();
+        this.loadSubscriptions();
       },
       error: (err) => {
         this.saving.set(false);
-        this.notificationService.error('حدث خطأ أثناء إنشاء الاشتراك');
-        console.error(err);
+        const msg = err.error?.message || 'حدث خطأ أثناء إنشاء الاشتراك';
+        this.notificationService.error(msg);
       }
     });
   }
 
-  savePlan(): void {
-    if (!this.planForm.name || !this.planForm.price || !this.planForm.durationMonths) {
-      this.notificationService.warn('يرجى إدخال جميع البيانات المطلوبة');
-      return;
-    }
+  // ==================== Payment Dialog ====================
+  openPaymentDialog(sub: ClientSubscription): void {
+    this.selectedSubscription = sub;
+    this.paymentForm = { amount: sub.remainingAmount || 0, paymentMethod: 0 };
+    this.paymentDialogVisible = true;
+  }
+
+  savePayment(): void {
+    if (!this.selectedSubscription || !this.paymentForm.amount) return;
 
     this.saving.set(true);
-    this.coachService.createSubscriptionPlan({
-      name: this.planForm.name,
-      price: this.planForm.price,
-      durationMonths: this.planForm.durationMonths
+    this.ownerService.addPayment(this.selectedSubscription.id, {
+      amount: this.paymentForm.amount,
+      paymentMethod: this.paymentForm.paymentMethod
     }).subscribe({
       next: () => {
         this.saving.set(false);
-        this.planDialogVisible = false;
-        this.notificationService.success('تم إنشاء الباقة بنجاح');
-        this.loadData();
+        this.paymentDialogVisible = false;
+        this.notificationService.success('تم إضافة الدفعة بنجاح');
+        this.loadSubscriptions();
       },
       error: (err) => {
         this.saving.set(false);
-        this.notificationService.error('حدث خطأ أثناء إنشاء الباقة');
-        console.error(err);
+        this.notificationService.error(err.error?.message || 'حدث خطأ أثناء إضافة الدفعة');
       }
     });
+  }
+
+  // ==================== Renew Dialog ====================
+  openRenewDialog(sub: ClientSubscription): void {
+    this.selectedSubscription = sub;
+    this.renewForm = {
+      planId: null,
+      startDate: null,
+      paymentMethod: 0,
+      amountPaid: 0,
+      notes: ''
+    };
+    this.renewDialogVisible = true;
+  }
+
+  saveRenew(): void {
+    if (!this.selectedSubscription) return;
+
+    this.saving.set(true);
+    const startDate = this.renewForm.startDate instanceof Date
+      ? this.renewForm.startDate.toISOString().split('T')[0]
+      : this.renewForm.startDate;
+
+    this.ownerService.renewSubscription(this.selectedSubscription.id, {
+      planId: this.renewForm.planId || undefined,
+      startDate: startDate || undefined,
+      paymentMethod: this.renewForm.paymentMethod,
+      amountPaid: this.renewForm.amountPaid || undefined,
+      notes: this.renewForm.notes || undefined
+    }).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.renewDialogVisible = false;
+        this.notificationService.success('تم تجديد الاشتراك بنجاح');
+        this.loadSubscriptions();
+      },
+      error: (err) => {
+        this.saving.set(false);
+        this.notificationService.error(err.error?.message || 'حدث خطأ أثناء تجديد الاشتراك');
+      }
+    });
+  }
+
+  // ==================== Freeze Dialog ====================
+  openFreezeDialog(sub: ClientSubscription): void {
+    this.selectedSubscription = sub;
+    this.freezeForm = {
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      reason: ''
+    };
+    this.freezeDialogVisible = true;
   }
 
   saveFreeze(): void {
@@ -1089,7 +1679,7 @@ export class SubscriptionsListComponent implements OnInit {
       ? this.freezeForm.endDate.toISOString().split('T')[0]
       : this.freezeForm.endDate;
 
-    this.coachService.freezeSubscription(this.selectedSubscription.id, {
+    this.ownerService.freezeSubscription(this.selectedSubscription.id, {
       startDate,
       endDate,
       reason: this.freezeForm.reason || undefined
@@ -1098,39 +1688,80 @@ export class SubscriptionsListComponent implements OnInit {
         this.saving.set(false);
         this.freezeDialogVisible = false;
         this.notificationService.success('تم تجميد الاشتراك بنجاح');
-        this.loadData();
+        this.loadSubscriptions();
       },
       error: (err) => {
         this.saving.set(false);
-        this.notificationService.error('حدث خطأ أثناء تجميد الاشتراك');
-        console.error(err);
+        this.notificationService.error(err.error?.message || 'حدث خطأ أثناء تجميد الاشتراك');
       }
     });
   }
 
-  cancelSubscription(subscription: ClientSubscription): void {
+  endFreeze(freezeId: string): void {
     Swal.fire({
-      title: 'تأكيد الإلغاء',
-      text: `هل أنت متأكد من إلغاء اشتراك "${subscription.clientName}"؟`,
-      icon: 'warning',
+      title: 'إنهاء التجميد',
+      text: 'هل أنت متأكد من إنهاء التجميد مبكراً؟',
+      icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: '#ef4444',
+      confirmButtonColor: '#3b82f6',
       cancelButtonColor: '#6b7280',
-      confirmButtonText: 'نعم، إلغاء',
-      cancelButtonText: 'تراجع',
+      confirmButtonText: 'نعم',
+      cancelButtonText: 'إلغاء',
       reverseButtons: true
     }).then((result) => {
       if (result.isConfirmed) {
-        this.coachService.cancelSubscription(subscription.id).subscribe({
+        this.ownerService.endFreeze(freezeId).subscribe({
           next: () => {
-            this.notificationService.success('تم إلغاء الاشتراك بنجاح');
-            this.loadData();
+            this.notificationService.success('تم إنهاء التجميد بنجاح');
+            if (this.detailSubscription) this.viewDetails(this.detailSubscription);
+            this.loadSubscriptions();
           },
           error: (err) => {
-            this.notificationService.error('حدث خطأ أثناء إلغاء الاشتراك');
-            console.error(err);
+            this.notificationService.error(err.error?.message || 'حدث خطأ');
           }
         });
+      }
+    });
+  }
+
+  // ==================== Cancel Dialog ====================
+  openCancelDialog(sub: ClientSubscription): void {
+    this.selectedSubscription = sub;
+    this.cancelForm = { refundToWallet: false, refundAmount: null };
+    this.cancelDialogVisible = true;
+  }
+
+  confirmCancel(): void {
+    if (!this.selectedSubscription) return;
+
+    this.saving.set(true);
+    this.ownerService.cancelSubscription(this.selectedSubscription.id, {
+      refundToWallet: this.cancelForm.refundToWallet,
+      refundAmount: this.cancelForm.refundToWallet ? this.cancelForm.refundAmount : undefined
+    }).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.cancelDialogVisible = false;
+        this.notificationService.success('تم إلغاء الاشتراك بنجاح');
+        this.loadSubscriptions();
+      },
+      error: (err) => {
+        this.saving.set(false);
+        this.notificationService.error(err.error?.message || 'حدث خطأ أثناء إلغاء الاشتراك');
+      }
+    });
+  }
+
+  // ==================== Detail Dialog ====================
+  viewDetails(sub: ClientSubscription): void {
+    this.ownerService.getSubscriptionById(sub.id).subscribe({
+      next: (data) => {
+        this.detailSubscription = data;
+        this.detailDialogVisible = true;
+      },
+      error: () => {
+        this.detailSubscription = sub;
+        this.detailDialogVisible = true;
       }
     });
   }

@@ -5,6 +5,8 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { ButtonModule } from 'primeng/button';
+import { InputSwitchModule } from 'primeng/inputswitch';
+import { ChipsModule } from 'primeng/chips';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { ExportMenuComponent, ExportFormat } from '../../../shared/components/export-menu/export-menu.component';
@@ -12,17 +14,6 @@ import { ExportService } from '../../../core/services/export.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { OwnerService, SubscriptionPlan } from '../services/owner.service';
 import Swal from 'sweetalert2';
-
-// Display interface for cards
-interface PlanDisplay {
-  id: string;
-  name: string;
-  price: number;
-  durationMonths: number;
-  isActive: boolean;
-  subscribersCount: number;
-  description?: string;
-}
 
 @Component({
   selector: 'app-plans-list',
@@ -34,6 +25,8 @@ interface PlanDisplay {
     InputTextModule,
     InputNumberModule,
     ButtonModule,
+    InputSwitchModule,
+    ChipsModule,
     PageHeaderComponent,
     LoadingSkeletonComponent,
     ExportMenuComponent
@@ -60,14 +53,17 @@ interface PlanDisplay {
       <!-- Stats Row -->
       <div class="stats-row">
         <div class="mini-stat">
+          <div class="mini-stat__icon blue"><i class="pi pi-box"></i></div>
           <span class="mini-stat__value">{{ plans().length }}</span>
           <span class="mini-stat__label">إجمالي الخطط</span>
         </div>
         <div class="mini-stat">
+          <div class="mini-stat__icon green"><i class="pi pi-check-circle"></i></div>
           <span class="mini-stat__value">{{ activePlansCount() }}</span>
           <span class="mini-stat__label">خطط نشطة</span>
         </div>
         <div class="mini-stat">
+          <div class="mini-stat__icon purple"><i class="pi pi-users"></i></div>
           <span class="mini-stat__value">{{ totalSubscribers() }}</span>
           <span class="mini-stat__label">إجمالي المشتركين</span>
         </div>
@@ -90,14 +86,53 @@ interface PlanDisplay {
               <span class="price-currency">جنيه</span>
             </div>
 
-            <div class="plan-duration">
-              <i class="pi pi-calendar"></i>
-              <span>{{ plan.durationMonths }} {{ getDurationLabel(plan.durationMonths) }}</span>
+            <div class="plan-meta">
+              <div class="meta-item">
+                <i class="pi pi-calendar"></i>
+                <span>{{ plan.durationMonths }} {{ getDurationLabel(plan.durationMonths) }}</span>
+              </div>
+              <div class="meta-item">
+                <i class="pi pi-users"></i>
+                <span>{{ plan.activeSubscribersCount || 0 }} مشترك</span>
+              </div>
+              @if (plan.sessionsPerWeek) {
+                <div class="meta-item">
+                  <i class="pi pi-clock"></i>
+                  <span>{{ plan.sessionsPerWeek }} حصة/أسبوع</span>
+                </div>
+              }
+              @if (plan.maxFreezeDays) {
+                <div class="meta-item">
+                  <i class="pi pi-pause"></i>
+                  <span>تجميد {{ plan.maxFreezeDays }} يوم ({{ plan.maxFreezeCount || 1 }} مرة)</span>
+                </div>
+              }
             </div>
 
-            <div class="plan-subscribers">
-              <i class="pi pi-users"></i>
-              <span>{{ plan.subscribersCount }} مشترك</span>
+            <!-- Features Tags -->
+            @if (plan.features && plan.features.length > 0) {
+              <div class="plan-features">
+                @for (feature of plan.features; track feature) {
+                  <span class="feature-tag">
+                    <i class="pi pi-check"></i>
+                    {{ feature }}
+                  </span>
+                }
+              </div>
+            }
+
+            <!-- Special Badges -->
+            <div class="plan-badges">
+              @if (plan.inBodyIncluded) {
+                <span class="special-badge inbody">
+                  <i class="pi pi-heart"></i> InBody
+                </span>
+              }
+              @if (plan.privateCoach) {
+                <span class="special-badge coach">
+                  <i class="pi pi-user"></i> مدرب خاص
+                </span>
+              }
             </div>
 
             @if (plan.description) {
@@ -139,8 +174,9 @@ interface PlanDisplay {
         [(visible)]="dialogVisible"
         [header]="isEditing ? 'تعديل خطة الاشتراك' : 'إضافة خطة اشتراك جديدة'"
         [modal]="true"
-        [style]="{width: '450px'}"
+        [style]="{width: '600px', maxHeight: '90vh'}"
         [closable]="true"
+        [contentStyle]="{'overflow-y': 'auto'}"
       >
         <div class="dialog-content">
           <div class="form-group">
@@ -149,7 +185,7 @@ interface PlanDisplay {
               type="text"
               pInputText
               [(ngModel)]="planForm.name"
-              placeholder="مثال: الاشتراك الشهري"
+              placeholder="مثال: الاشتراك الشهري VIP"
             />
           </div>
 
@@ -177,14 +213,73 @@ interface PlanDisplay {
             </div>
           </div>
 
+          <div class="form-row">
+            <div class="form-group">
+              <label>الحصص في الأسبوع</label>
+              <p-inputNumber
+                [(ngModel)]="planForm.sessionsPerWeek"
+                [min]="1"
+                [max]="7"
+                placeholder="غير محدود"
+              ></p-inputNumber>
+            </div>
+
+            <div class="form-group">
+              <label>أقصى أيام تجميد</label>
+              <p-inputNumber
+                [(ngModel)]="planForm.maxFreezeDays"
+                [min]="0"
+                placeholder="0"
+              ></p-inputNumber>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>أقصى عدد مرات تجميد</label>
+              <p-inputNumber
+                [(ngModel)]="planForm.maxFreezeCount"
+                [min]="0"
+                placeholder="0"
+              ></p-inputNumber>
+            </div>
+            <div class="form-group"></div>
+          </div>
+
           <div class="form-group">
-            <label>الوصف (اختياري)</label>
+            <label>المميزات</label>
+            <p-chips
+              [(ngModel)]="planForm.features"
+              placeholder="اكتب ميزة واضغط Enter"
+              [addOnBlur]="true"
+              [addOnTab]="true"
+            ></p-chips>
+            <small class="hint">اضغط Enter بعد كل ميزة لإضافتها</small>
+          </div>
+
+          <div class="form-group">
+            <label>الوصف</label>
             <textarea
               pInputText
               [(ngModel)]="planForm.description"
               rows="3"
               placeholder="وصف مختصر للخطة..."
             ></textarea>
+          </div>
+
+          <div class="switches-row">
+            <div class="switch-item">
+              <label>InBody مشمول</label>
+              <p-inputSwitch [(ngModel)]="planForm.inBodyIncluded"></p-inputSwitch>
+            </div>
+            <div class="switch-item">
+              <label>مدرب خاص</label>
+              <p-inputSwitch [(ngModel)]="planForm.privateCoach"></p-inputSwitch>
+            </div>
+            <div class="switch-item">
+              <label>نشط</label>
+              <p-inputSwitch [(ngModel)]="planForm.isActive"></p-inputSwitch>
+            </div>
           </div>
         </div>
 
@@ -222,13 +317,31 @@ interface PlanDisplay {
       border-radius: 12px;
       padding: 1.25rem;
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .mini-stat__icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+
+      &.blue { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+      &.green { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+      &.purple { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
     }
 
     .mini-stat__value {
       display: block;
       font-size: 1.75rem;
       font-weight: 700;
-      color: #8b5cf6;
+      color: var(--text-primary);
     }
 
     .mini-stat__label {
@@ -238,7 +351,7 @@ interface PlanDisplay {
 
     .plans-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 1.5rem;
     }
 
@@ -263,7 +376,7 @@ interface PlanDisplay {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.25rem;
+      margin-bottom: 1rem;
     }
 
     .plan-name {
@@ -278,11 +391,11 @@ interface PlanDisplay {
       border-radius: 20px;
       font-size: 0.75rem;
       font-weight: 500;
-      background: #fef2f2;
+      background: rgba(239, 68, 68, 0.1);
       color: #dc2626;
 
       &.active {
-        background: #dcfce7;
+        background: rgba(34, 197, 94, 0.1);
         color: #16a34a;
       }
     }
@@ -308,24 +421,77 @@ interface PlanDisplay {
       margin-left: 0.25rem;
     }
 
-    .plan-duration,
-    .plan-subscribers {
+    .plan-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .meta-item {
       display: flex;
       align-items: center;
       gap: 0.5rem;
       color: var(--text-secondary);
-      margin-bottom: 0.75rem;
       font-size: 0.9rem;
 
       i {
         color: var(--text-muted);
+        width: 18px;
+        text-align: center;
+      }
+    }
+
+    .plan-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .feature-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.75rem;
+      background: rgba(34, 197, 94, 0.08);
+      color: #16a34a;
+      border-radius: 20px;
+      font-size: 0.8rem;
+
+      i { font-size: 0.7rem; }
+    }
+
+    .plan-badges {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .special-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 500;
+
+      &.inbody {
+        background: rgba(236, 72, 153, 0.1);
+        color: #ec4899;
+      }
+
+      &.coach {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
       }
     }
 
     .plan-description {
-      margin-top: 1rem;
-      padding-top: 1rem;
+      padding-top: 0.75rem;
       border-top: 1px dashed var(--border-color);
+      margin-bottom: 0.75rem;
 
       p {
         margin: 0;
@@ -338,7 +504,6 @@ interface PlanDisplay {
     .plan-actions {
       display: flex;
       gap: 0.5rem;
-      margin-top: 1.5rem;
       padding-top: 1rem;
       border-top: 1px solid var(--border-color);
     }
@@ -362,7 +527,7 @@ interface PlanDisplay {
       }
 
       &.danger:hover {
-        background: #fef2f2;
+        background: rgba(239, 68, 68, 0.1);
         color: #dc2626;
       }
     }
@@ -382,14 +547,8 @@ interface PlanDisplay {
         background: linear-gradient(135deg, #8b5cf6, #7c3aed);
         color: white;
 
-        &:hover {
-          background: linear-gradient(135deg, #7c3aed, #6d28d9);
-        }
-
-        &:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
+        &:hover { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
+        &:disabled { opacity: 0.6; cursor: not-allowed; }
       }
 
       &.btn-outline {
@@ -397,10 +556,7 @@ interface PlanDisplay {
         border: 1px solid var(--border-color);
         color: var(--text-secondary);
 
-        &:hover {
-          border-color: #8b5cf6;
-          color: #8b5cf6;
-        }
+        &:hover { border-color: #8b5cf6; color: #8b5cf6; }
       }
     }
 
@@ -418,22 +574,9 @@ interface PlanDisplay {
       border: 2px dashed var(--border-color);
       border-radius: 16px;
 
-      i {
-        font-size: 4rem;
-        color: var(--text-muted);
-        opacity: 0.5;
-        margin-bottom: 1rem;
-      }
-
-      h3 {
-        margin: 0 0 0.5rem;
-        color: var(--text-primary);
-      }
-
-      p {
-        margin: 0 0 1.5rem;
-        color: var(--text-muted);
-      }
+      i { font-size: 4rem; color: var(--text-muted); opacity: 0.5; margin-bottom: 1rem; }
+      h3 { margin: 0 0 0.5rem; color: var(--text-primary); }
+      p { margin: 0 0 1.5rem; color: var(--text-muted); }
     }
 
     /* Dialog Styles */
@@ -459,12 +602,10 @@ interface PlanDisplay {
         color: var(--text-secondary);
         font-size: 0.9rem;
 
-        .required {
-          color: #ef4444;
-        }
+        .required { color: #ef4444; }
       }
 
-      input, textarea, :host ::ng-deep .p-inputnumber {
+      input, textarea, :host ::ng-deep .p-inputnumber, :host ::ng-deep .p-chips {
         width: 100%;
       }
 
@@ -476,11 +617,35 @@ interface PlanDisplay {
         border-radius: 8px;
         background: var(--bg-primary);
         color: var(--text-primary);
+        font-family: inherit;
 
-        &:focus {
-          outline: none;
-          border-color: #8b5cf6;
-        }
+        &:focus { outline: none; border-color: #8b5cf6; }
+      }
+
+      .hint {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+    }
+
+    .switches-row {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      padding: 1rem;
+      background: var(--bg-secondary);
+      border-radius: 10px;
+    }
+
+    .switch-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      label {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        font-weight: 500;
       }
     }
 
@@ -491,13 +656,10 @@ interface PlanDisplay {
     }
 
     @media (max-width: 768px) {
-      .stats-row {
-        flex-direction: column;
-      }
-
-      .form-row {
-        grid-template-columns: 1fr;
-      }
+      .stats-row { flex-direction: column; }
+      .form-row { grid-template-columns: 1fr; }
+      .switches-row { flex-direction: column; gap: 1rem; }
+      .plans-grid { grid-template-columns: 1fr; }
     }
   `]
 })
@@ -508,69 +670,69 @@ export class PlansListComponent implements OnInit {
 
   loading = signal(true);
   saving = signal(false);
-  plans = signal<PlanDisplay[]>([]);
+  plans = signal<SubscriptionPlan[]>([]);
 
   // Dialog state
   dialogVisible = false;
   isEditing = false;
   editingPlanId: string | null = null;
 
-  planForm = {
-    name: '',
-    price: 0,
-    durationMonths: 1,
-    description: ''
-  };
+  planForm: {
+    name: string;
+    price: number;
+    durationMonths: number;
+    description: string;
+    features: string[];
+    maxFreezeDays: number;
+    maxFreezeCount: number;
+    sessionsPerWeek: number | null;
+    inBodyIncluded: boolean;
+    privateCoach: boolean;
+    isActive: boolean;
+  } = this.getDefaultForm();
 
   ngOnInit(): void {
     this.loadPlans();
   }
 
+  private getDefaultForm() {
+    return {
+      name: '',
+      price: 0,
+      durationMonths: 1,
+      description: '',
+      features: [] as string[],
+      maxFreezeDays: 0,
+      maxFreezeCount: 0,
+      sessionsPerWeek: null as number | null,
+      inBodyIncluded: false,
+      privateCoach: false,
+      isActive: true
+    };
+  }
+
   loadPlans(): void {
     this.loading.set(true);
-
     this.ownerService.getSubscriptionPlans().subscribe({
       next: (data) => {
-        const mappedPlans = this.mapPlansForDisplay(data);
-        this.plans.set(mappedPlans);
+        this.plans.set(data);
         this.loading.set(false);
       },
       error: (err) => {
         console.error('Error loading plans:', err);
-        // Fallback to mock data for development
-        this.plans.set([
-          { id: '1', name: 'شهري', price: 500, durationMonths: 1, isActive: true, subscribersCount: 45 },
-          { id: '2', name: 'ربع سنوي', price: 1200, durationMonths: 3, isActive: true, subscribersCount: 28 },
-          { id: '3', name: 'نصف سنوي', price: 2000, durationMonths: 6, isActive: true, subscribersCount: 15 },
-          { id: '4', name: 'سنوي', price: 3500, durationMonths: 12, isActive: true, subscribersCount: 8 },
-        ]);
+        this.plans.set([]);
         this.loading.set(false);
+        this.notificationService.error('حدث خطأ أثناء تحميل الخطط');
       }
     });
   }
 
-  /**
-   * Map API response to display format
-   */
-  private mapPlansForDisplay(plans: SubscriptionPlan[]): PlanDisplay[] {
-    return plans.map(plan => ({
-      id: plan.id,
-      name: plan.name,
-      price: plan.price,
-      durationMonths: plan.durationMonths,
-      isActive: plan.isActive ?? true,
-      subscribersCount: plan.subscribersCount ?? 0,
-      description: plan.description
-    }));
-  }
-
-  // Computed stats
   activePlansCount(): number {
-    return this.plans().filter(p => p.isActive).length;
+    return this.plans().filter(p => p.isActive !== false).length;
   }
 
   totalSubscribers(): number {
-    return this.plans().reduce((sum, p) => sum + p.subscribersCount, 0);
+    return this.plans().reduce((sum, p) => sum + (p.activeSubscribersCount || 0), 0);
   }
 
   getDurationLabel(months: number): string {
@@ -591,23 +753,25 @@ export class PlansListComponent implements OnInit {
   openAddDialog(): void {
     this.isEditing = false;
     this.editingPlanId = null;
-    this.planForm = {
-      name: '',
-      price: 0,
-      durationMonths: 1,
-      description: ''
-    };
+    this.planForm = this.getDefaultForm();
     this.dialogVisible = true;
   }
 
-  editPlan(plan: PlanDisplay): void {
+  editPlan(plan: SubscriptionPlan): void {
     this.isEditing = true;
     this.editingPlanId = plan.id;
     this.planForm = {
       name: plan.name,
       price: plan.price,
       durationMonths: plan.durationMonths,
-      description: plan.description || ''
+      description: plan.description || '',
+      features: plan.features ? [...plan.features] : [],
+      maxFreezeDays: plan.maxFreezeDays || 0,
+      maxFreezeCount: plan.maxFreezeCount || 0,
+      sessionsPerWeek: plan.sessionsPerWeek ?? null,
+      inBodyIncluded: plan.inBodyIncluded || false,
+      privateCoach: plan.privateCoach || false,
+      isActive: plan.isActive !== false
     };
     this.dialogVisible = true;
   }
@@ -629,11 +793,17 @@ export class PlansListComponent implements OnInit {
       name: this.planForm.name.trim(),
       price: this.planForm.price,
       durationMonths: this.planForm.durationMonths,
-      description: this.planForm.description?.trim() || undefined
+      description: this.planForm.description?.trim() || undefined,
+      features: this.planForm.features.length > 0 ? this.planForm.features : undefined,
+      maxFreezeDays: this.planForm.maxFreezeDays || undefined,
+      maxFreezeCount: this.planForm.maxFreezeCount || undefined,
+      sessionsPerWeek: this.planForm.sessionsPerWeek || undefined,
+      inBodyIncluded: this.planForm.inBodyIncluded,
+      privateCoach: this.planForm.privateCoach,
+      isActive: this.planForm.isActive
     };
 
     if (this.isEditing && this.editingPlanId) {
-      // Update existing plan
       this.ownerService.updatePlan(this.editingPlanId, planData).subscribe({
         next: () => {
           this.saving.set(false);
@@ -648,7 +818,6 @@ export class PlansListComponent implements OnInit {
         }
       });
     } else {
-      // Create new plan
       this.ownerService.createPlan(planData).subscribe({
         next: () => {
           this.saving.set(false);
@@ -665,7 +834,7 @@ export class PlansListComponent implements OnInit {
     }
   }
 
-  togglePlan(plan: PlanDisplay): void {
+  togglePlan(plan: SubscriptionPlan): void {
     const newStatus = !plan.isActive;
     const action = newStatus ? 'تفعيل' : 'تعطيل';
 
@@ -681,9 +850,8 @@ export class PlansListComponent implements OnInit {
       reverseButtons: true
     }).then((result) => {
       if (result.isConfirmed) {
-        this.ownerService.togglePlanStatus(plan.id, newStatus).subscribe({
+        this.ownerService.updatePlan(plan.id, { isActive: newStatus }).subscribe({
           next: () => {
-            // Update locally
             this.plans.update(plans =>
               plans.map(p => p.id === plan.id ? { ...p, isActive: newStatus } : p)
             );
@@ -698,11 +866,11 @@ export class PlansListComponent implements OnInit {
     });
   }
 
-  deletePlan(plan: PlanDisplay): void {
-    if (plan.subscribersCount > 0) {
+  deletePlan(plan: SubscriptionPlan): void {
+    if ((plan.activeSubscribersCount || 0) > 0) {
       Swal.fire({
         title: 'لا يمكن حذف الخطة',
-        text: `هذه الخطة لديها ${plan.subscribersCount} مشترك. قم بتعطيلها بدلاً من حذفها.`,
+        text: `هذه الخطة لديها ${plan.activeSubscribersCount} مشترك نشط. قم بتعطيلها بدلاً من حذفها.`,
         icon: 'warning',
         confirmButtonColor: '#3b82f6',
         confirmButtonText: 'حسناً'
@@ -727,9 +895,13 @@ export class PlansListComponent implements OnInit {
             this.plans.update(plans => plans.filter(p => p.id !== plan.id));
             this.notificationService.success('تم حذف الخطة بنجاح');
           },
-          error: (err) => {
+          error: (err: any) => {
             console.error('Error deleting plan:', err);
-            this.notificationService.error('حدث خطأ أثناء حذف الخطة');
+            if (err.status === 409) {
+              this.notificationService.error('لا يمكن حذف الخطة - توجد اشتراكات نشطة عليها');
+            } else {
+              this.notificationService.error('حدث خطأ أثناء حذف الخطة');
+            }
           }
         });
       }
@@ -746,36 +918,26 @@ export class PlansListComponent implements OnInit {
         { header: 'السعر (جنيه)', field: 'price' },
         { header: 'المدة (شهور)', field: 'durationMonths' },
         { header: 'الحالة', field: 'status' },
-        { header: 'عدد المشتركين', field: 'subscribersCount' }
+        { header: 'عدد المشتركين', field: 'subscribersCount' },
+        { header: 'المميزات', field: 'features' }
       ],
       data: plans.map(p => ({
         name: p.name,
         price: p.price.toString(),
         durationMonths: p.durationMonths.toString(),
-        status: p.isActive ? 'نشط' : 'غير نشط',
-        subscribersCount: p.subscribersCount.toString()
+        status: p.isActive !== false ? 'نشط' : 'غير نشط',
+        subscribersCount: (p.activeSubscribersCount || 0).toString(),
+        features: (p.features || []).join(', ')
       }))
     };
 
     switch (format) {
-      case 'pdf':
-        await this.exportService.exportToPDF(exportConfig);
-        break;
-      case 'word':
-        await this.exportService.exportToWord(exportConfig);
-        break;
-      case 'text':
-        this.exportService.exportToText(exportConfig);
-        break;
-      case 'csv':
-        this.exportService.exportToCSV(exportConfig);
-        break;
-      case 'preview':
-        this.exportService.printPreview(exportConfig);
-        break;
-      case 'print':
-        this.exportService.print(exportConfig);
-        break;
+      case 'pdf': await this.exportService.exportToPDF(exportConfig); break;
+      case 'word': await this.exportService.exportToWord(exportConfig); break;
+      case 'text': this.exportService.exportToText(exportConfig); break;
+      case 'csv': this.exportService.exportToCSV(exportConfig); break;
+      case 'preview': this.exportService.printPreview(exportConfig); break;
+      case 'print': this.exportService.print(exportConfig); break;
     }
   }
 }
