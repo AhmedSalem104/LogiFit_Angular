@@ -704,7 +704,7 @@ export class SidebarComponent {
       items: [
         { label: 'لوحة التحكم', icon: 'pi-th-large', route: '/owner/dashboard', roles: [UserRole.Owner] },
         { label: 'لوحة التحكم', icon: 'pi-th-large', route: '/coach/dashboard', roles: [UserRole.Coach] },
-        { label: 'برنامجي', icon: 'pi-th-large', route: '/client/my-program', roles: [UserRole.Client] },
+        { label: 'لوحة التحكم', icon: 'pi-th-large', route: '/client/dashboard', roles: [UserRole.Client] },
       ]
     },
     {
@@ -721,6 +721,7 @@ export class SidebarComponent {
       items: [
         { label: 'خطط الاشتراك', icon: 'pi-wallet', route: '/owner/subscription-plans', roles: [UserRole.Owner] },
         { label: 'الاشتراكات', icon: 'pi-list', route: '/owner/subscriptions', roles: [UserRole.Owner] },
+        { label: 'الحضور', icon: 'pi-clock', route: '/owner/attendance', roles: [UserRole.Owner] },
       ]
     },
     {
@@ -730,6 +731,15 @@ export class SidebarComponent {
         { label: 'متدربيني', icon: 'pi-users', route: '/coach/trainees', roles: [UserRole.Coach] },
         { label: 'برامج التمارين', icon: 'pi-calendar', route: '/coach/workout-programs', roles: [UserRole.Coach] },
         { label: 'الخطط الغذائية', icon: 'pi-heart', route: '/coach/diet-plans', roles: [UserRole.Coach] },
+      ]
+    },
+    {
+      title: 'التواصل',
+      roles: [UserRole.Coach],
+      items: [
+        { label: 'المواعيد', icon: 'pi-calendar-plus', route: '/coach/appointments', roles: [UserRole.Coach] },
+        { label: 'المحادثات', icon: 'pi-comments', route: '/coach/chat', roles: [UserRole.Coach] },
+        { label: 'التحديات', icon: 'pi-flag', route: '/coach/challenges', roles: [UserRole.Coach] },
       ]
     },
     {
@@ -764,6 +774,14 @@ export class SidebarComponent {
         { label: 'قياساتي', icon: 'pi-chart-line', route: '/client/my-measurements', roles: [UserRole.Client] },
         { label: 'تقدمي', icon: 'pi-chart-bar', route: '/client/my-progress', roles: [UserRole.Client] },
         { label: 'اشتراكاتي', icon: 'pi-wallet', route: '/client/my-subscriptions', roles: [UserRole.Client] },
+      ]
+    },
+    {
+      title: 'التواصل',
+      roles: [UserRole.Client],
+      items: [
+        { label: 'المحادثات', icon: 'pi-comments', route: '/client/chat', roles: [UserRole.Client] },
+        { label: 'تحدياتي', icon: 'pi-flag', route: '/client/challenges', roles: [UserRole.Client] },
       ]
     },
     {

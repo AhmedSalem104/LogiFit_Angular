@@ -194,7 +194,7 @@ export class AuthService {
       case UserRole.Coach:
         return '/coach/dashboard';
       case UserRole.Client:
-        return '/client/my-program';
+        return '/client/dashboard';
       default:
         return '/owner/dashboard'; // Default to owner instead of login to prevent loops
     }
@@ -221,7 +221,7 @@ export class AuthService {
       case 'Coach':
         return '/coach/dashboard';
       case 'Client':
-        return '/client/my-program';
+        return '/client/dashboard';
       default:
         return '/owner/dashboard'; // Default to owner dashboard
     }

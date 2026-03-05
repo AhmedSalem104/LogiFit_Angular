@@ -362,6 +362,73 @@ export interface Achievement {
   earnedDate: string;
 }
 
+// ==================== Client Dashboard Interfaces ====================
+export interface ClientDashboard {
+  clientName?: string;
+  activePrograms?: MyWorkoutProgramSummary[];
+  activeDietPlans?: MyDietPlanSummary[];
+  activeSubscription?: MySubscriptionSummary;
+  latestMeasurements?: MyBodyMeasurementSummary;
+  coach?: MyCoachInfo;
+  unreadNotificationsCount?: number;
+}
+
+export interface MyWorkoutProgramSummary {
+  id: string;
+  name?: string;
+  coachName?: string;
+  startDate?: string;
+  endDate?: string;
+  routinesCount?: number;
+}
+
+export interface MyDietPlanSummary {
+  id: string;
+  name?: string;
+  coachName?: string;
+  startDate?: string;
+  endDate?: string;
+  targetCalories?: number;
+  mealsCount?: number;
+}
+
+export interface MySubscriptionSummary {
+  id: string;
+  planName?: string;
+  startDate: string;
+  endDate: string;
+  status: number;
+  statusName?: string;
+  remainingDays?: number;
+  isPaid?: boolean;
+}
+
+export interface MyBodyMeasurementSummary {
+  dateRecorded?: string;
+  weightKg?: number;
+  bodyFatPercent?: number;
+  skeletalMuscleMass?: number;
+  bmr?: number;
+}
+
+export interface MyCoachInfo {
+  id: string;
+  fullName?: string;
+  email?: string;
+  phoneNumber?: string;
+}
+
+export interface MyAppointmentDto {
+  id: string;
+  coachId?: string;
+  coachName?: string;
+  startTime: string;
+  endTime: string;
+  title?: string;
+  notes?: string;
+  status: number; // 1=Pending, 2=Confirmed, 3=Cancelled, 4=Completed
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -450,5 +517,35 @@ export class ClientService {
   getMyProgress(): Observable<ProgressData> {
     const userId = this.getCurrentUserId();
     return this.http.get<ProgressData>(`${this.apiUrl}/reports/coach/trainee/${userId}`);
+  }
+
+  // ==================== NEW CLIENT DASHBOARD ENDPOINTS ====================
+
+  getDashboard(): Observable<ClientDashboard> {
+    return this.http.get<ClientDashboard>(`${this.apiUrl}/client/dashboard`);
+  }
+
+  getMyPrograms(): Observable<MyWorkoutProgramSummary[]> {
+    return this.http.get<MyWorkoutProgramSummary[]>(`${this.apiUrl}/client/my-programs`);
+  }
+
+  getMyDietPlans(): Observable<MyDietPlanSummary[]> {
+    return this.http.get<MyDietPlanSummary[]>(`${this.apiUrl}/client/my-diet-plans`);
+  }
+
+  getMySubscriptionsSummary(): Observable<MySubscriptionSummary[]> {
+    return this.http.get<MySubscriptionSummary[]>(`${this.apiUrl}/client/my-subscriptions`);
+  }
+
+  getMyMeasurementsSummary(): Observable<MyBodyMeasurementSummary[]> {
+    return this.http.get<MyBodyMeasurementSummary[]>(`${this.apiUrl}/client/my-measurements`);
+  }
+
+  getMyCoach(): Observable<MyCoachInfo> {
+    return this.http.get<MyCoachInfo>(`${this.apiUrl}/client/my-coach`);
+  }
+
+  getMyAppointments(): Observable<MyAppointmentDto[]> {
+    return this.http.get<MyAppointmentDto[]>(`${this.apiUrl}/client/my-appointments`);
   }
 }

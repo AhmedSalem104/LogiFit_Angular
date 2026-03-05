@@ -3,8 +3,13 @@ import { Routes } from '@angular/router';
 export const clientRoutes: Routes = [
   {
     path: '',
-    redirectTo: 'my-program',
+    redirectTo: 'dashboard',
     pathMatch: 'full'
+  },
+  {
+    path: 'dashboard',
+    loadComponent: () => import('./dashboard/client-dashboard.component').then(m => m.ClientDashboardComponent),
+    title: 'لوحة التحكم'
   },
   {
     path: 'my-program',
@@ -40,6 +45,16 @@ export const clientRoutes: Routes = [
     path: 'my-subscriptions',
     loadComponent: () => import('./subscriptions/my-subscriptions.component').then(m => m.MySubscriptionsComponent),
     title: 'اشتراكاتي'
+  },
+  {
+    path: 'chat',
+    loadComponent: () => import('./chat/client-chat.component').then(m => m.ClientChatComponent),
+    title: 'المحادثات'
+  },
+  {
+    path: 'challenges',
+    loadComponent: () => import('./challenges/my-challenges.component').then(m => m.MyChallengesComponent),
+    title: 'تحدياتي'
   },
   {
     path: 'profile',

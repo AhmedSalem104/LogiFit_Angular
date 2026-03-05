@@ -59,11 +59,13 @@ export interface Coach {
   profile?: CoachProfile;
   fullName?: string;
   traineesCount?: number;
+  traineeCount?: number;
   activePrograms?: number;
 }
 
 export interface CoachProfile {
   fullName?: string;
+  profilePictureUrl?: string;
   gender?: number;
   birthDate?: string;
 }
@@ -74,6 +76,7 @@ export interface CreateCoachRequest {
   password: string;
   fullName: string;
   gender?: number;
+  birthDate?: string;
 }
 
 export interface UpdateCoachRequest {
@@ -82,6 +85,7 @@ export interface UpdateCoachRequest {
   isActive?: boolean;
   fullName?: string;
   gender?: number;
+  birthDate?: string;
 }
 
 // ==================== Subscription Plan Interfaces ====================
@@ -337,10 +341,13 @@ export class OwnerService {
 
   // ==================== COACHES ====================
 
-  getCoaches(params?: { isActive?: boolean }): Observable<Coach[]> {
+  getCoaches(params?: { isActive?: boolean; searchTerm?: string }): Observable<Coach[]> {
     let httpParams = new HttpParams();
     if (params?.isActive !== undefined) {
       httpParams = httpParams.set('isActive', params.isActive.toString());
+    }
+    if (params?.searchTerm) {
+      httpParams = httpParams.set('searchTerm', params.searchTerm);
     }
     return this.http.get<Coach[]>(`${this.apiUrl}/coaches`, { params: httpParams });
   }

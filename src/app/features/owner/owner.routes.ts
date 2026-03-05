@@ -32,6 +32,12 @@ export const ownerRoutes: Routes = [
     title: 'الاشتراكات - LogicFit'
   },
   {
+    path: 'attendance',
+    loadComponent: () =>
+      import('./attendance/attendance.component').then(m => m.AttendanceComponent),
+    title: 'الحضور - LogicFit'
+  },
+  {
     path: 'reports',
     loadComponent: () =>
       import('./reports/reports.component').then(m => m.ReportsComponent),

@@ -72,6 +72,21 @@ export const COACH_ROUTES: Routes = [
     title: 'قياسات الجسم'
   },
   {
+    path: 'appointments',
+    loadComponent: () => import('./appointments/appointments.component').then(m => m.AppointmentsComponent),
+    title: 'المواعيد'
+  },
+  {
+    path: 'chat',
+    loadComponent: () => import('./chat/coach-chat.component').then(m => m.CoachChatComponent),
+    title: 'المحادثات'
+  },
+  {
+    path: 'challenges',
+    loadComponent: () => import('./challenges/challenges.component').then(m => m.ChallengesComponent),
+    title: 'التحديات'
+  },
+  {
     path: 'profile',
     loadComponent: () => import('./profile/coach-profile.component').then(m => m.CoachProfileComponent),
     title: 'الملف الشخصي'
