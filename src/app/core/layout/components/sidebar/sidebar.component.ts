@@ -703,6 +703,7 @@ export class SidebarComponent {
       title: 'الرئيسية',
       items: [
         { label: 'لوحة التحكم', icon: 'pi-th-large', route: '/owner/dashboard', roles: [UserRole.Owner] },
+        { label: 'لوحة التشغيل', icon: 'pi-chart-pie', route: '/owner/operations', roles: [UserRole.Owner] },
         { label: 'لوحة التحكم', icon: 'pi-th-large', route: '/coach/dashboard', roles: [UserRole.Coach] },
         { label: 'لوحة التحكم', icon: 'pi-th-large', route: '/client/dashboard', roles: [UserRole.Client] },
       ]
@@ -713,6 +714,8 @@ export class SidebarComponent {
       items: [
         { label: 'العملاء', icon: 'pi-users', route: '/owner/clients', roles: [UserRole.Owner] },
         { label: 'المدربين', icon: 'pi-id-card', route: '/owner/coaches', roles: [UserRole.Owner] },
+        { label: 'بطاقات العضوية', icon: 'pi-qrcode', route: '/owner/membership-cards', roles: [UserRole.Owner] },
+        { label: 'البوابة الإلكترونية', icon: 'pi-sign-in', route: '/owner/gate-access', roles: [UserRole.Owner] },
       ]
     },
     {
@@ -722,6 +725,58 @@ export class SidebarComponent {
         { label: 'خطط الاشتراك', icon: 'pi-wallet', route: '/owner/subscription-plans', roles: [UserRole.Owner] },
         { label: 'الاشتراكات', icon: 'pi-list', route: '/owner/subscriptions', roles: [UserRole.Owner] },
         { label: 'الحضور', icon: 'pi-clock', route: '/owner/attendance', roles: [UserRole.Owner] },
+      ]
+    },
+    {
+      title: 'المرافق',
+      roles: [UserRole.Owner],
+      items: [
+        { label: 'الفروع', icon: 'pi-building', route: '/owner/branches', roles: [UserRole.Owner] },
+        { label: 'القاعات', icon: 'pi-th-large', route: '/owner/rooms', roles: [UserRole.Owner] },
+        { label: 'الأجهزة', icon: 'pi-cog', route: '/owner/equipment', roles: [UserRole.Owner] },
+        { label: 'الصيانة', icon: 'pi-wrench', route: '/owner/maintenance', roles: [UserRole.Owner] },
+      ]
+    },
+    {
+      title: 'الحصص الجماعية',
+      roles: [UserRole.Owner],
+      items: [
+        { label: 'أنواع الحصص', icon: 'pi-calendar', route: '/owner/group-classes', roles: [UserRole.Owner] },
+        { label: 'الجدولة', icon: 'pi-calendar-plus', route: '/owner/class-schedules', roles: [UserRole.Owner] },
+      ]
+    },
+    {
+      title: 'المالية',
+      roles: [UserRole.Owner],
+      items: [
+        { label: 'الفواتير', icon: 'pi-file', route: '/owner/invoices', roles: [UserRole.Owner] },
+        { label: 'المدفوعات', icon: 'pi-dollar', route: '/owner/payments', roles: [UserRole.Owner] },
+        { label: 'المصروفات', icon: 'pi-money-bill', route: '/owner/expenses', roles: [UserRole.Owner] },
+        { label: 'فئات المصروفات', icon: 'pi-tag', route: '/owner/expense-categories', roles: [UserRole.Owner] },
+        { label: 'الكوبونات', icon: 'pi-ticket', route: '/owner/coupons', roles: [UserRole.Owner] },
+        { label: 'الضرائب', icon: 'pi-percentage', route: '/owner/tax-settings', roles: [UserRole.Owner] },
+      ]
+    },
+    {
+      title: 'المخزون والمتجر',
+      roles: [UserRole.Owner],
+      items: [
+        { label: 'نقطة البيع', icon: 'pi-shopping-cart', route: '/owner/pos-sales', roles: [UserRole.Owner] },
+        { label: 'المنتجات', icon: 'pi-box', route: '/owner/products', roles: [UserRole.Owner] },
+        { label: 'فئات المنتجات', icon: 'pi-tags', route: '/owner/product-categories', roles: [UserRole.Owner] },
+        { label: 'المخزون', icon: 'pi-database', route: '/owner/stock', roles: [UserRole.Owner] },
+        { label: 'الموردين', icon: 'pi-truck', route: '/owner/suppliers', roles: [UserRole.Owner] },
+      ]
+    },
+    {
+      title: 'الموظفين والرواتب',
+      roles: [UserRole.Owner],
+      items: [
+        { label: 'الموظفين', icon: 'pi-users', route: '/owner/employees', roles: [UserRole.Owner] },
+        { label: 'الورديات', icon: 'pi-clock', route: '/owner/shifts', roles: [UserRole.Owner] },
+        { label: 'الإجازات', icon: 'pi-calendar-minus', route: '/owner/leaves', roles: [UserRole.Owner] },
+        { label: 'العمولات', icon: 'pi-percentage', route: '/owner/commissions', roles: [UserRole.Owner] },
+        { label: 'الرواتب', icon: 'pi-receipt', route: '/owner/payroll', roles: [UserRole.Owner] },
       ]
     },
     {
@@ -795,7 +850,8 @@ export class SidebarComponent {
       title: 'التقارير',
       roles: [UserRole.Owner],
       items: [
-        { label: 'التقارير', icon: 'pi-chart-bar', route: '/owner/reports', roles: [UserRole.Owner] },
+        { label: 'التقارير العامة', icon: 'pi-chart-bar', route: '/owner/reports', roles: [UserRole.Owner] },
+        { label: 'التقارير التشغيلية', icon: 'pi-chart-line', route: '/owner/operations-reports', roles: [UserRole.Owner] },
       ]
     },
     {
