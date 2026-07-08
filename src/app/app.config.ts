@@ -1,5 +1,5 @@
 import { ApplicationConfig, importProvidersFrom, APP_INITIALIZER } from '@angular/core';
-import { provideRouter, withViewTransitions } from '@angular/router';
+import { provideRouter, withViewTransitions, withPreloading, PreloadAllModules, withInMemoryScrolling } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { MessageService } from 'primeng/api';
@@ -20,7 +20,13 @@ function initBranding(branding: BrandingService) {
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideRouter(routes, withViewTransitions()),
+    provideRouter(
+      routes,
+      withViewTransitions(),
+      // Background-preload lazy chunks after the first screen → instant navigation.
+      withPreloading(PreloadAllModules),
+      withInMemoryScrolling({ scrollPositionRestoration: 'top', anchorScrolling: 'enabled' })
+    ),
     provideHttpClient(
       withInterceptors([jwtInterceptor, errorInterceptor])
     ),
