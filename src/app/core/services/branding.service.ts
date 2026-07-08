@@ -57,6 +57,34 @@ export class BrandingService {
   }
 
   /**
+   * Resolve a gym by its subdomain, then apply + persist its branding and tenantId.
+   * Used on non-branded domains (e.g. the preview host) to pick a gym before login.
+   */
+  resolveBySubdomain(subdomain: string): Observable<TenantBranding> {
+    const clean = subdomain.trim().toLowerCase();
+    return this.getBranding(clean).pipe(
+      tap(b => {
+        this.branding.set(b);
+        this.storage.setItem(environment.brandingKey, b);
+        this.storage.setString(environment.tenantIdKey, b.tenantId);
+        this.apply(b);
+      })
+    );
+  }
+
+  /** The tenantId resolved from ACTUAL branding only (never a stale stored value). */
+  getBrandingTenantId(): string | null {
+    return this.branding()?.tenantId ?? null;
+  }
+
+  /** Forget any resolved gym (clears branding + stored tenantId). */
+  clearResolvedTenant(): void {
+    this.branding.set(null);
+    this.storage.removeItem(environment.brandingKey);
+    this.storage.removeItem(environment.tenantIdKey);
+  }
+
+  /**
    * Bootstrap branding on app start: resolve subdomain → fetch → apply theme + store tenantId.
    * Falls back to cached branding (offline / first paint) and never blocks startup on error.
    */

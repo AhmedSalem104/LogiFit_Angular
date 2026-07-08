@@ -1,16 +1,15 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { BrandingService } from '../../../../core/services/branding.service';
-import { TenantResponse } from '../../../../core/auth/models/auth.models';
 
 @Component({
   selector: 'app-forgot-password',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule],
   template: `
     <div class="forgot-password-page">
       <a routerLink="/auth/login" class="back-link">
@@ -19,52 +18,53 @@ import { TenantResponse } from '../../../../core/auth/models/auth.models';
       </a>
 
       <h2>نسيت كلمة المرور؟</h2>
-      <p class="subtitle">اختر صالتك وأدخل رقم هاتفك لإرسال رمز إعادة التعيين</p>
+      <p class="subtitle">حدّد صالتك وأدخل رقم هاتفك لإرسال رمز إعادة التعيين</p>
 
-      <form [formGroup]="forgotForm" (ngSubmit)="onSubmit()">
-        <!-- Gym context -->
-        @if (resolvedGymName()) {
-          <div class="gym-banner">
-            <i class="pi pi-building"></i>
-            <div><span class="gym-banner-label">الصالة</span><b>{{ resolvedGymName() }}</b></div>
-          </div>
-        } @else {
+      @if (!tenantResolved()) {
+        <form (ngSubmit)="resolveGym()">
           <div class="form-group">
-            <label class="form-label">الصالة</label>
+            <label class="form-label">معرّف صالتك (subdomain)</label>
             <div class="input-wrapper">
               <i class="pi pi-building"></i>
-              <select class="form-input form-select" formControlName="tenantId" [class.error]="isFieldInvalid('tenantId')">
-                <option value="">-- اختر الصالة --</option>
-                @for (tenant of tenants(); track tenant.id) {
-                  <option [value]="tenant.id">{{ tenant.name }}</option>
-                }
-              </select>
+              <input type="text" class="form-input" [(ngModel)]="gymSubdomain" name="gymSubdomain"
+                placeholder="مثال: goldgym" [class.error]="!!resolveError()" autocapitalize="off" autocomplete="off" />
             </div>
-            <span class="error-message" *ngIf="isFieldInvalid('tenantId')">يرجى اختيار الصالة</span>
+            <span class="error-message" *ngIf="resolveError()">{{ resolveError() }}</span>
           </div>
-        }
-
-        <!-- Phone -->
-        <div class="form-group">
-          <label class="form-label">رقم الهاتف</label>
-          <div class="input-wrapper">
-            <i class="pi pi-phone"></i>
-            <input type="tel" class="form-input" formControlName="phoneNumber" placeholder="01xxxxxxxxx"
-              [class.error]="isFieldInvalid('phoneNumber')" />
-          </div>
-          <span class="error-message" *ngIf="isFieldInvalid('phoneNumber')">رقم الهاتف مطلوب</span>
+          <button type="submit" class="btn btn-primary w-full" [disabled]="resolving() || !gymSubdomain.trim()">
+            <i class="pi pi-spin pi-spinner" *ngIf="resolving()"></i>
+            <span *ngIf="!resolving()">متابعة</span>
+          </button>
+        </form>
+      } @else {
+        <div class="gym-banner">
+          <i class="pi pi-building"></i>
+          <div><span class="gym-banner-label">الصالة</span><b>{{ resolvedGymName() }}</b></div>
+          <button type="button" class="change-gym" (click)="changeGym()" *ngIf="canChangeGym()">تغيير</button>
         </div>
 
-        <button type="submit" class="btn btn-primary w-full" [disabled]="loading">
-          <i class="pi pi-spin pi-spinner" *ngIf="loading"></i>
-          <span *ngIf="!loading">إرسال رمز الاستعادة</span>
-        </button>
+        <form [formGroup]="forgotForm" (ngSubmit)="onSubmit()">
+          <div class="form-group">
+            <label class="form-label">رقم الهاتف</label>
+            <div class="input-wrapper">
+              <i class="pi pi-phone"></i>
+              <input type="tel" class="form-input" formControlName="phoneNumber" placeholder="01xxxxxxxxx"
+                [class.error]="isFieldInvalid('phoneNumber')" />
+            </div>
+            <span class="error-message" *ngIf="isFieldInvalid('phoneNumber')">رقم الهاتف مطلوب</span>
+          </div>
 
-        <div class="error-box" *ngIf="errorMessage">
-          <i class="pi pi-exclamation-circle"></i>
-          <span>{{ errorMessage }}</span>
-        </div>
-      </form>
+          <button type="submit" class="btn btn-primary w-full" [disabled]="loading">
+            <i class="pi pi-spin pi-spinner" *ngIf="loading"></i>
+            <span *ngIf="!loading">إرسال رمز الاستعادة</span>
+          </button>
+
+          <div class="error-box" *ngIf="errorMessage">
+            <i class="pi pi-exclamation-circle"></i>
+            <span>{{ errorMessage }}</span>
+          </div>
+        </form>
+      }
     </div>
   `,
   styles: [`
@@ -80,14 +80,12 @@ import { TenantResponse } from '../../../../core/auth/models/auth.models';
     .gym-banner > i { font-size:1.25rem; color:#3b82f6; }
     .gym-banner .gym-banner-label { display:block; font-size:.75rem; color:var(--text-secondary); }
     .gym-banner b { color:var(--text-primary); }
+    .gym-banner .change-gym { margin-inline-start:auto; background:none; border:none; color:#3b82f6; cursor:pointer; font-size:.85rem; font-weight:600; }
+    .gym-banner .change-gym:hover { text-decoration:underline; }
     .input-wrapper { position:relative; display:flex; align-items:center; }
     .input-wrapper > i:first-child { position:absolute; right:1rem; color:var(--text-muted); z-index:1; }
     .input-wrapper .form-input { padding-right:2.75rem; padding-left:2.75rem; }
-    .form-select { cursor:pointer; appearance:none;
-      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-      background-repeat:no-repeat; background-position:left 1rem center; }
     :host-context([dir="ltr"]) .input-wrapper > i:first-child { right:auto; left:1rem; }
-    :host-context([dir="ltr"]) .form-select { background-position:right 1rem center; }
     .form-input.error { border-color:#ef4444; }
     .error-message { display:block; color:#ef4444; font-size:.8rem; margin-top:.5rem; }
     .btn { display:flex; align-items:center; justify-content:center; gap:.5rem; height:48px; font-size:1rem; }
@@ -106,27 +104,62 @@ export class ForgotPasswordComponent implements OnInit {
   forgotForm: FormGroup;
   loading = false;
   errorMessage = '';
-  tenants = signal<TenantResponse[]>([]);
+
+  tenantResolved = signal(false);
   resolvedGymName = signal<string | null>(null);
+  gymSubdomain = '';
+  resolving = signal(false);
+  resolveError = signal<string | null>(null);
+  private fromSubdomain = false;
+  private tenantId = '';
 
   constructor() {
     this.forgotForm = this.fb.group({
-      tenantId: ['', [Validators.required]],
       phoneNumber: ['', [Validators.required]]
     });
   }
 
   ngOnInit(): void {
-    const tenantId = this.branding.getResolvedTenantId();
-    if (tenantId) {
-      this.forgotForm.patchValue({ tenantId });
-      this.resolvedGymName.set(this.branding.branding()?.name ?? 'صالتك');
+    const b = this.branding.branding();
+    if (b?.tenantId) {
+      this.tenantId = b.tenantId;
+      this.resolvedGymName.set(b.name || 'صالتك');
+      this.tenantResolved.set(true);
+      this.fromSubdomain = !!this.branding.resolveIdentifier();
     } else {
-      this.authService.getTenants().subscribe({
-        next: (data) => this.tenants.set(data),
-        error: () => {}
-      });
+      this.branding.clearResolvedTenant();
     }
+  }
+
+  canChangeGym(): boolean { return !this.fromSubdomain; }
+
+  resolveGym(): void {
+    const sub = this.gymSubdomain.trim();
+    if (!sub) return;
+    this.resolving.set(true);
+    this.resolveError.set(null);
+    this.branding.resolveBySubdomain(sub).subscribe({
+      next: (b) => {
+        this.resolving.set(false);
+        this.tenantId = b.tenantId;
+        this.resolvedGymName.set(b.name || 'صالتك');
+        this.tenantResolved.set(true);
+      },
+      error: (err) => {
+        this.resolving.set(false);
+        this.resolveError.set(err?.status === 404
+          ? 'لا توجد صالة بهذا المعرّف. تأكد من الكتابة الصحيحة.'
+          : (err?.translatedMessage || 'تعذّر العثور على الصالة'));
+      }
+    });
+  }
+
+  changeGym(): void {
+    this.branding.clearResolvedTenant();
+    this.tenantResolved.set(false);
+    this.resolvedGymName.set(null);
+    this.tenantId = '';
+    this.errorMessage = '';
   }
 
   isFieldInvalid(field: string): boolean {
@@ -139,18 +172,16 @@ export class ForgotPasswordComponent implements OnInit {
       this.forgotForm.markAllAsTouched();
       return;
     }
-
     this.loading = true;
     this.errorMessage = '';
-    const { tenantId, phoneNumber } = this.forgotForm.value;
+    const { phoneNumber } = this.forgotForm.value;
 
-    this.authService.forgotPassword({ tenantId, phoneNumber }).subscribe({
+    this.authService.forgotPassword({ tenantId: this.tenantId, phoneNumber }).subscribe({
       next: (res) => {
         this.loading = false;
         this.notification.success('تم إرسال رمز إعادة التعيين');
-        // Navigate to reset screen, carrying tenant + phone (and dev resetToken if returned).
         this.router.navigate(['/auth/reset-password'], {
-          queryParams: { tenantId, phoneNumber, token: res?.resetToken ?? '' }
+          queryParams: { tenantId: this.tenantId, phoneNumber, token: res?.resetToken ?? '' }
         });
       },
       error: (error) => {
