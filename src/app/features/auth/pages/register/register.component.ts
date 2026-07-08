@@ -17,21 +17,44 @@ import { BrandingService } from '../../../../core/services/branding.service';
 
       <!-- STEP 1: resolve the gym -->
       @if (!tenantResolved()) {
-        <form (ngSubmit)="resolveGym()">
-          <div class="form-group">
-            <label class="form-label">معرّف صالتك (subdomain)</label>
-            <div class="input-wrapper">
-              <i class="pi pi-building"></i>
-              <input type="text" class="form-input" [(ngModel)]="gymSubdomain" name="gymSubdomain"
-                placeholder="مثال: goldgym" [class.error]="!!resolveError()" autocapitalize="off" autocomplete="off" />
+        @if (!manualMode()) {
+          <form (ngSubmit)="resolveGym()">
+            <div class="form-group">
+              <label class="form-label">معرّف صالتك (subdomain)</label>
+              <div class="input-wrapper">
+                <i class="pi pi-building"></i>
+                <input type="text" class="form-input" [(ngModel)]="gymSubdomain" name="gymSubdomain"
+                  placeholder="مثال: goldgym" [class.error]="!!resolveError()" autocapitalize="off" autocomplete="off" />
+              </div>
+              <span class="error-message" *ngIf="resolveError()">{{ resolveError() }}</span>
             </div>
-            <span class="error-message" *ngIf="resolveError()">{{ resolveError() }}</span>
-          </div>
-          <button type="submit" class="btn btn-primary w-full" [disabled]="resolving() || !gymSubdomain.trim()">
-            <i class="pi pi-spin pi-spinner" *ngIf="resolving()"></i>
-            <span *ngIf="!resolving()">متابعة</span>
+            <button type="submit" class="btn btn-primary w-full" [disabled]="resolving() || !gymSubdomain.trim()">
+              <i class="pi pi-spin pi-spinner" *ngIf="resolving()"></i>
+              <span *ngIf="!resolving()">متابعة</span>
+            </button>
+          </form>
+          <button type="button" class="link-btn" (click)="manualMode.set(true)">
+            <i class="pi pi-wrench"></i> إدخال معرّف الصالة (GUID) — وضع الاختبار
           </button>
-        </form>
+        } @else {
+          <form (ngSubmit)="useManualTenant()">
+            <div class="form-group">
+              <label class="form-label">معرّف الصالة (TenantId — GUID)</label>
+              <div class="input-wrapper">
+                <i class="pi pi-key"></i>
+                <input type="text" class="form-input" [(ngModel)]="manualTenantId" name="manualTenantId"
+                  placeholder="00000000-0000-0000-0000-000000000000" [class.error]="!!manualError()"
+                  autocapitalize="off" autocomplete="off" />
+              </div>
+              <span class="hint">للاختبار فقط — يتجاوز تحديد الصالة عبر الـ subdomain</span>
+              <span class="error-message" *ngIf="manualError()">{{ manualError() }}</span>
+            </div>
+            <button type="submit" class="btn btn-primary w-full" [disabled]="!manualTenantId.trim()">متابعة</button>
+          </form>
+          <button type="button" class="link-btn" (click)="manualMode.set(false)">
+            <i class="pi pi-arrow-right"></i> رجوع لإدخال معرّف الصالة (subdomain)
+          </button>
+        }
       } @else {
         <!-- STEP 2: account details -->
         <div class="gym-banner">
@@ -156,6 +179,9 @@ import { BrandingService } from '../../../../core/services/branding.service';
     .toggle-password:hover { color: var(--text-secondary); }
     :host-context([dir="ltr"]) .toggle-password { left: auto; right: 1rem; }
     .error-message { display: block; color: #ef4444; font-size: 0.8rem; margin-top: 0.5rem; }
+    .hint { display: block; color: var(--text-muted); font-size: 0.8rem; margin-top: 0.5rem; }
+    .link-btn { display: inline-flex; align-items: center; gap: 0.4rem; margin: 1rem auto 0; background: none; border: none; color: var(--text-secondary); font-size: 0.82rem; cursor: pointer; width: 100%; justify-content: center; }
+    .link-btn:hover { color: #3b82f6; }
     .checkbox-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text-secondary); font-size: 0.9rem; }
     .checkbox-label input { width: 1rem; height: 1rem; accent-color: #3b82f6; }
     .terms-link { color: #3b82f6; text-decoration: none; }
@@ -190,6 +216,11 @@ export class RegisterComponent implements OnInit {
   resolveError = signal<string | null>(null);
   private fromSubdomain = false;
   private subdomain = '';
+
+  // Testing mode: enter TenantId GUID directly
+  manualMode = signal(false);
+  manualTenantId = '';
+  manualError = signal<string | null>(null);
 
   constructor() {
     this.registerForm = this.fb.group({
@@ -239,10 +270,25 @@ export class RegisterComponent implements OnInit {
     });
   }
 
+  /** Testing: accept a raw TenantId GUID and skip branding resolution. */
+  useManualTenant(): void {
+    const id = this.manualTenantId.trim();
+    const guid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    if (!guid.test(id)) {
+      this.manualError.set('صيغة المعرّف غير صحيحة (GUID)');
+      return;
+    }
+    this.manualError.set(null);
+    this.subdomain = '';
+    this.applyTenant(id, 'صالة (وضع الاختبار)');
+  }
+
   changeGym(): void {
     this.branding.clearResolvedTenant();
     this.tenantResolved.set(false);
     this.resolvedGymName.set(null);
+    this.manualMode.set(false);
+    this.manualError.set(null);
     this.registerForm.patchValue({ tenantId: '' });
     this.errorMessage = '';
   }
