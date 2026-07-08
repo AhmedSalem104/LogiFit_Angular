@@ -5,76 +5,128 @@
 <h1 align="center">LogicFit</h1>
 
 <p align="center">
-  <strong>A Modern Gym Management System</strong>
+  <strong>A Modern, Multi-Tenant Gym Management SaaS</strong>
 </p>
 
 <p align="center">
-  <a href="#features">Features</a> •
-  <a href="#tech-stack">Tech Stack</a> •
-  <a href="#installation">Installation</a> •
-  <a href="#project-structure">Structure</a> •
-  <a href="#api-integration">API</a> •
-  <a href="#screenshots">Screenshots</a>
+  <a href="#-overview">Overview</a> •
+  <a href="#-features">Features</a> •
+  <a href="#-saas-architecture">SaaS</a> •
+  <a href="#-tech-stack">Tech Stack</a> •
+  <a href="#-installation">Installation</a> •
+  <a href="#-project-structure">Structure</a> •
+  <a href="#-api-integration">API</a>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Angular-18-DD0031?style=for-the-badge&logo=angular&logoColor=white" alt="Angular 18"/>
-  <img src="https://img.shields.io/badge/TypeScript-5.4-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"/>
+  <img src="https://img.shields.io/badge/TypeScript-5.5-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"/>
   <img src="https://img.shields.io/badge/PrimeNG-17-DD0031?style=for-the-badge&logo=primeng&logoColor=white" alt="PrimeNG"/>
   <img src="https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="TailwindCSS"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"/>
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/badge/Multi--Tenant-SaaS-6366F1?style=flat-square" alt="Multi-Tenant"/>
+  <img src="https://img.shields.io/badge/RBAC-Permissions-0EA5E9?style=flat-square" alt="RBAC"/>
+  <img src="https://img.shields.io/badge/White--Label-Branding-8B5CF6?style=flat-square" alt="White Label"/>
+  <img src="https://img.shields.io/badge/i18n-AR%20%2F%20EN%20RTL-F59E0B?style=flat-square" alt="i18n"/>
   <img src="https://img.shields.io/badge/Vercel-Deployed-black?style=flat-square&logo=vercel" alt="Vercel"/>
-  <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen?style=flat-square" alt="PRs Welcome"/>
-  <img src="https://img.shields.io/github/last-commit/AhmedSalem104/LogiFit_Angular?style=flat-square" alt="Last Commit"/>
 </p>
 
 ---
 
 ## 📋 Overview
 
-**LogicFit** is a comprehensive, full-featured gym management system built with Angular 18. It provides a complete solution for gym owners, coaches, and clients to manage memberships, workout programs, diet plans, and track fitness progress.
+**LogicFit** is a comprehensive, **multi-tenant SaaS** platform for managing gyms end-to-end. Each gym is an isolated tenant with its own members, staff, finances, inventory, and white-label branding. The app serves **seven roles** across three panels (back-office, coaching, and client self-service), with fine-grained permission control, automatic session refresh, and a full gym-to-platform subscription & billing flow.
 
-The application features a modern, responsive UI with support for **Arabic (RTL)** and **English (LTR)** languages, along with **Dark** and **Light** theme modes.
+The UI is fully responsive with first-class **Arabic (RTL)** and **English (LTR)** support, plus **Dark / Light** themes.
+
+> 🔗 The **backend** exposes two APIs sharing one database: a **Tenant API** (this app) and a separate **Platform API** for the super-admin dashboard (gym approval, plan management, payment review).
 
 ---
 
 ## ✨ Features
 
-### 🏢 For Gym Owners
-| Feature | Description |
-|---------|-------------|
-| 📊 **Dashboard** | Real-time statistics, revenue charts, and KPIs |
-| 👥 **Client Management** | Add, edit, search, and manage gym members |
-| 🏋️ **Coach Management** | Manage coaching staff and their assignments |
-| 💳 **Subscription Plans** | Create and manage membership packages |
-| 📑 **Subscriptions** | Track all active and expired subscriptions |
-| 📈 **Reports** | Financial and operational reports |
-| ⚙️ **Gym Settings** | Configure gym profile and preferences |
+### 🏢 Back-Office (Owner / Manager / Receptionist / Accountant)
+| Area | Capabilities |
+|------|--------------|
+| 📊 **Dashboards** | Real-time KPIs, revenue charts, and an operations dashboard |
+| 👥 **Members & Coaches** | Members, coaches, membership cards, and electronic gate access (QR / card / biometric) |
+| 💳 **Client Subscriptions** | Plans, subscriptions, freeze / renew / cancel, and attendance |
+| 🏢 **Facilities** | Branches, rooms, equipment, and maintenance tickets |
+| 🗓️ **Group Classes** | Class types and scheduling with enrollments |
+| 💰 **Finance** | Invoices, payments, expenses & categories, coupons, and tax settings |
+| 🛒 **Inventory & POS** | Point of sale, products & categories, stock movements, and suppliers |
+| 🧑‍💼 **HR & Payroll** | Employees, shifts, leaves, commissions, and payroll runs |
+| 📈 **Reports** | General and operational reporting |
+| ⭐ **Platform Billing** | Manage the gym's own subscription to the LogicFit platform |
+| ⚙️ **Settings** | Gym profile, white-label branding, and preferences |
 
-### 🏋️ For Coaches
+### 🏋️ Coaching (Coach / Trainer)
 | Feature | Description |
 |---------|-------------|
-| 👨‍🏫 **Trainee Management** | View and manage assigned trainees |
-| 📋 **Workout Programs** | Create custom workout programs with exercises |
-| 🥗 **Diet Plans** | Design personalized nutrition plans |
-| 📏 **Body Measurements** | Track client progress with measurements |
-| 💪 **Exercise Library** | Browse and manage exercise database |
-| 🍎 **Foods Database** | Access nutritional information |
-| 📊 **Muscle Distribution** | Analyze workout muscle targeting |
+| 👨‍🏫 **Trainee Management** | View and manage assigned trainees and their progress |
+| 📋 **Workout Programs** | Wizard builder with live muscle-distribution analysis |
+| 🥗 **Diet Plans** | Personalized nutrition plans with macros |
+| 💪 **Libraries** | Exercises, foods, and muscles databases |
+| 📏 **Measurements** | Body measurement tracking |
+| 💬 **Engagement** | Appointments, chat, and challenges |
 
-### 🏃 For Clients
+### 🏃 Client Self-Service
 | Feature | Description |
 |---------|-------------|
-| 🏠 **Personal Dashboard** | Overview of fitness journey |
-| 📅 **My Program** | View assigned workout routines |
-| 🎯 **Workout Sessions** | Log and track workout progress |
-| 🥗 **My Diet** | Access personalized meal plans |
-| 📊 **Progress Tracking** | Visualize fitness improvements |
-| 📏 **Measurements** | View body measurement history |
-| 💳 **Subscriptions** | Manage gym membership |
+| 🏠 **Dashboard** | Overview of the fitness journey |
+| 📅 **My Program & Sessions** | View routines and log workout sessions (weight / reps / RPE) |
+| 🥗 **My Diet & Meal Log** | Access meal plans and log meals |
+| 📊 **Progress & Measurements** | Visualize improvements and history |
+| 💳 **My Subscriptions** | Manage gym membership |
+| 💬 **Chat & Challenges** | Communicate with the coach and join challenges |
+
+---
+
+## 🏛️ SaaS Architecture
+
+LogicFit ships with a complete SaaS layer on top of the gym feature set.
+
+### 🔑 Multi-Tenancy
+- Every gym is an isolated **tenant**; all data is scoped by `tenantId` carried in the JWT.
+- The tenant is resolved from the **subdomain** (`goldgym.logicfit.com`) at startup — no public gym list is exposed on branded domains.
+
+### 🎨 White-Label Branding
+- On app start, an `APP_INITIALIZER` fetches `GET /api/branding/{subdomain}` (anonymous) and applies the gym's **colors, logo, font, app name, and custom CSS** — before the first paint.
+- Cached for a flash-free load; owners edit branding from **Gym Settings**.
+
+### 🛡️ Roles & Permissions (RBAC)
+Seven roles map onto two back-end panels; access **inside** a panel is governed by a permission catalog.
+
+| Role | Panel | Default Permissions |
+|------|-------|---------------------|
+| **Owner** | Back-office | All gym permissions |
+| **Manager** | Back-office | All except Settings & Platform Billing |
+| **Receptionist** | Back-office | Members, Attendance, Client Subscriptions, POS |
+| **Accountant** | Back-office | Finance, Reports, Platform Billing |
+| **Coach** | Coaching | View Members, Attendance, Reports (own trainees) |
+| **Trainer** | Coaching | Coaching self-service |
+| **Client** | Self-service | Personal self-service screens only |
+
+- Permissions drive the UI via `AuthService.hasPermission()` and the `*appHasPermission` structural directive; the sidebar is permission-filtered.
+- **Permission catalog:** `ManageMembers`, `ViewMembers`, `ManageCoaches`, `ManageAttendance`, `ManageClientSubscriptions`, `ManagePOS`, `ManageInventory`, `ManageEmployees`, `ManageBranches`, `ManageFinance`, `ViewReports`, `ManageReports`, `ManageSettings`, `ManageTenantBilling`.
+
+### 💳 Platform Subscription & Billing
+The gym owner subscribes the gym to the LogicFit platform (paid manually, reviewed by the platform admin):
+
+```
+plans → select-plan → payment-methods → upload proof → (admin approves) → active
+```
+- Plan tiers with limits (max members / coaches / branches / employees / storage) and feature flags.
+- **Usage-vs-limit** progress bars, invoices, and a full **payment-proof upload** flow with request history and reject reasons.
+
+### 🔒 Authentication & Sessions
+- **JWT** with a **15-minute access token** + **refresh token**.
+- Transparent **auto-refresh** on `401` (single-flight — one refresh, queued retries); falls back to logout when refresh fails.
+- `logout-all` invalidates every device session.
+- **Plan-limit gating:** a `402 Payment Required` response routes owners to the upgrade screen.
 
 ---
 
@@ -83,92 +135,64 @@ The application features a modern, responsive UI with support for **Arabic (RTL)
 ### Frontend Framework
 ```
 Angular 18 (Standalone Components)
-├── Signals for State Management
-├── New Control Flow (@if, @for, @switch)
-├── Lazy Loading Routes
-└── Server-Side Rendering Ready
+├── Signals for state management (no NgRx)
+├── New control flow (@if, @for, @switch)
+├── Lazy-loaded, role-based routes
+└── Functional HTTP interceptors & guards
 ```
 
-### UI Components & Styling
+### UI, State & Tooling
 | Technology | Usage |
 |------------|-------|
 | **PrimeNG 17** | Rich UI component library |
-| **PrimeFlex** | CSS utility library |
-| **TailwindCSS 3.4** | Utility-first CSS framework |
-| **PrimeIcons** | Icon library |
-| **NgxCharts** | Data visualization |
-
-### State & Data Management
-| Technology | Usage |
-|------------|-------|
+| **TailwindCSS 3.4** | Utility-first styling |
+| **PrimeIcons** | Icon set |
+| **NgxCharts** (`@swimlane/ngx-charts`) | Data visualization |
+| **SweetAlert2** | Dialogs & confirmations |
 | **Angular Signals** | Reactive state management |
-| **RxJS** | Reactive programming |
-| **HttpClient** | API communication |
-
-### Internationalization & Theming
-| Feature | Implementation |
-|---------|----------------|
-| **i18n** | ngx-translate (AR/EN) |
-| **RTL Support** | Full Arabic support |
-| **Theming** | Dark/Light modes |
-
-### Development Tools
-| Tool | Purpose |
-|------|---------|
-| **TypeScript 5.4** | Type-safe JavaScript |
-| **SCSS** | CSS preprocessing |
-| **ESLint** | Code linting |
-| **Prettier** | Code formatting |
-
-### Export & Reporting
-| Format | Library |
-|--------|---------|
-| **PDF** | html2canvas + jsPDF |
-| **Word** | docx |
-| **CSV** | Custom implementation |
-| **Print** | Native browser |
+| **RxJS** | Reactive async & interceptor flows |
+| **ngx-translate** | i18n (AR / EN) with full RTL |
+| **jsPDF + jspdf-autotable** | PDF export (RTL-aware) |
+| **docx / file-saver** | Word & file export |
 
 ---
 
 ## 🚀 Installation
 
 ### Prerequisites
-- Node.js 18+
-- npm 9+
-- Angular CLI 18+
+- Node.js 18+ · npm 9+ · Angular CLI 18+
 
 ### Setup
-
-1. **Clone the repository**
 ```bash
+# 1) Clone
 git clone https://github.com/AhmedSalem104/LogiFit_Angular.git
 cd LogiFit_Angular
-```
 
-2. **Install dependencies**
-```bash
+# 2) Install
 npm install
+
+# 3) Run
+ng serve            # http://localhost:4200
 ```
 
-3. **Configure environment**
+### Environment
 ```typescript
 // src/environments/environment.ts
 export const environment = {
   production: false,
-  apiUrl: 'https://your-api-url.com/api',
-  // ... other settings
+  apiUrl: 'https://logicfit.runasp.net/api',   // Tenant API
+  platformUrl: 'https://logicfit-platform.runasp.net', // Platform (gym signup)
+  tokenKey: 'logicfit_token',
+  refreshTokenKey: 'logicfit_refresh_token',
+  userKey: 'logicfit_user',
+  permissionsKey: 'logicfit_permissions',
+  tenantIdKey: 'logicfit_tenant_id',
+  brandingKey: 'logicfit_branding',
+  // ...theme & language keys
 };
 ```
 
-4. **Run development server**
-```bash
-ng serve
-```
-
-5. **Open browser**
-```
-http://localhost:4200
-```
+> 💡 On `localhost` there's no subdomain, so the login screen falls back to a manual gym picker for convenience.
 
 ### Build for Production
 ```bash
@@ -182,181 +206,109 @@ ng build --configuration=production
 ```
 src/
 ├── app/
-│   ├── core/                    # Core functionality
-│   │   ├── auth/               # Authentication
-│   │   │   ├── guards/         # Route guards
-│   │   │   ├── interceptors/   # HTTP interceptors
-│   │   │   ├── models/         # Auth models
-│   │   │   └── services/       # Auth service
-│   │   ├── layout/             # App layouts
-│   │   │   ├── auth-layout/    # Login/Register layout
-│   │   │   ├── main-layout/    # Dashboard layout
-│   │   │   └── components/     # Header, Sidebar
-│   │   └── services/           # Core services
+│   ├── core/
+│   │   ├── auth/
+│   │   │   ├── guards/            # authGuard, guestGuard, role/permission guards
+│   │   │   ├── interceptors/      # jwt + error (auto-refresh, 402/403 handling)
+│   │   │   ├── models/            # auth models, roles, Permission catalog
+│   │   │   └── services/          # AuthService (tokens, permissions, refresh)
+│   │   ├── layout/                # main / auth layouts, header, sidebar (RBAC-filtered)
+│   │   └── services/              # branding, export, chat, notifications, storage...
 │   │
-│   ├── features/               # Feature modules
-│   │   ├── auth/               # Authentication pages
-│   │   ├── owner/              # Owner dashboard
-│   │   │   ├── clients/        # Client management
-│   │   │   ├── coaches/        # Coach management
-│   │   │   ├── dashboard/      # Owner dashboard
-│   │   │   ├── subscription-plans/
-│   │   │   └── services/       # Owner services
-│   │   ├── coach/              # Coach dashboard
-│   │   │   ├── trainees/       # Trainee management
-│   │   │   ├── workout-programs/
-│   │   │   ├── diet-plans/
-│   │   │   ├── measurements/
-│   │   │   ├── exercises/
-│   │   │   └── services/
-│   │   └── client/             # Client portal
-│   │       ├── workout/        # Workout tracking
-│   │       ├── diet/           # Diet tracking
-│   │       ├── progress/       # Progress charts
-│   │       └── services/
+│   ├── features/
+│   │   ├── auth/                  # login, register, register-gym (→ platform), reset-password
+│   │   ├── owner/                 # back-office suite (35+ modules)
+│   │   │   ├── clients, coaches, subscriptions, invoices, payments,
+│   │   │   ├── products, stock, employees, payroll, branches, reports...
+│   │   │   ├── subscription/      # ⭐ platform billing (plans, usage, payment proof, invoices)
+│   │   │   └── services/          # domain-split services (finance, hr, inventory...)
+│   │   ├── coach/                 # trainees, workout/diet builders, libraries...
+│   │   └── client/                # program, sessions, diet, progress, subscriptions...
 │   │
-│   ├── shared/                 # Shared resources
-│   │   ├── components/         # Reusable components
-│   │   │   ├── page-header/
-│   │   │   ├── stat-card/
-│   │   │   ├── chart-card/
-│   │   │   ├── loading-skeleton/
-│   │   │   └── export-menu/
-│   │   └── models/             # Shared interfaces
+│   ├── shared/
+│   │   ├── components/            # page-header, stat-card, chart-card, wizard-stepper...
+│   │   ├── directives/            # *appHasPermission (RBAC directive)
+│   │   └── models/                # api.models.ts, gym-management.models.ts
 │   │
-│   └── state/                  # Global state
-│       └── theme.state.ts      # Theme management
+│   └── state/                     # theme.state.ts (signals: theme, language, sidebar)
 │
-├── assets/
-│   └── i18n/                   # Translation files
-│       ├── ar.json             # Arabic
-│       └── en.json             # English
-│
-└── environments/               # Environment configs
-    ├── environment.ts
-    └── environment.prod.ts
+├── assets/i18n/                   # ar.json / en.json
+├── environments/
+└── docs/PROJECT_REFERENCE.md      # full technical reference
 ```
 
 ---
 
 ## 🔌 API Integration
 
+Base URL: **`{apiUrl}`** — all protected requests send `Authorization: Bearer <accessToken>`.
+
 ### Authentication
-```typescript
-POST /api/auth/login          // User login
-POST /api/auth/register       // User registration
-POST /api/auth/refresh        // Refresh token
-POST /api/auth/forgot-password
+```http
+POST /api/auth/login              # { phoneNumber, password, tenantId }
+POST /api/auth/register           # creates a Client account
+POST /api/auth/refresh            # rotate tokens (auto-called on 401)
+POST /api/auth/logout-all         # invalidate all sessions
+POST /api/auth/forget-password    # { phoneNumber, tenantId } → resetToken
+POST /api/auth/reset-password     # { phoneNumber, resetToken, newPassword, tenantId }
+GET  /api/branding/{identifier}   # white-label branding (anonymous)
 ```
 
-### Owner Endpoints
-```typescript
-GET    /api/clients           // List all clients
-POST   /api/clients           // Create client
-PUT    /api/clients/:id       // Update client
-DELETE /api/clients/:id       // Delete client
-
-GET    /api/coaches           // List all coaches
-GET    /api/subscriptionplans // List subscription plans
-GET    /api/reports/dashboard // Dashboard statistics
+### Platform Subscription (Owner · `ManageTenantBilling`)
+```http
+GET  /api/tenant/plans
+GET  /api/tenant/my-subscription
+GET  /api/tenant/usage
+GET  /api/tenant/invoices
+GET  /api/tenant/payment-methods
+POST /api/tenant/subscription/select-plan | upgrade | renew
+POST /api/tenant/payment-requests          # multipart: proof of payment
+GET  /api/tenant/payment-requests
 ```
 
-### Coach Endpoints
-```typescript
-GET    /api/coachclients              // Get assigned trainees
-GET    /api/workoutprograms           // List programs
-POST   /api/workoutprograms           // Create program
-GET    /api/dietplans                 // List diet plans
-POST   /api/dietplans                 // Create diet plan
-GET    /api/bodymeasurements          // List measurements
-GET    /api/exercises                 // Exercise library
-GET    /api/foods                     // Foods database
+### Feature Areas (permission-gated)
+```http
+Members      /api/clients, /api/coaches, /api/membershipcards      # ManageMembers / ManageCoaches
+Finance      /api/invoices, /api/payments, /api/expenses, /api/coupons   # ManageFinance
+Inventory    /api/products, /api/stock, /api/suppliers, /api/sales  # ManageInventory / ManagePOS
+HR           /api/employees, /api/shifts, /api/leaves, /api/payroll # ManageEmployees
+Facilities   /api/branches, /api/rooms, /api/equipment             # ManageBranches
+Coaching     /api/workoutprograms, /api/dietplans, /api/exercises  # ownership-checked
+Reports      /api/reports/*, /api/operations-dashboard             # ViewReports
 ```
 
-### Client Endpoints
-```typescript
-GET    /api/clients/:id               // Get profile
-GET    /api/workoutprograms?clientId= // My programs
-GET    /api/dietplans?clientId=       // My diet plans
-GET    /api/subscriptions?clientId=   // My subscriptions
-POST   /api/workoutsessions/start     // Start workout
-POST   /api/workoutsessions/:id/sets  // Log exercise set
-```
+> 📎 The full endpoint map, enums, and conventions live in [`docs/PROJECT_REFERENCE.md`](docs/PROJECT_REFERENCE.md).
+
+### Unified Error Handling
+| Status | Meaning | Frontend behavior |
+|--------|---------|-------------------|
+| `400` | Validation | Show per-field errors |
+| `401` | Token expired | Silent refresh + retry, else logout |
+| `402` | Plan limit / feature not included | Redirect to upgrade screen |
+| `403` | No permission | Hide/disable the element |
+| `409` | Conflict | Show message |
 
 ---
 
-## 🎨 Theme System
+## 🎨 Theming & Internationalization
 
-### Color Palette
-```scss
-// Light Theme
---bg-primary: #ffffff;
---bg-secondary: #f8fafc;
---text-primary: #1e293b;
---accent-color: #3b82f6;
+- **Themes:** Dark / Light via a `dark` class on `<html>`, persisted in `localStorage`.
+- **Branding:** tenant colors/logo/font/custom-CSS applied at startup (white-label).
+- **Languages:** 🇸🇦 Arabic (RTL) · 🇺🇸 English (LTR) — toggled via `ThemeState`, translations in `assets/i18n`.
 
-// Dark Theme
---bg-primary: #1e1e2d;
---bg-secondary: #151521;
---text-primary: #ffffff;
---accent-color: #3b82f6;
-```
-
-### Theme Toggle
 ```typescript
-// Automatic theme persistence
-themeState.toggleTheme(); // Switch between dark/light
-themeState.isDark();      // Check current theme
+themeState.toggleDarkMode();   // switch theme
+themeState.setLanguage('ar');  // switch language (sets RTL)
 ```
-
----
-
-## 🌐 Internationalization
-
-### Supported Languages
-- 🇸🇦 **Arabic** (RTL) - Default
-- 🇺🇸 **English** (LTR)
-
-### Usage
-```typescript
-// In component
-translate.use('ar'); // Switch to Arabic
-translate.use('en'); // Switch to English
-```
-
-### Translation Files
-```json
-// assets/i18n/ar.json
-{
-  "dashboard": "لوحة التحكم",
-  "clients": "العملاء",
-  "coaches": "المدربين"
-}
-```
-
----
-
-## 📱 Responsive Design
-
-| Breakpoint | Description |
-|------------|-------------|
-| `< 640px` | Mobile devices |
-| `640px - 768px` | Tablets |
-| `768px - 1024px` | Small laptops |
-| `> 1024px` | Desktops |
 
 ---
 
 ## 🚀 Deployment
 
 ### Vercel (Recommended)
-
-1. Import project from GitHub
-2. Configure:
-   - **Framework**: Angular
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist/logicfit-app/browser`
-3. Deploy
+1. Import the project from GitHub.
+2. Configure — **Build:** `npm run build` · **Output:** `dist/logicfit-app/browser`.
+3. Deploy.
 
 ### Docker
 ```dockerfile
@@ -377,19 +329,17 @@ EXPOSE 80
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these steps:
-
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Licensed under the MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
@@ -401,10 +351,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-<p align="center">
-  <strong>Built with ❤️ using Angular</strong>
-</p>
-
-<p align="center">
-  <a href="#top">⬆️ Back to Top</a>
-</p>
+<p align="center"><strong>Built with ❤️ using Angular</strong></p>
+<p align="center"><a href="#top">⬆️ Back to Top</a></p>
