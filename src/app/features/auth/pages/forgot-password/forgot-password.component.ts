@@ -1,9 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { NotificationService } from '../../../../core/services/notification.service';
+import { TenantResponse } from '../../../../core/auth/models/auth.models';
 
 @Component({
   selector: 'app-forgot-password',
@@ -16,230 +17,95 @@ import { NotificationService } from '../../../../core/services/notification.serv
         <span>العودة لتسجيل الدخول</span>
       </a>
 
-      @if (!emailSent) {
-        <h2>نسيت كلمة المرور؟</h2>
-        <p class="subtitle">أدخل بريدك الإلكتروني وسنرسل لك رابط لإعادة تعيين كلمة المرور</p>
+      <h2>نسيت كلمة المرور؟</h2>
+      <p class="subtitle">اختر صالتك وأدخل رقم هاتفك لإرسال رمز إعادة التعيين</p>
 
-        <form [formGroup]="forgotForm" (ngSubmit)="onSubmit()">
-          <!-- Email -->
-          <div class="form-group">
-            <label class="form-label">البريد الإلكتروني</label>
-            <div class="input-wrapper">
-              <i class="pi pi-envelope"></i>
-              <input
-                type="email"
-                class="form-input"
-                formControlName="email"
-                placeholder="example@email.com"
-                [class.error]="isFieldInvalid('email')"
-              />
-            </div>
-            <span class="error-message" *ngIf="isFieldInvalid('email')">
-              @if (forgotForm.get('email')?.errors?.['required']) {
-                البريد الإلكتروني مطلوب
-              } @else {
-                البريد الإلكتروني غير صالح
+      <form [formGroup]="forgotForm" (ngSubmit)="onSubmit()">
+        <!-- Gym Selection -->
+        <div class="form-group">
+          <label class="form-label">الصالة</label>
+          <div class="input-wrapper">
+            <i class="pi pi-building"></i>
+            <select class="form-input form-select" formControlName="tenantId" [class.error]="isFieldInvalid('tenantId')">
+              <option value="">-- اختر الصالة --</option>
+              @for (tenant of tenants(); track tenant.id) {
+                <option [value]="tenant.id">{{ tenant.name }}</option>
               }
-            </span>
+            </select>
           </div>
-
-          <!-- Submit -->
-          <button
-            type="submit"
-            class="btn btn-primary w-full"
-            [disabled]="loading"
-          >
-            <i class="pi pi-spin pi-spinner" *ngIf="loading"></i>
-            <span *ngIf="!loading">إرسال رابط الاستعادة</span>
-          </button>
-
-          <!-- Error Message -->
-          <div class="error-box" *ngIf="errorMessage">
-            <i class="pi pi-exclamation-circle"></i>
-            <span>{{ errorMessage }}</span>
-          </div>
-        </form>
-      } @else {
-        <div class="success-state">
-          <div class="success-icon">
-            <i class="pi pi-check"></i>
-          </div>
-          <h2>تم إرسال الرابط!</h2>
-          <p>تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني. يرجى التحقق من صندوق الوارد.</p>
-          <button class="btn btn-secondary" (click)="resetForm()">
-            إرسال مرة أخرى
-          </button>
+          <span class="error-message" *ngIf="isFieldInvalid('tenantId')">يرجى اختيار الصالة</span>
         </div>
-      }
+
+        <!-- Phone -->
+        <div class="form-group">
+          <label class="form-label">رقم الهاتف</label>
+          <div class="input-wrapper">
+            <i class="pi pi-phone"></i>
+            <input type="tel" class="form-input" formControlName="phoneNumber" placeholder="01xxxxxxxxx"
+              [class.error]="isFieldInvalid('phoneNumber')" />
+          </div>
+          <span class="error-message" *ngIf="isFieldInvalid('phoneNumber')">رقم الهاتف مطلوب</span>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full" [disabled]="loading">
+          <i class="pi pi-spin pi-spinner" *ngIf="loading"></i>
+          <span *ngIf="!loading">إرسال رمز الاستعادة</span>
+        </button>
+
+        <div class="error-box" *ngIf="errorMessage">
+          <i class="pi pi-exclamation-circle"></i>
+          <span>{{ errorMessage }}</span>
+        </div>
+      </form>
     </div>
   `,
   styles: [`
     .forgot-password-page {
-      .back-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: var(--text-secondary);
-        text-decoration: none;
-        margin-bottom: 2rem;
-        font-size: 0.9rem;
-        transition: color 0.2s;
-
-        &:hover {
-          color: #3b82f6;
-        }
-      }
-
-      h2 {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        margin-bottom: 0.5rem;
-      }
-
-      .subtitle {
-        color: var(--text-secondary);
-        margin-bottom: 2rem;
-        line-height: 1.6;
-      }
+      .back-link { display:inline-flex; align-items:center; gap:.5rem; color:var(--text-secondary); text-decoration:none; margin-bottom:2rem; font-size:.9rem; transition:color .2s; }
+      .back-link:hover { color:#3b82f6; }
+      h2 { font-size:1.75rem; font-weight:700; color:var(--text-primary); margin-bottom:.5rem; }
+      .subtitle { color:var(--text-secondary); margin-bottom:2rem; line-height:1.6; }
     }
-
-    :host-context([dir="ltr"]) .back-link {
-      i {
-        transform: rotate(180deg);
-      }
-    }
-
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-
-    .input-wrapper {
-      position: relative;
-      display: flex;
-      align-items: center;
-
-      > i:first-child {
-        position: absolute;
-        right: 1rem;
-        color: var(--text-muted);
-      }
-
-      .form-input {
-        padding-right: 2.75rem;
-      }
-    }
-
-    :host-context([dir="ltr"]) {
-      .input-wrapper {
-        > i:first-child {
-          right: auto;
-          left: 1rem;
-        }
-
-        .form-input {
-          padding-right: 1rem;
-          padding-left: 2.75rem;
-        }
-      }
-    }
-
-    .form-input.error {
-      border-color: #ef4444;
-    }
-
-    .error-message {
-      display: block;
-      color: #ef4444;
-      font-size: 0.8rem;
-      margin-top: 0.5rem;
-    }
-
-    .btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      height: 48px;
-      font-size: 1rem;
-
-      &:disabled {
-        opacity: 0.7;
-        cursor: not-allowed;
-      }
-    }
-
-    .w-full {
-      width: 100%;
-    }
-
-    .error-box {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 1rem;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      border-radius: 8px;
-      color: #dc2626;
-      margin-top: 1rem;
-      font-size: 0.9rem;
-    }
-
-    .success-state {
-      text-align: center;
-
-      .success-icon {
-        width: 80px;
-        height: 80px;
-        background: #dcfce7;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1.5rem;
-
-        i {
-          font-size: 2rem;
-          color: #16a34a;
-        }
-      }
-
-      p {
-        color: var(--text-secondary);
-        margin-bottom: 2rem;
-        line-height: 1.6;
-      }
-
-      .btn-secondary {
-        background: var(--bg-secondary);
-        color: var(--text-primary);
-        border: 1px solid var(--border-color);
-        padding: 0.75rem 1.5rem;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s;
-
-        &:hover {
-          background: var(--bg-tertiary);
-        }
-      }
-    }
+    :host-context([dir="ltr"]) .back-link i { transform:rotate(180deg); }
+    .form-group { margin-bottom:1.25rem; }
+    .input-wrapper { position:relative; display:flex; align-items:center; }
+    .input-wrapper > i:first-child { position:absolute; right:1rem; color:var(--text-muted); z-index:1; }
+    .input-wrapper .form-input { padding-right:2.75rem; padding-left:2.75rem; }
+    .form-select { cursor:pointer; appearance:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:left 1rem center; }
+    :host-context([dir="ltr"]) .input-wrapper > i:first-child { right:auto; left:1rem; }
+    :host-context([dir="ltr"]) .form-select { background-position:right 1rem center; }
+    .form-input.error { border-color:#ef4444; }
+    .error-message { display:block; color:#ef4444; font-size:.8rem; margin-top:.5rem; }
+    .btn { display:flex; align-items:center; justify-content:center; gap:.5rem; height:48px; font-size:1rem; }
+    .btn:disabled { opacity:.7; cursor:not-allowed; }
+    .w-full { width:100%; }
+    .error-box { display:flex; align-items:center; gap:.5rem; padding:1rem; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; color:#dc2626; margin-top:1rem; font-size:.9rem; }
   `]
 })
-export class ForgotPasswordComponent {
+export class ForgotPasswordComponent implements OnInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private notification = inject(NotificationService);
+  private router = inject(Router);
 
   forgotForm: FormGroup;
   loading = false;
   errorMessage = '';
-  emailSent = false;
+  tenants = signal<TenantResponse[]>([]);
 
   constructor() {
     this.forgotForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]]
+      tenantId: ['', [Validators.required]],
+      phoneNumber: ['', [Validators.required]]
+    });
+  }
+
+  ngOnInit(): void {
+    this.authService.getTenants().subscribe({
+      next: (data) => this.tenants.set(data),
+      error: () => {}
     });
   }
 
@@ -256,23 +122,21 @@ export class ForgotPasswordComponent {
 
     this.loading = true;
     this.errorMessage = '';
+    const { tenantId, phoneNumber } = this.forgotForm.value;
 
-    const { email } = this.forgotForm.value;
-
-    this.authService.forgotPassword({ email }).subscribe({
-      next: () => {
-        this.emailSent = true;
+    this.authService.forgotPassword({ tenantId, phoneNumber }).subscribe({
+      next: (res) => {
         this.loading = false;
+        this.notification.success('تم إرسال رمز إعادة التعيين');
+        // Navigate to reset screen, carrying tenant + phone (and dev resetToken if returned).
+        this.router.navigate(['/auth/reset-password'], {
+          queryParams: { tenantId, phoneNumber, token: res?.resetToken ?? '' }
+        });
       },
       error: (error) => {
         this.loading = false;
-        this.errorMessage = error.translatedMessage || 'خطأ في إرسال الرابط';
+        this.errorMessage = error.translatedMessage || 'خطأ في إرسال الرمز';
       }
     });
-  }
-
-  resetForm(): void {
-    this.emailSent = false;
-    this.forgotForm.reset();
   }
 }

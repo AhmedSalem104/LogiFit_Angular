@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../../auth/services/auth.service';
 import { ThemeState } from '../../../../state/theme.state';
-import { UserRole } from '../../../auth/models/auth.models';
+import { UserRole, Permission, BACK_OFFICE_ROLES, COACH_ROLES } from '../../../auth/models/auth.models';
 
 interface NavItem {
   label: string;
   icon: string;
   route: string;
   roles?: UserRole[];
+  permission?: Permission | Permission[];
   badge?: number;
 }
 
@@ -17,6 +18,7 @@ interface NavGroup {
   title: string;
   items: NavItem[];
   roles?: UserRole[];
+  permission?: Permission | Permission[];
 }
 
 @Component({
@@ -712,29 +714,30 @@ export class SidebarComponent {
       title: 'إدارة الأعضاء',
       roles: [UserRole.Owner],
       items: [
-        { label: 'العملاء', icon: 'pi-users', route: '/owner/clients', roles: [UserRole.Owner] },
-        { label: 'المدربين', icon: 'pi-id-card', route: '/owner/coaches', roles: [UserRole.Owner] },
-        { label: 'بطاقات العضوية', icon: 'pi-qrcode', route: '/owner/membership-cards', roles: [UserRole.Owner] },
-        { label: 'البوابة الإلكترونية', icon: 'pi-sign-in', route: '/owner/gate-access', roles: [UserRole.Owner] },
+        { label: 'العملاء', icon: 'pi-users', route: '/owner/clients', roles: [UserRole.Owner], permission: 'ViewMembers' },
+        { label: 'المدربين', icon: 'pi-id-card', route: '/owner/coaches', roles: [UserRole.Owner], permission: 'ManageCoaches' },
+        { label: 'بطاقات العضوية', icon: 'pi-qrcode', route: '/owner/membership-cards', roles: [UserRole.Owner], permission: 'ManageMembers' },
+        { label: 'البوابة الإلكترونية', icon: 'pi-sign-in', route: '/owner/gate-access', roles: [UserRole.Owner], permission: 'ManageAttendance' },
       ]
     },
     {
       title: 'الاشتراكات',
       roles: [UserRole.Owner],
       items: [
-        { label: 'خطط الاشتراك', icon: 'pi-wallet', route: '/owner/subscription-plans', roles: [UserRole.Owner] },
-        { label: 'الاشتراكات', icon: 'pi-list', route: '/owner/subscriptions', roles: [UserRole.Owner] },
-        { label: 'الحضور', icon: 'pi-clock', route: '/owner/attendance', roles: [UserRole.Owner] },
+        { label: 'خطط الاشتراك', icon: 'pi-wallet', route: '/owner/subscription-plans', roles: [UserRole.Owner], permission: 'ManageClientSubscriptions' },
+        { label: 'الاشتراكات', icon: 'pi-list', route: '/owner/subscriptions', roles: [UserRole.Owner], permission: 'ManageClientSubscriptions' },
+        { label: 'الحضور', icon: 'pi-clock', route: '/owner/attendance', roles: [UserRole.Owner], permission: 'ManageAttendance' },
       ]
     },
     {
       title: 'المرافق',
       roles: [UserRole.Owner],
+      permission: 'ManageBranches',
       items: [
-        { label: 'الفروع', icon: 'pi-building', route: '/owner/branches', roles: [UserRole.Owner] },
-        { label: 'القاعات', icon: 'pi-th-large', route: '/owner/rooms', roles: [UserRole.Owner] },
-        { label: 'الأجهزة', icon: 'pi-cog', route: '/owner/equipment', roles: [UserRole.Owner] },
-        { label: 'الصيانة', icon: 'pi-wrench', route: '/owner/maintenance', roles: [UserRole.Owner] },
+        { label: 'الفروع', icon: 'pi-building', route: '/owner/branches', roles: [UserRole.Owner], permission: 'ManageBranches' },
+        { label: 'القاعات', icon: 'pi-th-large', route: '/owner/rooms', roles: [UserRole.Owner], permission: 'ManageBranches' },
+        { label: 'الأجهزة', icon: 'pi-cog', route: '/owner/equipment', roles: [UserRole.Owner], permission: 'ManageBranches' },
+        { label: 'الصيانة', icon: 'pi-wrench', route: '/owner/maintenance', roles: [UserRole.Owner], permission: 'ManageBranches' },
       ]
     },
     {
@@ -748,35 +751,38 @@ export class SidebarComponent {
     {
       title: 'المالية',
       roles: [UserRole.Owner],
+      permission: 'ManageFinance',
       items: [
-        { label: 'الفواتير', icon: 'pi-file', route: '/owner/invoices', roles: [UserRole.Owner] },
-        { label: 'المدفوعات', icon: 'pi-dollar', route: '/owner/payments', roles: [UserRole.Owner] },
-        { label: 'المصروفات', icon: 'pi-money-bill', route: '/owner/expenses', roles: [UserRole.Owner] },
-        { label: 'فئات المصروفات', icon: 'pi-tag', route: '/owner/expense-categories', roles: [UserRole.Owner] },
-        { label: 'الكوبونات', icon: 'pi-ticket', route: '/owner/coupons', roles: [UserRole.Owner] },
-        { label: 'الضرائب', icon: 'pi-percentage', route: '/owner/tax-settings', roles: [UserRole.Owner] },
+        { label: 'الفواتير', icon: 'pi-file', route: '/owner/invoices', roles: [UserRole.Owner], permission: 'ManageFinance' },
+        { label: 'المدفوعات', icon: 'pi-dollar', route: '/owner/payments', roles: [UserRole.Owner], permission: 'ManageFinance' },
+        { label: 'المصروفات', icon: 'pi-money-bill', route: '/owner/expenses', roles: [UserRole.Owner], permission: 'ManageFinance' },
+        { label: 'فئات المصروفات', icon: 'pi-tag', route: '/owner/expense-categories', roles: [UserRole.Owner], permission: 'ManageFinance' },
+        { label: 'الكوبونات', icon: 'pi-ticket', route: '/owner/coupons', roles: [UserRole.Owner], permission: 'ManageFinance' },
+        { label: 'الضرائب', icon: 'pi-percentage', route: '/owner/tax-settings', roles: [UserRole.Owner], permission: 'ManageSettings' },
       ]
     },
     {
       title: 'المخزون والمتجر',
       roles: [UserRole.Owner],
+      permission: ['ManagePOS', 'ManageInventory'],
       items: [
-        { label: 'نقطة البيع', icon: 'pi-shopping-cart', route: '/owner/pos-sales', roles: [UserRole.Owner] },
-        { label: 'المنتجات', icon: 'pi-box', route: '/owner/products', roles: [UserRole.Owner] },
-        { label: 'فئات المنتجات', icon: 'pi-tags', route: '/owner/product-categories', roles: [UserRole.Owner] },
-        { label: 'المخزون', icon: 'pi-database', route: '/owner/stock', roles: [UserRole.Owner] },
-        { label: 'الموردين', icon: 'pi-truck', route: '/owner/suppliers', roles: [UserRole.Owner] },
+        { label: 'نقطة البيع', icon: 'pi-shopping-cart', route: '/owner/pos-sales', roles: [UserRole.Owner], permission: 'ManagePOS' },
+        { label: 'المنتجات', icon: 'pi-box', route: '/owner/products', roles: [UserRole.Owner], permission: 'ManageInventory' },
+        { label: 'فئات المنتجات', icon: 'pi-tags', route: '/owner/product-categories', roles: [UserRole.Owner], permission: 'ManageInventory' },
+        { label: 'المخزون', icon: 'pi-database', route: '/owner/stock', roles: [UserRole.Owner], permission: 'ManageInventory' },
+        { label: 'الموردين', icon: 'pi-truck', route: '/owner/suppliers', roles: [UserRole.Owner], permission: 'ManageInventory' },
       ]
     },
     {
       title: 'الموظفين والرواتب',
       roles: [UserRole.Owner],
+      permission: 'ManageEmployees',
       items: [
-        { label: 'الموظفين', icon: 'pi-users', route: '/owner/employees', roles: [UserRole.Owner] },
-        { label: 'الورديات', icon: 'pi-clock', route: '/owner/shifts', roles: [UserRole.Owner] },
-        { label: 'الإجازات', icon: 'pi-calendar-minus', route: '/owner/leaves', roles: [UserRole.Owner] },
-        { label: 'العمولات', icon: 'pi-percentage', route: '/owner/commissions', roles: [UserRole.Owner] },
-        { label: 'الرواتب', icon: 'pi-receipt', route: '/owner/payroll', roles: [UserRole.Owner] },
+        { label: 'الموظفين', icon: 'pi-users', route: '/owner/employees', roles: [UserRole.Owner], permission: 'ManageEmployees' },
+        { label: 'الورديات', icon: 'pi-clock', route: '/owner/shifts', roles: [UserRole.Owner], permission: 'ManageEmployees' },
+        { label: 'الإجازات', icon: 'pi-calendar-minus', route: '/owner/leaves', roles: [UserRole.Owner], permission: 'ManageEmployees' },
+        { label: 'العمولات', icon: 'pi-percentage', route: '/owner/commissions', roles: [UserRole.Owner], permission: 'ManageFinance' },
+        { label: 'الرواتب', icon: 'pi-receipt', route: '/owner/payroll', roles: [UserRole.Owner], permission: 'ManageEmployees' },
       ]
     },
     {
@@ -849,29 +855,60 @@ export class SidebarComponent {
     {
       title: 'التقارير',
       roles: [UserRole.Owner],
+      permission: 'ViewReports',
       items: [
-        { label: 'التقارير العامة', icon: 'pi-chart-bar', route: '/owner/reports', roles: [UserRole.Owner] },
-        { label: 'التقارير التشغيلية', icon: 'pi-chart-line', route: '/owner/operations-reports', roles: [UserRole.Owner] },
+        { label: 'التقارير العامة', icon: 'pi-chart-bar', route: '/owner/reports', roles: [UserRole.Owner], permission: 'ViewReports' },
+        { label: 'التقارير التشغيلية', icon: 'pi-chart-line', route: '/owner/operations-reports', roles: [UserRole.Owner], permission: 'ViewReports' },
+      ]
+    },
+    {
+      title: 'اشتراك المنصة',
+      roles: [UserRole.Owner],
+      permission: 'ManageTenantBilling',
+      items: [
+        { label: 'اشتراك الصالة', icon: 'pi-star', route: '/owner/subscription', roles: [UserRole.Owner], permission: 'ManageTenantBilling' },
+        { label: 'فواتير المنصة', icon: 'pi-credit-card', route: '/owner/subscription/invoices', roles: [UserRole.Owner], permission: 'ManageTenantBilling' },
       ]
     },
     {
       title: 'الإعدادات',
       roles: [UserRole.Owner],
+      permission: 'ManageSettings',
       items: [
-        { label: 'إعدادات الصالة', icon: 'pi-cog', route: '/owner/gym-settings', roles: [UserRole.Owner] },
+        { label: 'إعدادات الصالة', icon: 'pi-cog', route: '/owner/gym-settings', roles: [UserRole.Owner], permission: 'ManageSettings' },
       ]
     }
   ];
 
+  /** Expand a panel-role list so that any role in the same family (back-office / coach) matches. */
+  private matchesPanel(roles?: UserRole[]): boolean {
+    if (!roles || !roles.length) return true;
+    const current = this.authService.user()?.role;
+    if (!current) return false;
+    for (const r of roles) {
+      if (r === UserRole.Owner && BACK_OFFICE_ROLES.includes(current)) return true;
+      if (r === UserRole.Coach && COACH_ROLES.includes(current)) return true;
+      if (r === current) return true;
+    }
+    return false;
+  }
+
+  private matchesPermission(permission?: Permission | Permission[]): boolean {
+    if (!permission) return true;
+    const list = Array.isArray(permission) ? permission : [permission];
+    // Owner (full access) always passes; others must hold at least one required permission.
+    if (this.authService.isOwner()) return true;
+    return this.authService.hasAnyPermission(...list);
+  }
+
   get visibleNavGroups(): NavGroup[] {
-    return this.navGroups.filter(group => {
-      if (!group.roles) return true;
-      return this.authService.hasRole(group.roles);
-    });
+    return this.navGroups
+      .filter(group => this.matchesPanel(group.roles) && this.matchesPermission(group.permission))
+      .map(group => ({ ...group, items: group.items.filter(item => this.canShowItem(item)) }))
+      .filter(group => group.items.length > 0);
   }
 
   canShowItem(item: NavItem): boolean {
-    if (!item.roles) return true;
-    return this.authService.hasRole(item.roles);
+    return this.matchesPanel(item.roles) && this.matchesPermission(item.permission);
   }
 }

@@ -1,16 +1,56 @@
 // User roles matching backend enum (numeric values)
-// Backend: Owner = 1, Coach = 2, Client = 3 (1-indexed)
+// Backend: Owner=1, Coach=2, Client=3, Manager=4, Receptionist=5, Accountant=6, Trainer=7
 export enum UserRole {
   Owner = 'Owner',
   Coach = 'Coach',
-  Client = 'Client'
+  Client = 'Client',
+  Manager = 'Manager',
+  Receptionist = 'Receptionist',
+  Accountant = 'Accountant',
+  Trainer = 'Trainer'
 }
 
-// Numeric role values for API requests (1-indexed to match backend UserRole enum)
+// Numeric role values for API requests (matches backend UserRole enum)
 export const UserRoleValues = {
   Owner: 1,
   Coach: 2,
-  Client: 3
+  Client: 3,
+  Manager: 4,
+  Receptionist: 5,
+  Accountant: 6,
+  Trainer: 7
+} as const;
+
+// Roles that use the "owner" (back-office) panel & layout
+export const BACK_OFFICE_ROLES: UserRole[] = [
+  UserRole.Owner, UserRole.Manager, UserRole.Receptionist, UserRole.Accountant
+];
+// Roles that use the "coach" panel
+export const COACH_ROLES: UserRole[] = [UserRole.Coach, UserRole.Trainer];
+
+// ==================== Permissions (RBAC) ====================
+// Backend permission catalog (Tenant scope). The JWT / login response carries permissions[].
+export type Permission =
+  | 'ManageMembers' | 'ViewMembers' | 'ManageCoaches' | 'ManageAttendance'
+  | 'ManageClientSubscriptions' | 'ManagePOS' | 'ManageInventory' | 'ManageEmployees'
+  | 'ManageBranches' | 'ManageFinance' | 'ViewReports' | 'ManageReports'
+  | 'ManageSettings' | 'ManageTenantBilling';
+
+export const Permissions = {
+  ManageMembers: 'ManageMembers',
+  ViewMembers: 'ViewMembers',
+  ManageCoaches: 'ManageCoaches',
+  ManageAttendance: 'ManageAttendance',
+  ManageClientSubscriptions: 'ManageClientSubscriptions',
+  ManagePOS: 'ManagePOS',
+  ManageInventory: 'ManageInventory',
+  ManageEmployees: 'ManageEmployees',
+  ManageBranches: 'ManageBranches',
+  ManageFinance: 'ManageFinance',
+  ViewReports: 'ViewReports',
+  ManageReports: 'ManageReports',
+  ManageSettings: 'ManageSettings',
+  ManageTenantBilling: 'ManageTenantBilling'
 } as const;
 
 // Login request (matches backend LoginCommand)
@@ -20,16 +60,19 @@ export interface LoginRequest {
   tenantId: string;
 }
 
-// Register request (matches backend RegisterCommand)
-// Note: role must be numeric (1=Owner, 2=Coach, 3=Client) to match backend enum
+// Register request — backend ALWAYS creates a Client (role is ignored/not selectable).
 export interface RegisterRequest {
   email: string;
   phoneNumber?: string;
   password: string;
   confirmPassword: string;
   tenantId: string;
-  role: number;  // 1=Owner, 2=Coach, 3=Client
   fullName: string;
+}
+
+// Refresh token request
+export interface RefreshRequest {
+  refreshToken: string;
 }
 
 // Create Tenant request
@@ -46,7 +89,7 @@ export interface TenantResponse {
   id: string;
   name: string;
   subdomain: string;
-  status: number; // 0=Inactive, 1=Active, 2=Suspended
+  status: number; // TenantStatus: Active=1, Suspended=2, Trial=3, ...
   createdAt: string;
   logoUrl?: string;
   primaryColor?: string;
@@ -62,25 +105,35 @@ export interface RegisterGymRequest {
   password: string;
 }
 
-// Forgot password request
+// Forgot password request — now requires tenantId, keyed by phone number.
 export interface ForgotPasswordRequest {
-  email: string;
+  phoneNumber: string;
+  tenantId: string;
+}
+
+// Forgot password response — returns a reset token (in production sent via SMS/Email).
+export interface ForgotPasswordResponse {
+  resetToken: string;
 }
 
 // Reset password request
 export interface ResetPasswordRequest {
-  token: string;
+  phoneNumber: string;
+  resetToken: string;
   newPassword: string;
+  tenantId: string;
 }
 
 // Auth response from backend (matches AuthResponseDto)
-// Note: Backend returns role as string (Owner, Coach, Client) as per OpenAPI
+// Backend returns role as string (Owner, Coach, ...) plus roles[] and permissions[].
 export interface AuthResponse {
   userId: string;
   email?: string;
   phoneNumber?: string;
   fullName?: string;
-  role: string | number;  // Can be string or number depending on endpoint
+  role: string | number;
+  roles?: string[];
+  permissions?: Permission[];
   tenantId: string;
   accessToken: string;
   refreshToken: string;
@@ -93,6 +146,7 @@ export interface UserInfo {
   email?: string;
   phoneNumber?: string;
   role: UserRole;
+  roles?: UserRole[];
   tenantId: string;
   fullName?: string;
 }

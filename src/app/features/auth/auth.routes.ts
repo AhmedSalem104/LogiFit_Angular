@@ -26,6 +26,12 @@ export const authRoutes: Routes = [
     title: 'نسيت كلمة المرور - LogicFit'
   },
   {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./pages/reset-password/reset-password.component').then(m => m.ResetPasswordComponent),
+    title: 'إعادة تعيين كلمة المرور - LogicFit'
+  },
+  {
     path: '',
     redirectTo: 'login',
     pathMatch: 'full'

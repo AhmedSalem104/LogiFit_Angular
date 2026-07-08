@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn, ActivatedRouteSnapshot } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { UserRole } from '../models/auth.models';
+import { UserRole, BACK_OFFICE_ROLES, COACH_ROLES } from '../models/auth.models';
 
 /**
  * Guard factory to protect routes based on user role
@@ -27,14 +27,15 @@ export const roleGuard = (allowedRoles: UserRole[]): CanActivateFn => {
 };
 
 /**
- * Guard for Owner-only routes
+ * Guard for back-office routes (Owner + Manager / Receptionist / Accountant).
+ * Fine-grained access inside the panel is enforced per-feature via permissions.
  */
-export const ownerGuard: CanActivateFn = roleGuard([UserRole.Owner]);
+export const ownerGuard: CanActivateFn = roleGuard(BACK_OFFICE_ROLES);
 
 /**
- * Guard for Coach-only routes
+ * Guard for coach routes (Coach + Trainer)
  */
-export const coachGuard: CanActivateFn = roleGuard([UserRole.Coach]);
+export const coachGuard: CanActivateFn = roleGuard(COACH_ROLES);
 
 /**
  * Guard for Client-only routes

@@ -4,7 +4,7 @@ import { RouterModule, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { NotificationService } from '../../../../core/services/notification.service';
-import { TenantResponse, UserRoleValues } from '../../../../core/auth/models/auth.models';
+import { TenantResponse } from '../../../../core/auth/models/auth.models';
 
 @Component({
   selector: 'app-register',
@@ -13,34 +13,9 @@ import { TenantResponse, UserRoleValues } from '../../../../core/auth/models/aut
   template: `
     <div class="register-page">
       <h2>إنشاء حساب جديد</h2>
-      <p class="subtitle">سجل كمدرب أو متدرب في صالتك الرياضية</p>
+      <p class="subtitle">سجّل كمتدرب في صالتك الرياضية</p>
 
       <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-        <!-- Account Type Selection -->
-        <div class="form-group">
-          <label class="form-label">نوع الحساب</label>
-          <div class="role-selection">
-            <button
-              type="button"
-              class="role-btn"
-              [class.active]="selectedRole() === 'coach'"
-              (click)="selectRole('coach')"
-            >
-              <i class="pi pi-user-edit"></i>
-              <span>مدرب</span>
-            </button>
-            <button
-              type="button"
-              class="role-btn"
-              [class.active]="selectedRole() === 'client'"
-              (click)="selectRole('client')"
-            >
-              <i class="pi pi-user"></i>
-              <span>متدرب</span>
-            </button>
-          </div>
-        </div>
-
         <!-- Gym Selection -->
         <div class="form-group">
           <label class="form-label">الصالة الرياضية</label>
@@ -190,7 +165,7 @@ import { TenantResponse, UserRoleValues } from '../../../../core/auth/models/aut
         <button
           type="submit"
           class="btn btn-primary w-full"
-          [disabled]="loading || registerForm.invalid || !selectedRole()"
+          [disabled]="loading || registerForm.invalid"
         >
           <i class="pi pi-spin pi-spinner" *ngIf="loading"></i>
           <span *ngIf="!loading">إنشاء الحساب</span>
@@ -464,7 +439,6 @@ export class RegisterComponent implements OnInit {
 
   tenants = signal<TenantResponse[]>([]);
   tenantsLoading = signal(false);
-  selectedRole = signal<'coach' | 'client' | null>(null);
 
   constructor() {
     this.registerForm = this.fb.group({
@@ -495,10 +469,6 @@ export class RegisterComponent implements OnInit {
     });
   }
 
-  selectRole(role: 'coach' | 'client'): void {
-    this.selectedRole.set(role);
-  }
-
   get passwordMismatch(): boolean {
     const password = this.registerForm.get('password')?.value;
     const confirmPassword = this.registerForm.get('confirmPassword')?.value;
@@ -511,7 +481,7 @@ export class RegisterComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.registerForm.invalid || this.passwordMismatch || !this.selectedRole()) {
+    if (this.registerForm.invalid || this.passwordMismatch) {
       this.registerForm.markAllAsTouched();
       return;
     }
@@ -520,23 +490,20 @@ export class RegisterComponent implements OnInit {
     this.errorMessage = '';
 
     const { tenantId, fullName, email, phoneNumber, password } = this.registerForm.value;
-    const role = this.selectedRole() === 'coach' ? UserRoleValues.Coach : UserRoleValues.Client;
 
+    // Backend always creates a Client account from public registration.
     this.authService.register({
       tenantId,
       fullName,
       email,
       phoneNumber,
       password,
-      confirmPassword: password,
-      role
+      confirmPassword: password
     }).subscribe({
-      next: () => {
+      next: (response) => {
         this.loading = false;
-        const roleText = this.selectedRole() === 'coach' ? 'مدرب' : 'متدرب';
-        this.notification.success(`تم تسجيلك كـ ${roleText} بنجاح`);
-        // Navigate to appropriate dashboard based on role
-        const redirectUrl = this.authService.getRedirectUrl();
+        this.notification.success('تم إنشاء حسابك بنجاح');
+        const redirectUrl = this.authService.getRedirectUrlForRole(response.role);
         this.router.navigate([redirectUrl]);
       },
       error: (error) => {

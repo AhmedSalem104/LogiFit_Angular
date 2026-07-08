@@ -52,6 +52,10 @@ export const ownerRoutes: Routes = [
   { path: 'reports', loadComponent: () => import('./reports/reports.component').then(m => m.ReportsComponent), title: 'التقارير' },
   { path: 'operations-reports', loadComponent: () => import('./operations-dashboard/operations-reports.component').then(m => m.OperationsReportsComponent), title: 'التقارير التشغيلية' },
 
+  // Platform Subscription & Billing (اشتراك الصالة في المنصة)
+  { path: 'subscription', loadComponent: () => import('./subscription/my-subscription.component').then(m => m.MySubscriptionComponent), title: 'اشتراك الصالة' },
+  { path: 'subscription/invoices', loadComponent: () => import('./subscription/subscription-invoices.component').then(m => m.SubscriptionInvoicesComponent), title: 'فواتير المنصة' },
+
   // Settings
   { path: 'gym-settings', loadComponent: () => import('./gym-settings/gym-settings.component').then(m => m.GymSettingsComponent), title: 'إعدادات الصالة' },
 
