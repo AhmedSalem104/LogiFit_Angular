@@ -43,7 +43,7 @@ import { NotificationService } from '../../../../core/services/notification.serv
             </div>
             <span class="error-message" *ngIf="isFieldInvalid('newPassword')">
               @if (form.get('newPassword')?.errors?.['required']) { كلمة المرور مطلوبة }
-              @else { كلمة المرور يجب أن تكون 6 أحرف على الأقل }
+              @else { 8 أحرف على الأقل، وتحتوي على حرف كبير وحرف صغير ورقم }
             </span>
           </div>
 
@@ -118,12 +118,13 @@ export class ResetPasswordComponent implements OnInit {
   done = signal(false);
 
   private tenantId = '';
+  private subdomain = '';
   private phoneNumber = '';
 
   constructor() {
     this.form = this.fb.group({
       resetToken: ['', [Validators.required]],
-      newPassword: ['', [Validators.required, Validators.minLength(6)]],
+      newPassword: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)]],
       confirmPassword: ['', [Validators.required]]
     });
   }
@@ -131,12 +132,13 @@ export class ResetPasswordComponent implements OnInit {
   ngOnInit(): void {
     const q = this.route.snapshot.queryParamMap;
     this.tenantId = q.get('tenantId') ?? '';
+    this.subdomain = q.get('subdomain') ?? '';
     this.phoneNumber = q.get('phoneNumber') ?? '';
     const token = q.get('token');
     if (token) this.form.patchValue({ resetToken: token });
 
     // If arrived without context, send the user back to request a code.
-    if (!this.tenantId || !this.phoneNumber) {
+    if ((!this.tenantId && !this.subdomain) || !this.phoneNumber) {
       this.notification.warn('يرجى طلب رمز إعادة التعيين أولاً');
       this.router.navigate(['/auth/forgot-password']);
     }
@@ -165,6 +167,7 @@ export class ResetPasswordComponent implements OnInit {
 
     this.authService.resetPassword({
       tenantId: this.tenantId,
+      subdomain: this.subdomain,
       phoneNumber: this.phoneNumber,
       resetToken,
       newPassword

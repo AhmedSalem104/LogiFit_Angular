@@ -172,6 +172,7 @@ export class LoginComponent implements OnInit {
   resolving = signal(false);
   resolveError = signal<string | null>(null);
   private fromSubdomain = false; // true when tenant came from the URL (can't change)
+  private subdomain = '';        // gym subdomain sent alongside tenantId
 
   constructor() {
     this.loginForm = this.fb.group({
@@ -187,6 +188,7 @@ export class LoginComponent implements OnInit {
     // value left in storage by a previous backend/session.
     const b = this.branding.branding();
     if (b?.tenantId) {
+      this.subdomain = b.subdomain || this.branding.resolveIdentifier() || '';
       this.applyTenant(b.tenantId, b.name);
       this.fromSubdomain = !!this.branding.resolveIdentifier();
     } else {
@@ -215,6 +217,7 @@ export class LoginComponent implements OnInit {
     this.branding.resolveBySubdomain(sub).subscribe({
       next: (b) => {
         this.resolving.set(false);
+        this.subdomain = b.subdomain || sub;
         this.applyTenant(b.tenantId, b.name);
       },
       error: (err) => {
@@ -250,7 +253,7 @@ export class LoginComponent implements OnInit {
 
     const { tenantId, phoneNumber, password } = this.loginForm.value;
 
-    this.authService.login({ tenantId, phoneNumber, password }).subscribe({
+    this.authService.login({ tenantId, phoneNumber, password, subdomain: this.subdomain }).subscribe({
       next: (response) => {
         this.loading = false;
         this.notification.success('تم تسجيل الدخول بنجاح');

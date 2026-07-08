@@ -86,7 +86,7 @@ import { BrandingService } from '../../../../core/services/branding.service';
             </div>
             <span class="error-message" *ngIf="isFieldInvalid('password')">
               @if (registerForm.get('password')?.errors?.['required']) { كلمة المرور مطلوبة }
-              @else { كلمة المرور يجب أن تكون 6 أحرف على الأقل }
+              @else { 8 أحرف على الأقل، وتحتوي على حرف كبير وحرف صغير ورقم }
             </span>
           </div>
 
@@ -189,6 +189,7 @@ export class RegisterComponent implements OnInit {
   resolving = signal(false);
   resolveError = signal<string | null>(null);
   private fromSubdomain = false;
+  private subdomain = '';
 
   constructor() {
     this.registerForm = this.fb.group({
@@ -196,7 +197,7 @@ export class RegisterComponent implements OnInit {
       fullName: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
       phoneNumber: ['', [Validators.required]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
+      password: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)]],
       confirmPassword: ['', [Validators.required]],
       acceptTerms: [false, [Validators.requiredTrue]]
     });
@@ -205,6 +206,7 @@ export class RegisterComponent implements OnInit {
   ngOnInit(): void {
     const b = this.branding.branding();
     if (b?.tenantId) {
+      this.subdomain = b.subdomain || this.branding.resolveIdentifier() || '';
       this.applyTenant(b.tenantId, b.name);
       this.fromSubdomain = !!this.branding.resolveIdentifier();
     } else {
@@ -227,7 +229,7 @@ export class RegisterComponent implements OnInit {
     this.resolving.set(true);
     this.resolveError.set(null);
     this.branding.resolveBySubdomain(sub).subscribe({
-      next: (b) => { this.resolving.set(false); this.applyTenant(b.tenantId, b.name); },
+      next: (b) => { this.resolving.set(false); this.subdomain = b.subdomain || sub; this.applyTenant(b.tenantId, b.name); },
       error: (err) => {
         this.resolving.set(false);
         this.resolveError.set(err?.status === 404
@@ -268,7 +270,7 @@ export class RegisterComponent implements OnInit {
 
     // Backend always creates a Client account from public registration.
     this.authService.register({
-      tenantId, fullName, email, phoneNumber, password, confirmPassword: password
+      tenantId, subdomain: this.subdomain, fullName, email, phoneNumber, password, confirmPassword: password
     }).subscribe({
       next: (response) => {
         this.loading = false;

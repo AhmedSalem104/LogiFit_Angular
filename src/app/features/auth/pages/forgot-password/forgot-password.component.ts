@@ -112,6 +112,7 @@ export class ForgotPasswordComponent implements OnInit {
   resolveError = signal<string | null>(null);
   private fromSubdomain = false;
   private tenantId = '';
+  private subdomain = '';
 
   constructor() {
     this.forgotForm = this.fb.group({
@@ -123,6 +124,7 @@ export class ForgotPasswordComponent implements OnInit {
     const b = this.branding.branding();
     if (b?.tenantId) {
       this.tenantId = b.tenantId;
+      this.subdomain = b.subdomain || this.branding.resolveIdentifier() || '';
       this.resolvedGymName.set(b.name || 'صالتك');
       this.tenantResolved.set(true);
       this.fromSubdomain = !!this.branding.resolveIdentifier();
@@ -142,6 +144,7 @@ export class ForgotPasswordComponent implements OnInit {
       next: (b) => {
         this.resolving.set(false);
         this.tenantId = b.tenantId;
+        this.subdomain = b.subdomain || sub;
         this.resolvedGymName.set(b.name || 'صالتك');
         this.tenantResolved.set(true);
       },
@@ -176,12 +179,12 @@ export class ForgotPasswordComponent implements OnInit {
     this.errorMessage = '';
     const { phoneNumber } = this.forgotForm.value;
 
-    this.authService.forgotPassword({ tenantId: this.tenantId, phoneNumber }).subscribe({
+    this.authService.forgotPassword({ tenantId: this.tenantId, subdomain: this.subdomain, phoneNumber }).subscribe({
       next: (res) => {
         this.loading = false;
         this.notification.success('تم إرسال رمز إعادة التعيين');
         this.router.navigate(['/auth/reset-password'], {
-          queryParams: { tenantId: this.tenantId, phoneNumber, token: res?.resetToken ?? '' }
+          queryParams: { tenantId: this.tenantId, subdomain: this.subdomain, phoneNumber, token: res?.resetToken ?? '' }
         });
       },
       error: (error) => {

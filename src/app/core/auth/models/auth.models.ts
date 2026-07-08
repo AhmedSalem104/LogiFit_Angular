@@ -53,11 +53,13 @@ export const Permissions = {
   ManageTenantBilling: 'ManageTenantBilling'
 } as const;
 
-// Login request (matches backend LoginCommand)
+// Login request. The gym is identified by `subdomain` (new backend) and/or
+// `tenantId` (current backend) — we send both for forward compatibility.
 export interface LoginRequest {
   phoneNumber: string;
   password: string;
-  tenantId: string;
+  tenantId?: string;
+  subdomain?: string;
 }
 
 // Register request — backend ALWAYS creates a Client (role is ignored/not selectable).
@@ -66,7 +68,8 @@ export interface RegisterRequest {
   phoneNumber?: string;
   password: string;
   confirmPassword: string;
-  tenantId: string;
+  tenantId?: string;
+  subdomain?: string;
   fullName: string;
 }
 
@@ -105,10 +108,11 @@ export interface RegisterGymRequest {
   password: string;
 }
 
-// Forgot password request — now requires tenantId, keyed by phone number.
+// Forgot password request — keyed by phone number + gym (subdomain / tenantId).
 export interface ForgotPasswordRequest {
   phoneNumber: string;
-  tenantId: string;
+  tenantId?: string;
+  subdomain?: string;
 }
 
 // Forgot password response — returns a reset token (in production sent via SMS/Email).
@@ -121,7 +125,8 @@ export interface ResetPasswordRequest {
   phoneNumber: string;
   resetToken: string;
   newPassword: string;
-  tenantId: string;
+  tenantId?: string;
+  subdomain?: string;
 }
 
 // Auth response from backend (matches AuthResponseDto)
