@@ -4,6 +4,7 @@ import { RouterModule, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { NotificationService } from '../../../../core/services/notification.service';
+import { BrandingService } from '../../../../core/services/branding.service';
 import { TenantResponse } from '../../../../core/auth/models/auth.models';
 
 @Component({
@@ -21,20 +22,27 @@ import { TenantResponse } from '../../../../core/auth/models/auth.models';
       <p class="subtitle">اختر صالتك وأدخل رقم هاتفك لإرسال رمز إعادة التعيين</p>
 
       <form [formGroup]="forgotForm" (ngSubmit)="onSubmit()">
-        <!-- Gym Selection -->
-        <div class="form-group">
-          <label class="form-label">الصالة</label>
-          <div class="input-wrapper">
+        <!-- Gym context -->
+        @if (resolvedGymName()) {
+          <div class="gym-banner">
             <i class="pi pi-building"></i>
-            <select class="form-input form-select" formControlName="tenantId" [class.error]="isFieldInvalid('tenantId')">
-              <option value="">-- اختر الصالة --</option>
-              @for (tenant of tenants(); track tenant.id) {
-                <option [value]="tenant.id">{{ tenant.name }}</option>
-              }
-            </select>
+            <div><span class="gym-banner-label">الصالة</span><b>{{ resolvedGymName() }}</b></div>
           </div>
-          <span class="error-message" *ngIf="isFieldInvalid('tenantId')">يرجى اختيار الصالة</span>
-        </div>
+        } @else {
+          <div class="form-group">
+            <label class="form-label">الصالة</label>
+            <div class="input-wrapper">
+              <i class="pi pi-building"></i>
+              <select class="form-input form-select" formControlName="tenantId" [class.error]="isFieldInvalid('tenantId')">
+                <option value="">-- اختر الصالة --</option>
+                @for (tenant of tenants(); track tenant.id) {
+                  <option [value]="tenant.id">{{ tenant.name }}</option>
+                }
+              </select>
+            </div>
+            <span class="error-message" *ngIf="isFieldInvalid('tenantId')">يرجى اختيار الصالة</span>
+          </div>
+        }
 
         <!-- Phone -->
         <div class="form-group">
@@ -68,6 +76,10 @@ import { TenantResponse } from '../../../../core/auth/models/auth.models';
     }
     :host-context([dir="ltr"]) .back-link i { transform:rotate(180deg); }
     .form-group { margin-bottom:1.25rem; }
+    .gym-banner { display:flex; align-items:center; gap:.75rem; padding:.85rem 1rem; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:10px; margin-bottom:1.25rem; }
+    .gym-banner > i { font-size:1.25rem; color:#3b82f6; }
+    .gym-banner .gym-banner-label { display:block; font-size:.75rem; color:var(--text-secondary); }
+    .gym-banner b { color:var(--text-primary); }
     .input-wrapper { position:relative; display:flex; align-items:center; }
     .input-wrapper > i:first-child { position:absolute; right:1rem; color:var(--text-muted); z-index:1; }
     .input-wrapper .form-input { padding-right:2.75rem; padding-left:2.75rem; }
@@ -89,11 +101,13 @@ export class ForgotPasswordComponent implements OnInit {
   private authService = inject(AuthService);
   private notification = inject(NotificationService);
   private router = inject(Router);
+  private branding = inject(BrandingService);
 
   forgotForm: FormGroup;
   loading = false;
   errorMessage = '';
   tenants = signal<TenantResponse[]>([]);
+  resolvedGymName = signal<string | null>(null);
 
   constructor() {
     this.forgotForm = this.fb.group({
@@ -103,10 +117,16 @@ export class ForgotPasswordComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.authService.getTenants().subscribe({
-      next: (data) => this.tenants.set(data),
-      error: () => {}
-    });
+    const tenantId = this.branding.getResolvedTenantId();
+    if (tenantId) {
+      this.forgotForm.patchValue({ tenantId });
+      this.resolvedGymName.set(this.branding.branding()?.name ?? 'صالتك');
+    } else {
+      this.authService.getTenants().subscribe({
+        next: (data) => this.tenants.set(data),
+        error: () => {}
+      });
+    }
   }
 
   isFieldInvalid(field: string): boolean {

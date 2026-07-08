@@ -1,6 +1,7 @@
 export const environment = {
   production: false,
   apiUrl: 'https://logicfit.runasp.net/api',
+  platformUrl: 'https://logicfit-platform.runasp.net',
   tokenKey: 'logicfit_token',
   refreshTokenKey: 'logicfit_refresh_token',
   userKey: 'logicfit_user',

@@ -4,6 +4,7 @@ import { RouterModule, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { NotificationService } from '../../../../core/services/notification.service';
+import { BrandingService } from '../../../../core/services/branding.service';
 import { TenantResponse } from '../../../../core/auth/models/auth.models';
 
 @Component({
@@ -16,30 +17,42 @@ import { TenantResponse } from '../../../../core/auth/models/auth.models';
       <p class="subtitle">سجل دخولك للوصول إلى لوحة التحكم</p>
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-        <!-- Gym Selection -->
-        <div class="form-group">
-          <label class="form-label">اختر الصالة</label>
-          <div class="input-wrapper">
+        <!-- Gym context -->
+        @if (resolvedGymName()) {
+          <!-- Resolved from the subdomain (white-label) — no public gym list exposed -->
+          <div class="gym-banner">
             <i class="pi pi-building"></i>
-            <select
-              class="form-input form-select"
-              formControlName="tenantId"
-              [class.error]="isFieldInvalid('tenantId')"
-            >
-              <option value="">-- اختر الصالة --</option>
-              @for (tenant of tenants(); track tenant.id) {
-                <option [value]="tenant.id">{{ tenant.name }}</option>
-              }
-            </select>
+            <div>
+              <span class="gym-banner-label">الصالة</span>
+              <b>{{ resolvedGymName() }}</b>
+            </div>
           </div>
-          <span class="error-message" *ngIf="isFieldInvalid('tenantId')">
-            يرجى اختيار الصالة
-          </span>
-          <span class="loading-text" *ngIf="loadingTenants()">
-            <i class="pi pi-spin pi-spinner"></i>
-            جاري تحميل الصالات...
-          </span>
-        </div>
+        } @else {
+          <!-- Fallback (dev / bare app domain): pick a gym manually -->
+          <div class="form-group">
+            <label class="form-label">اختر الصالة</label>
+            <div class="input-wrapper">
+              <i class="pi pi-building"></i>
+              <select
+                class="form-input form-select"
+                formControlName="tenantId"
+                [class.error]="isFieldInvalid('tenantId')"
+              >
+                <option value="">-- اختر الصالة --</option>
+                @for (tenant of tenants(); track tenant.id) {
+                  <option [value]="tenant.id">{{ tenant.name }}</option>
+                }
+              </select>
+            </div>
+            <span class="error-message" *ngIf="isFieldInvalid('tenantId')">
+              يرجى اختيار الصالة
+            </span>
+            <span class="loading-text" *ngIf="loadingTenants()">
+              <i class="pi pi-spin pi-spinner"></i>
+              جاري تحميل الصالات...
+            </span>
+          </div>
+        }
 
         <!-- Phone Number -->
         <div class="form-group">
@@ -142,6 +155,21 @@ import { TenantResponse } from '../../../../core/auth/models/auth.models';
 
     .form-group {
       margin-bottom: 1.25rem;
+    }
+
+    .gym-banner {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem 1rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      margin-bottom: 1.25rem;
+
+      > i { font-size: 1.25rem; color: #3b82f6; }
+      .gym-banner-label { display: block; font-size: 0.75rem; color: var(--text-secondary); }
+      b { color: var(--text-primary); }
     }
 
     .input-wrapper {
@@ -327,6 +355,7 @@ export class LoginComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private notification = inject(NotificationService);
+  private branding = inject(BrandingService);
 
   loginForm: FormGroup;
   loading = false;
@@ -334,6 +363,7 @@ export class LoginComponent implements OnInit {
   showPassword = false;
   errorMessage = '';
   tenants = signal<TenantResponse[]>([]);
+  resolvedGymName = signal<string | null>(null);
 
   constructor() {
     this.loginForm = this.fb.group({
@@ -345,7 +375,15 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadTenants();
+    // When the app is opened on a gym subdomain, the tenant is resolved from
+    // branding — use it and skip the public gym list entirely.
+    const tenantId = this.branding.getResolvedTenantId();
+    if (tenantId) {
+      this.loginForm.patchValue({ tenantId });
+      this.resolvedGymName.set(this.branding.branding()?.name ?? 'صالتك');
+    } else {
+      this.loadTenants();
+    }
   }
 
   loadTenants(): void {

@@ -4,6 +4,7 @@ import { RouterModule, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { NotificationService } from '../../../../core/services/notification.service';
+import { BrandingService } from '../../../../core/services/branding.service';
 import { TenantResponse } from '../../../../core/auth/models/auth.models';
 
 @Component({
@@ -16,27 +17,34 @@ import { TenantResponse } from '../../../../core/auth/models/auth.models';
       <p class="subtitle">سجّل كمتدرب في صالتك الرياضية</p>
 
       <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-        <!-- Gym Selection -->
-        <div class="form-group">
-          <label class="form-label">الصالة الرياضية</label>
-          <div class="input-wrapper">
+        <!-- Gym context -->
+        @if (resolvedGymName()) {
+          <div class="gym-banner">
             <i class="pi pi-building"></i>
-            <select
-              class="form-input form-select"
-              formControlName="tenantId"
-              [class.error]="isFieldInvalid('tenantId')"
-            >
-              <option value="">اختر الصالة</option>
-              @for (tenant of tenants(); track tenant.id) {
-                <option [value]="tenant.id">{{ tenant.name }}</option>
-              }
-            </select>
+            <div><span class="gym-banner-label">الصالة</span><b>{{ resolvedGymName() }}</b></div>
           </div>
-          <span class="error-message" *ngIf="isFieldInvalid('tenantId')">
-            يرجى اختيار الصالة
-          </span>
-          <span class="hint" *ngIf="tenantsLoading()">جاري تحميل الصالات...</span>
-        </div>
+        } @else {
+          <div class="form-group">
+            <label class="form-label">الصالة الرياضية</label>
+            <div class="input-wrapper">
+              <i class="pi pi-building"></i>
+              <select
+                class="form-input form-select"
+                formControlName="tenantId"
+                [class.error]="isFieldInvalid('tenantId')"
+              >
+                <option value="">اختر الصالة</option>
+                @for (tenant of tenants(); track tenant.id) {
+                  <option [value]="tenant.id">{{ tenant.name }}</option>
+                }
+              </select>
+            </div>
+            <span class="error-message" *ngIf="isFieldInvalid('tenantId')">
+              يرجى اختيار الصالة
+            </span>
+            <span class="hint" *ngIf="tenantsLoading()">جاري تحميل الصالات...</span>
+          </div>
+        }
 
         <!-- Full Name -->
         <div class="form-group">
@@ -206,11 +214,19 @@ import { TenantResponse } from '../../../../core/auth/models/auth.models';
       }
     }
 
-    .role-selection {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
+    .gym-banner {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem 1rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      margin-bottom: 1rem;
     }
+    .gym-banner > i { font-size: 1.25rem; color: #3b82f6; }
+    .gym-banner .gym-banner-label { display: block; font-size: 0.75rem; color: var(--text-secondary); }
+    .gym-banner b { color: var(--text-primary); }
 
     .role-btn {
       display: flex;
@@ -430,6 +446,7 @@ export class RegisterComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private notification = inject(NotificationService);
+  private branding = inject(BrandingService);
 
   registerForm: FormGroup;
   loading = false;
@@ -439,6 +456,7 @@ export class RegisterComponent implements OnInit {
 
   tenants = signal<TenantResponse[]>([]);
   tenantsLoading = signal(false);
+  resolvedGymName = signal<string | null>(null);
 
   constructor() {
     this.registerForm = this.fb.group({
@@ -453,7 +471,13 @@ export class RegisterComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadTenants();
+    const tenantId = this.branding.getResolvedTenantId();
+    if (tenantId) {
+      this.registerForm.patchValue({ tenantId });
+      this.resolvedGymName.set(this.branding.branding()?.name ?? 'صالتك');
+    } else {
+      this.loadTenants();
+    }
   }
 
   loadTenants(): void {
