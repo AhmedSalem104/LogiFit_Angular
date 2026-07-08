@@ -38,6 +38,8 @@ export class BrandingService {
   resolveIdentifier(): string | null {
     const host = window.location.hostname;
     if (host === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(host)) return null;
+    // Preview / non-branded hosting domains have no real tenant subdomain.
+    if (host.endsWith('.vercel.app') || host.endsWith('.netlify.app')) return null;
 
     const parts = host.split('.');
     // e.g. goldgym.logicfit.com → "goldgym"; app.goldgym.com (custom) → full host

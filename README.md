@@ -180,7 +180,7 @@ ng serve            # http://localhost:4200
 // src/environments/environment.ts
 export const environment = {
   production: false,
-  apiUrl: 'https://logicfit-platform.runasp.net/api',   // Backend API
+  apiUrl: '/api',   // relative → proxied to the backend (avoids CORS)
   platformUrl: 'https://logicfit-platform.runasp.net',  // Platform (gym signup)
   tokenKey: 'logicfit_token',
   refreshTokenKey: 'logicfit_refresh_token',
@@ -309,6 +309,9 @@ themeState.setLanguage('ar');  // switch language (sets RTL)
 1. Import the project from GitHub.
 2. Configure — **Build:** `npm run build` · **Output:** `dist/logicfit-app/browser`.
 3. Deploy.
+
+> 🔀 **API proxy (no CORS):** `vercel.json` rewrites `/api/*` to the backend so browser
+> requests stay same-origin. Locally, `proxy.conf.json` does the same for `ng serve`.
 
 ### Docker
 ```dockerfile
