@@ -11,7 +11,7 @@
 - كل صالة = **tenant** منفصل. كل استدعاء API مرتبط ضمنياً بـ `tenantId` (من التوكن).
 - **3 أدوار:** `Owner` / `Coach` / `Client`.
 - ثنائي اللغة: **EN (LTR) + AR (RTL)**، مع وضعي Dark/Light.
-- Backend حقيقي (لا mock data): `http://logicfit-platform.runasp.net/api`.
+- Backend حقيقي (لا mock data): `https://logicfit-platform.runasp.net/api`.
 
 ### Stack
 | الطبقة | التقنية |
@@ -105,7 +105,7 @@ state/          theme.state.ts
 - **Core:** `export.service.ts` (999L)، `muscle-distribution.service.ts` (344L)، `challenges.service.ts` (146L)، `notifications-api.service.ts` (95L)، `chat.service.ts` (71L)، `notification.service.ts` (69L)، `storage.service.ts` (66L).
 
 ### الـ API Endpoints (المستخدمة فعلياً)
-> القاعدة: `http://logicfit-platform.runasp.net/api`. الـ `{id}` بين المسارات.
+> القاعدة: `https://logicfit-platform.runasp.net/api`. الـ `{id}` بين المسارات.
 
 **Auth & Tenant:** `POST /auth/login` · `/auth/register` · `/auth/forget-password` · `/auth/reset-password` · `GET|POST /tenants`
 

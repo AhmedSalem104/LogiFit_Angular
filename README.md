@@ -180,8 +180,8 @@ ng serve            # http://localhost:4200
 // src/environments/environment.ts
 export const environment = {
   production: false,
-  apiUrl: 'http://logicfit-platform.runasp.net/api',   // Backend API
-  platformUrl: 'http://logicfit-platform.runasp.net',  // Platform (gym signup)
+  apiUrl: 'https://logicfit-platform.runasp.net/api',   // Backend API
+  platformUrl: 'https://logicfit-platform.runasp.net',  // Platform (gym signup)
   tokenKey: 'logicfit_token',
   refreshTokenKey: 'logicfit_refresh_token',
   userKey: 'logicfit_user',
