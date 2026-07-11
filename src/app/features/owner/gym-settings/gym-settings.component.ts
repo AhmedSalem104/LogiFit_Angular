@@ -610,8 +610,28 @@ export class GymSettingsComponent implements OnInit {
     });
   }
 
+  /** Reject non-images and files > 5 MB before uploading; clears the input for retry. */
+  private validImage(event: Event): File | null {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return null;
+    const okTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!okTypes.includes(file.type)) {
+      this.notify.error('نوع الملف غير مدعوم. اختر صورة (JPG, PNG, GIF, WEBP).');
+      input.value = '';
+      return null;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.notify.error('حجم الصورة يتجاوز 5 ميجابايت.');
+      input.value = '';
+      return null;
+    }
+    input.value = ''; // allow re-selecting the same file later
+    return file;
+  }
+
   uploadLogo(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
+    const file = this.validImage(event);
     if (!file) return;
     this.ownerService.uploadGymLogo(file).subscribe({
       next: (res) => {
@@ -623,7 +643,7 @@ export class GymSettingsComponent implements OnInit {
   }
 
   uploadCover(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
+    const file = this.validImage(event);
     if (!file) return;
     this.ownerService.uploadGymCover(file).subscribe({
       next: (res) => {
@@ -635,7 +655,7 @@ export class GymSettingsComponent implements OnInit {
   }
 
   uploadGalleryImage(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
+    const file = this.validImage(event);
     if (!file) return;
     this.ownerService.uploadGymGallery(file).subscribe({
       next: (res) => {

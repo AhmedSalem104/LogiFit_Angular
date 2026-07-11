@@ -10,6 +10,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { ClientService, ClientProfile } from '../services/client.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { AuthService } from '../../../core/auth/services/auth.service';
 
 @Component({
   selector: 'app-my-profile',
@@ -428,6 +429,7 @@ export class MyProfileComponent implements OnInit {
   private fb = inject(FormBuilder);
   private clientService = inject(ClientService);
   private notificationService = inject(NotificationService);
+  private authService = inject(AuthService);
 
   loading = signal(true);
   saving = signal(false);
@@ -494,7 +496,8 @@ export class MyProfileComponent implements OnInit {
       ...data,
       // Map from nested profile object if present
       fullName: data.profile?.fullName || data.fullName,
-      gender: data.profile?.gender?.toString() || data.gender,
+      // Keep gender NUMERIC (0=Male,1=Female) so the dropdown pre-selects; 0 is valid.
+      gender: data.profile?.gender ?? data.gender,
       birthDate: data.profile?.birthDate || data.birthDate || data.dateOfBirth,
       height: data.profile?.heightCm || data.height,
       medicalHistory: data.profile?.medicalHistory || data.medicalHistory,
@@ -508,46 +511,65 @@ export class MyProfileComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
 
     this.saving.set(true);
+    const v = this.form.getRawValue();
 
-    const formValue = this.form.getRawValue();
+    // Map form fields → backend UpdateClient shape (birthDate not dateOfBirth;
+    // local date string to avoid a UTC off-by-one).
+    const payload: any = {
+      fullName: v.fullName,
+      phoneNumber: v.phoneNumber,
+      email: v.email || undefined,
+      gender: v.gender ?? undefined,
+      birthDate: v.dateOfBirth ? this.toLocalDateString(new Date(v.dateOfBirth)) : undefined
+    };
 
-    this.clientService.updateProfile(formValue).subscribe({
+    this.clientService.updateProfile(payload).subscribe({
       next: () => {
         this.saving.set(false);
-        // Show success message
+        this.notificationService.success('تم حفظ التغييرات بنجاح');
+        if (v.fullName) this.authService.updateUserName(v.fullName);
       },
-      error: () => {
+      error: (err) => {
         this.saving.set(false);
-        // Show error message
+        this.notificationService.error(err?.translatedMessage || err?.error?.message || 'تعذّر حفظ التغييرات');
       }
     });
   }
 
   onChangePassword(): void {
-    if (this.passwordForm.invalid) return;
-
-    const { newPassword, confirmPassword } = this.passwordForm.value;
-
-    if (newPassword !== confirmPassword) {
-      // Show error message
+    if (this.passwordForm.invalid) {
+      this.passwordForm.markAllAsTouched();
       return;
     }
 
-    this.changingPassword.set(true);
+    const { newPassword, confirmPassword } = this.passwordForm.value;
+    if (newPassword !== confirmPassword) {
+      this.notificationService.error('كلمة المرور الجديدة وتأكيدها غير متطابقين');
+      return;
+    }
 
-    // API call to change password
-    setTimeout(() => {
-      this.changingPassword.set(false);
-      this.passwordForm.reset();
-    }, 1500);
+    // No self-service change-password endpoint exists on the backend yet.
+    // Direct the user to the secure reset flow instead of faking success.
+    this.notificationService.info('لتغيير كلمة المرور، استخدم "نسيت كلمة المرور؟" من شاشة تسجيل الدخول.');
+    this.passwordForm.reset();
   }
 
   confirmDeleteAccount(): void {
-    if (confirm('هل أنت متأكد من حذف حسابك؟ هذا الإجراء لا يمكن التراجع عنه.')) {
-      console.log('Delete account');
-    }
+    // Account deletion is a gym-managed operation (no self-delete endpoint).
+    this.notificationService.info('لحذف حسابك، يرجى التواصل مع إدارة الصالة.');
+  }
+
+  /** Format a Date as yyyy-MM-dd in LOCAL time (avoids UTC off-by-one). */
+  private toLocalDateString(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 }

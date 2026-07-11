@@ -365,7 +365,18 @@ export class MySubscriptionComponent implements OnInit {
 
   onFile(ev: Event): void {
     const input = ev.target as HTMLInputElement;
-    this.form.proof = input.files?.[0];
+    const file = input.files?.[0];
+    if (!file) { this.form.proof = undefined; return; }
+    const okTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!okTypes.includes(file.type)) {
+      this.notify.error('نوع الملف غير مدعوم. ارفع صورة (JPG, PNG, GIF, WEBP).');
+      input.value = ''; this.form.proof = undefined; return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.notify.error('حجم الصورة يتجاوز 5 ميجابايت.');
+      input.value = ''; this.form.proof = undefined; return;
+    }
+    this.form.proof = file;
   }
 
   submitProof(): void {

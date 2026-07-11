@@ -870,7 +870,8 @@ export class CoachProfileComponent implements OnInit {
         // Populate form
         if (data.profile) {
           this.profileForm.fullName = data.profile.fullName || '';
-          this.profileForm.gender = data.profile.gender || null;
+          // gender 0 (Male) is valid — use nullish check, not truthiness.
+          this.profileForm.gender = data.profile.gender ?? null;
           this.profileForm.birthDate = data.profile.birthDate ? new Date(data.profile.birthDate) : null;
           this.profileForm.heightCm = data.profile.heightCm || null;
           this.profileForm.weightKg = data.profile.weightKg || null;
@@ -894,8 +895,9 @@ export class CoachProfileComponent implements OnInit {
 
     const request: UpdateProfileRequest = {
       fullName: this.profileForm.fullName || undefined,
-      gender: this.profileForm.gender || undefined,
-      birthDate: this.profileForm.birthDate ? this.profileForm.birthDate.toISOString().split('T')[0] : undefined,
+      // gender 0 (Male) must survive — nullish check, not truthiness.
+      gender: this.profileForm.gender ?? undefined,
+      birthDate: this.profileForm.birthDate ? this.toLocalDateString(this.profileForm.birthDate) : undefined,
       heightCm: this.profileForm.heightCm || undefined,
       weightKg: this.profileForm.weightKg || undefined,
       activityLevel: this.profileForm.activityLevel || undefined,
@@ -989,11 +991,25 @@ export class CoachProfileComponent implements OnInit {
     return `${environment.apiUrl.replace('/api', '')}${url}`;
   }
 
+  /** Format a Date as yyyy-MM-dd in LOCAL time (avoids the UTC off-by-one from toISOString). */
+  private toLocalDateString(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
   getRoleName(role: number): string {
+    // Aligns with the app role enum: Owner=1, Coach=2, Client=3,
+    // Manager=4, Receptionist=5, Accountant=6, Trainer=7.
     const roles: Record<number, string> = {
-      0: 'متدرب',
-      1: 'مدرب',
-      2: 'مدير'
+      1: 'المالك',
+      2: 'مدرب',
+      3: 'عميل',
+      4: 'مدير',
+      5: 'موظف استقبال',
+      6: 'محاسب',
+      7: 'مدرب'
     };
     return roles[role] || 'مستخدم';
   }

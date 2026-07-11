@@ -17,7 +17,7 @@ export interface ClientProfile {
   // Legacy properties for component compatibility
   fullName?: string;
   profileImageUrl?: string;
-  gender?: string;
+  gender?: string | number; // numeric (0=Male,1=Female) from profile; legacy string tolerated
   birthDate?: string;
   dateOfBirth?: string;
   height?: number;

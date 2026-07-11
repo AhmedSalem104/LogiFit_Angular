@@ -112,6 +112,51 @@
   --table-header-bg: #f8fafc;
   --table-row-hover: #f1f5f9;
   --table-border: #e2e8f0;
+
+  // Accent alias — default to the primary hue so components that reference
+  // --accent-color always resolve to a real color (BrandingService overrides
+  // it per-tenant on the public/auth entry; role scopes override it in-app).
+  --accent-color: var(--primary-500);
+}
+
+// ========================================
+// Per-Role Color Identity
+// Each role family gets a distinct hue so users always know which workspace
+// they're in. Applied on the main layout via [data-role]; cascades to every
+// descendant via CSS custom properties (works under Angular emulated encaps).
+//   Owner / Gym  → Blue    (authority, trust)
+//   Coach        → Emerald (energy, fitness, growth)
+//   Client       → Violet  (personal, motivation)
+// ========================================
+[data-role="owner"] {
+  --primary-400: #60a5fa; --primary-500: #3b82f6; --primary-600: #2563eb; --primary-700: #1d4ed8;
+  --accent-color: #3b82f6;
+  --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  --sidebar-active: linear-gradient(135deg, rgba(59,130,246,.22) 0%, rgba(99,102,241,.22) 100%);
+  --border-focus: #3b82f6; --input-focus-border: #3b82f6; --input-focus-ring: rgba(59,130,246,.2);
+  --shadow-glow: 0 0 20px rgba(59,130,246,.3);
+  --role-solid: #3b82f6; --role-soft: rgba(59,130,246,.12);
+  --role-label: "إدارة الجيم";
+}
+[data-role="coach"] {
+  --primary-400: #34d399; --primary-500: #10b981; --primary-600: #059669; --primary-700: #047857;
+  --accent-color: #10b981;
+  --gradient-primary: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --sidebar-active: linear-gradient(135deg, rgba(16,185,129,.22) 0%, rgba(5,150,105,.22) 100%);
+  --border-focus: #10b981; --input-focus-border: #10b981; --input-focus-ring: rgba(16,185,129,.2);
+  --shadow-glow: 0 0 20px rgba(16,185,129,.3);
+  --role-solid: #10b981; --role-soft: rgba(16,185,129,.12);
+  --role-label: "المدرب";
+}
+[data-role="client"] {
+  --primary-400: #a78bfa; --primary-500: #8b5cf6; --primary-600: #7c3aed; --primary-700: #6d28d9;
+  --accent-color: #8b5cf6;
+  --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  --sidebar-active: linear-gradient(135deg, rgba(139,92,246,.22) 0%, rgba(124,58,237,.22) 100%);
+  --border-focus: #8b5cf6; --input-focus-border: #8b5cf6; --input-focus-ring: rgba(139,92,246,.2);
+  --shadow-glow: 0 0 20px rgba(139,92,246,.3);
+  --role-solid: #8b5cf6; --role-soft: rgba(139,92,246,.12);
+  --role-label: "العميل";
 }
 
 // ========================================

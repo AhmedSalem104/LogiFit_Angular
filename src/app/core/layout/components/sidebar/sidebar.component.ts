@@ -273,7 +273,7 @@ interface NavGroup {
     .logo-icon {
       width: 46px;
       height: 46px;
-      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
+      background: var(--gradient-primary, linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%));
       border-radius: 14px;
       display: flex;
       align-items: center;
@@ -543,7 +543,7 @@ interface NavGroup {
     .user-avatar {
       width: 42px;
       height: 42px;
-      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+      background: var(--gradient-primary, linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%));
       border-radius: 12px;
       display: flex;
       align-items: center;
@@ -594,12 +594,12 @@ interface NavGroup {
 
     .user-role-badge {
       font-size: 0.65rem;
-      font-weight: 500;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       padding: 0.125rem 0.5rem;
-      background: rgba(59, 130, 246, 0.15);
-      color: #60a5fa;
+      background: var(--role-soft, rgba(59, 130, 246, 0.15));
+      color: var(--role-solid, #60a5fa);
       border-radius: 6px;
       width: fit-content;
     }
