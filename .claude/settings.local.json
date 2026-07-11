@@ -59,7 +59,9 @@
       "Bash(grep:*)",
       "Bash(xargs wc:*)",
       "WebFetch(domain:logi-fit-angular.vercel.app)",
-      "Bash(tee /tmp/tsc.log)"
+      "Bash(tee /tmp/tsc.log)",
+      "Skill(artifact-design)",
+      "Artifact"
     ],
     "deny": [],
     "ask": []

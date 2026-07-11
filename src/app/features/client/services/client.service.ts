@@ -543,7 +543,7 @@ export class ClientService {
   getMealLogs(date: Date): Observable<MealLog[]> {
     const userId = this.getCurrentUserId();
     const dateStr = date.toISOString().split('T')[0];
-    return this.http.get<MealLog[]>(`${this.apiUrl}/meallog?clientId=${userId}&date=${dateStr}`);
+    return this.http.get<MealLog[]>(`${this.apiUrl}/meal-logs?clientId=${userId}&date=${dateStr}`);
   }
 
   // Diet Plan - status=Active as string per API docs
