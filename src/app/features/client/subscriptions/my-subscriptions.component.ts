@@ -431,7 +431,8 @@ export class MySubscriptionsComponent implements OnInit {
 
   // Helper to check if status is active (handles enum, string, and number)
   isActiveStatus(status: SubscriptionStatus | string | number): boolean {
-    return status === SubscriptionStatus.Active || status === 'active';
+    return status === SubscriptionStatus.Active || status === SubscriptionStatus.Trial ||
+           status === 'active' || status === 'trial';
   }
 
   // Helper to get CSS class for status — canonical numeric enum (1=Active..5=Cancelled)

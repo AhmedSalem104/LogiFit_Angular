@@ -1188,9 +1188,9 @@ export class TraineesListComponent implements OnInit {
   editingTrainee: Trainee | null = null;
 
   statusOptions = [
+    { label: 'مشترك', value: 'subscribed' },
     { label: 'نشط', value: 'active' },
-    { label: 'منتهي', value: 'expired' },
-    { label: 'معلق', value: 'pending' }
+    { label: 'غير نشط', value: 'inactive' }
   ];
 
   subscriptionPlanOptions = [
@@ -1297,7 +1297,11 @@ export class TraineesListComponent implements OnInit {
     }
 
     if (this.selectedStatus) {
-      result = result.filter(t => t.subscriptionStatus === this.selectedStatus);
+      // The API sends hasActiveSubscription/isActive, not a status string.
+      result = result.filter(t =>
+        this.selectedStatus === 'subscribed' ? t.hasActiveSubscription :
+        this.selectedStatus === 'active' ? t.isActive :
+        this.selectedStatus === 'inactive' ? !t.isActive : true);
     }
 
     this.filteredTrainees.set(result);

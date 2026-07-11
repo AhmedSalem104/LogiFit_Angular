@@ -608,7 +608,7 @@ export class AttendanceComponent implements OnInit {
 
   loadClients(): void {
     this.ownerService.getClients({ isActive: true }).subscribe({
-      next: (data) => this.clients.set(data),
+      next: (data) => this.clients.set(data || []),
       error: (err) => console.error('Error loading clients:', err)
     });
   }

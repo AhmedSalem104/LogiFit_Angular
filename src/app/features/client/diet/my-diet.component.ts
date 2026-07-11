@@ -563,19 +563,19 @@ export class MyDietComponent implements OnInit {
   }
 
   getMealCalories(meal: DietMeal): number {
-    return meal.foods.reduce((sum, f) => sum + f.calories, 0);
+    return (meal.foods ?? []).reduce((sum, f) => sum + (f.calories || 0), 0);
   }
 
   getMealProtein(meal: DietMeal): number {
-    return meal.foods.reduce((sum, f) => sum + f.protein, 0);
+    return (meal.foods ?? []).reduce((sum, f) => sum + (f.protein || 0), 0);
   }
 
   getMealCarbs(meal: DietMeal): number {
-    return meal.foods.reduce((sum, f) => sum + f.carbs, 0);
+    return (meal.foods ?? []).reduce((sum, f) => sum + (f.carbs || 0), 0);
   }
 
   getMealFat(meal: DietMeal): number {
-    return meal.foods.reduce((sum, f) => sum + f.fat, 0);
+    return (meal.foods ?? []).reduce((sum, f) => sum + (f.fat || 0), 0);
   }
 
   completeMeal(meal: DietMeal): void {
@@ -596,10 +596,24 @@ export class MyDietComponent implements OnInit {
       fatGrams: plan.targetFats ?? plan.fatGrams,
     };
 
-    // Meals are already in DietMeal format from service, just ensure they exist
-    if (!mappedPlan.meals) {
-      mappedPlan.meals = [];
-    }
+    // The API returns meals with `items[]` (assignedQuantity/calcCalories/…);
+    // map them to the component's DietMeal.foods[] shape so the UI renders.
+    mappedPlan.meals = ((plan.meals as any[]) ?? []).map((m: any) => ({
+      id: m.id,
+      name: m.name || m.mealName || 'وجبة',
+      time: m.time || '',
+      isCompleted: m.isCompleted ?? false,
+      foods: (m.items ?? m.foods ?? []).map((it: any) => ({
+        id: it.id,
+        foodName: it.foodName || it.name || '',
+        quantity: it.assignedQuantity ?? it.quantity ?? 0,
+        unit: it.unit || '',
+        calories: it.calcCalories ?? it.calories ?? 0,
+        protein: it.calcProtein ?? it.protein ?? 0,
+        carbs: it.calcCarbs ?? it.carbs ?? 0,
+        fat: it.calcFats ?? it.fat ?? 0,
+      })),
+    }));
 
     return mappedPlan;
   }

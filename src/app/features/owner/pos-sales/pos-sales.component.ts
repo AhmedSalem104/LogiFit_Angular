@@ -198,7 +198,7 @@ export class PosSalesComponent implements OnInit {
   filteredProducts = computed(() => {
     const q = this.productSearch.trim().toLowerCase();
     return this.products().filter(p => p.isActive && (!q ||
-      p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.barcode?.toLowerCase().includes(q)));
+      (p.name ?? '').toLowerCase().includes(q) || (p.sku ?? '').toLowerCase().includes(q) || p.barcode?.toLowerCase().includes(q)));
   });
 
   subtotal = computed(() => this.cart.items.reduce((s, it) =>

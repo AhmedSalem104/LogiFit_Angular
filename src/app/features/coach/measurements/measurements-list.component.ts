@@ -128,27 +128,27 @@ import Swal from 'sweetalert2';
           currentPageReportTemplate="عرض {first} إلى {last} من {totalRecords} قياس"
           styleClass="measurements-table"
           [tableStyle]="{'min-width': '70rem'}"
-          [sortField]="'measurementDate'"
+          [sortField]="'dateRecorded'"
           [sortOrder]="-1"
         >
           <ng-template pTemplate="header">
             <tr>
-              <th pSortableColumn="traineeName" style="width: 18%">
+              <th pSortableColumn="clientName" style="width: 18%">
                 <div class="th-content">
                   المتدرب
-                  <p-sortIcon field="traineeName"></p-sortIcon>
+                  <p-sortIcon field="clientName"></p-sortIcon>
                 </div>
               </th>
-              <th pSortableColumn="measurementDate" style="width: 12%">
+              <th pSortableColumn="dateRecorded" style="width: 12%">
                 <div class="th-content">
                   التاريخ
-                  <p-sortIcon field="measurementDate"></p-sortIcon>
+                  <p-sortIcon field="dateRecorded"></p-sortIcon>
                 </div>
               </th>
-              <th pSortableColumn="weight" style="width: 10%">
+              <th pSortableColumn="weightKg" style="width: 10%">
                 <div class="th-content">
                   الوزن
-                  <p-sortIcon field="weight"></p-sortIcon>
+                  <p-sortIcon field="weightKg"></p-sortIcon>
                 </div>
               </th>
               <th pSortableColumn="height" style="width: 10%">
@@ -157,10 +157,10 @@ import Swal from 'sweetalert2';
                   <p-sortIcon field="height"></p-sortIcon>
                 </div>
               </th>
-              <th pSortableColumn="bodyFatPercentage" style="width: 12%">
+              <th pSortableColumn="bodyFatPercent" style="width: 12%">
                 <div class="th-content">
                   نسبة الدهون
-                  <p-sortIcon field="bodyFatPercentage"></p-sortIcon>
+                  <p-sortIcon field="bodyFatPercent"></p-sortIcon>
                 </div>
               </th>
               <th style="width: 10%">الصدر</th>
@@ -867,7 +867,8 @@ export class MeasurementsListComponent implements OnInit {
   traineeOptions: { label: string; value: string }[] = [];
 
   uniqueTraineesCount(): number {
-    const uniqueIds = new Set(this.measurements().map(m => m.traineeId));
+    // API sends clientId (traineeId is a legacy alias that is usually absent).
+    const uniqueIds = new Set(this.measurements().map(m => m.clientId || m.traineeId).filter(Boolean));
     return uniqueIds.size;
   }
 

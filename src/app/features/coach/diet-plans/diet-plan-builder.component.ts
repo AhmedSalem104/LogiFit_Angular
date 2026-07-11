@@ -2793,7 +2793,7 @@ export class DietPlanBuilderComponent implements OnInit {
     clientId: ['', Validators.required],
     startDate: [new Date(), Validators.required],
     endDate: [null],
-    status: [0], // 0=Active, 1=Draft, 2=Archived
+    status: [1], // DietPlanStatus: Draft=0, Active=1, Archived=2 (new plans default to Active)
     name: ['', Validators.required],
     description: [''],
     totalCalories: [2500, Validators.required],
@@ -2804,10 +2804,11 @@ export class DietPlanBuilderComponent implements OnInit {
     meals: this.fb.array([])
   });
 
+  // DietPlanStatus enum: Draft=0, Active=1, Archived=2
   statusOptions = [
-    { label: 'Active', value: 0 },
-    { label: 'Draft', value: 1 },
-    { label: 'Archived', value: 2 }
+    { label: 'مسودة', value: 0 },
+    { label: 'نشط', value: 1 },
+    { label: 'مؤرشف', value: 2 }
   ];
 
   get mealsArray(): FormArray {

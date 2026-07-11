@@ -564,7 +564,21 @@ export class CoachService {
 
   // Dashboard
   getDashboardStats(): Observable<CoachDashboardStats> {
-    return this.http.get<CoachDashboardStats>(`${this.apiUrl}/reports/coach/dashboard`);
+    // The backend field names for this report vary (trainees vs clients,
+    // total vs active). Normalize defensively so the tiles never read undefined.
+    return this.http.get<any>(`${this.apiUrl}/reports/coach/dashboard`).pipe(
+      map(r => ({
+        totalTrainees: r?.totalTrainees ?? r?.totalClients ?? 0,
+        activeTrainees: r?.activeTrainees ?? r?.activeClients ?? 0,
+        totalWorkoutPrograms: r?.totalWorkoutPrograms ?? r?.activeWorkoutPrograms ?? r?.totalPrograms ?? 0,
+        totalDietPlans: r?.totalDietPlans ?? r?.activeDietPlans ?? 0,
+        totalSessionsThisMonth: r?.totalSessionsThisMonth ?? r?.totalSessions ?? 0,
+        totalVolumeThisMonth: r?.totalVolumeThisMonth ?? 0,
+        averageTraineeProgress: r?.averageTraineeProgress ?? 0,
+        topTraineesByProgress: r?.topTraineesByProgress ?? [],
+        recentActivities: r?.recentActivities ?? [],
+      }) as CoachDashboardStats)
+    );
   }
 
   // ==========================================

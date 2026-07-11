@@ -460,7 +460,11 @@ export class MyMeasurementsComponent implements OnInit {
 
     this.clientService.getMyMeasurements().subscribe({
       next: (data) => {
-        this.measurements.set(data);
+        // Ensure newest-first regardless of server order (stats/chart rely on it).
+        const sorted = [...(data || [])].sort((a, b) =>
+          new Date(b.dateRecorded || b.measurementDate || 0).getTime() -
+          new Date(a.dateRecorded || a.measurementDate || 0).getTime());
+        this.measurements.set(sorted);
         this.loading.set(false);
       },
       error: (err) => {

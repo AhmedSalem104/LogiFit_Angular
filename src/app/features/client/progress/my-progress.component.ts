@@ -519,23 +519,26 @@ export class MyProgressComponent implements OnInit {
    * API returns bodyMeasurements[], but component expects weightProgress[] and bodyFatProgress[]
    */
   private mapProgressFromApi(data: ProgressData): ProgressData {
-    // Map bodyMeasurements to weightProgress and bodyFatProgress
-    const weightProgress = data.bodyMeasurements?.map(m => ({
-      date: m.dateRecorded,
-      value: m.weightKg
-    })) || data.weightProgress || [];
+    // Normalize order regardless of what the server returns:
+    // asc (oldest→newest) for charts, desc (newest→oldest) for start/current.
+    const asc = [...(data.bodyMeasurements || [])].sort((a, b) =>
+      new Date(a.dateRecorded || 0).getTime() - new Date(b.dateRecorded || 0).getTime());
+    const desc = [...asc].reverse();
 
-    const bodyFatProgress = data.bodyMeasurements?.filter(m => m.bodyFatPercent != null).map(m => ({
-      date: m.dateRecorded,
-      value: m.bodyFatPercent!
-    })) || data.bodyFatProgress || [];
+    const weightProgress = asc.length
+      ? asc.map(m => ({ date: m.dateRecorded, value: m.weightKg }))
+      : data.weightProgress || [];
 
-    // Calculate weight change from bodyMeasurements
+    const bodyFatProgress = asc.length
+      ? asc.filter(m => m.bodyFatPercent != null).map(m => ({ date: m.dateRecorded, value: m.bodyFatPercent! }))
+      : data.bodyFatProgress || [];
+
+    // Calculate weight change from measurements (oldest = start, newest = current).
     let startWeight = data.startWeight;
     let currentWeight = data.currentWeight;
-    if (!startWeight && data.bodyMeasurements && data.bodyMeasurements.length > 0) {
-      startWeight = data.bodyMeasurements[data.bodyMeasurements.length - 1].weightKg;
-      currentWeight = data.bodyMeasurements[0].weightKg;
+    if (!startWeight && desc.length > 0) {
+      startWeight = asc[0].weightKg;
+      currentWeight = desc[0].weightKg;
     }
 
     return {

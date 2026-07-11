@@ -748,11 +748,12 @@ export class TraineeDetailsComponent implements OnInit {
   loadTraineeData(id: string): void {
     this.loading.set(true);
 
-    // Load trainee and measurements in parallel
     this.coachService.getTraineeById(id).subscribe({
       next: (data) => {
         this.trainee.set(data);
         this.loading.set(false);
+        // Load this trainee's measurements (keyed by client id).
+        this.loadMeasurements(data.clientId || data.id || id);
       },
       error: (err) => {
         console.error('Error loading trainee data:', err);
@@ -762,6 +763,13 @@ export class TraineeDetailsComponent implements OnInit {
         this.workoutHistory.set([]);
         this.loading.set(false);
       }
+    });
+  }
+
+  private loadMeasurements(clientId: string): void {
+    this.coachService.getMeasurements(clientId).subscribe({
+      next: (list) => this.measurements.set(list || []),
+      error: () => this.measurements.set([])
     });
   }
 
