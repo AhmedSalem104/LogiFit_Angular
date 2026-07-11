@@ -726,6 +726,155 @@ export const SCREEN_HELP: ScreenHelp[] = [
     ],
     pitfalls: [{ problem: 'لا توجد خطة غذائية.', fix: 'مدربك لم يُسند لك خطة بعد — تواصل معه.' }],
   },
+
+  // ===================== AUTH (remaining) =====================
+  {
+    key: 'auth-reset', route: '/auth/reset-password', role: 'any',
+    title: 'إعادة تعيين كلمة المرور', summary: 'إدخال كود التحقق وكلمة المرور الجديدة.',
+    steps: [
+      { text: 'أدخل رقم هاتفك وكود التحقق (6 أرقام).' },
+      { text: 'اكتب كلمة المرور الجديدة (8 أحرف + حرف كبير وصغير ورقم) وأكّدها.' },
+      { text: 'اضغط «إعادة التعيين».', result: 'تعود لتسجيل الدخول بكلمة المرور الجديدة.' },
+    ],
+    pitfalls: [{ problem: 'الكود مرفوض.', fix: 'الكود 6 أرقام وصلاحيته قصيرة — اطلب كوداً جديداً إن انتهى.' }],
+  },
+
+  // ===================== OWNER (remaining) =====================
+  {
+    key: 'owner-operations', route: '/owner/operations', role: 'owner',
+    title: 'لوحة التشغيل', summary: 'مؤشرات تشغيلية سريعة: الحضور، الحصص، المخزون، الأجهزة.',
+    steps: [{ text: 'استعرض بطاقات المؤشرات التشغيلية.' }, { text: 'انتقل للقسم المعني من القائمة الجانبية.' }],
+    topics: [
+      { id: 'o-ops-view', question: 'ما هي لوحة التشغيل؟', keywords: ['تشغيل', 'عمليات', 'مؤشرات', 'operations'],
+        steps: [{ text: 'تعرض ملخّص العمليات اليومية للصالة في مكان واحد.' }] },
+    ],
+  },
+  {
+    key: 'owner-expense-cats', route: '/owner/expense-categories', role: 'owner',
+    title: 'فئات المصروفات', summary: 'تصنيف المصروفات لتنظيم التقارير المالية.',
+    steps: [{ text: 'اضغط «إضافة فئة».' }, { text: 'أدخل اسم الفئة واحفظ.' }],
+    topics: [
+      { id: 'o-ec-new', question: 'كيف أضيف فئة مصروفات؟', keywords: ['فئه', 'مصروفات', 'تصنيف', 'اضافه'],
+        steps: [{ text: 'اضغط «إضافة فئة».' }, { text: 'أدخل الاسم واحفظ.' }] },
+    ],
+    jumps: [{ label: 'المصروفات', route: '/owner/expenses' }],
+  },
+  {
+    key: 'owner-product-cats', route: '/owner/product-categories', role: 'owner',
+    title: 'فئات المنتجات', summary: 'تصنيف المنتجات لتنظيمها في المخزون ونقطة البيع.',
+    steps: [{ text: 'اضغط «إضافة فئة».' }, { text: 'أدخل اسم الفئة واحفظ.' }],
+    topics: [
+      { id: 'o-pc-new', question: 'كيف أضيف فئة منتجات؟', keywords: ['فئه', 'منتجات', 'تصنيف', 'اضافه'],
+        steps: [{ text: 'اضغط «إضافة فئة».' }, { text: 'أدخل الاسم واحفظ.' }] },
+    ],
+    jumps: [{ label: 'المنتجات', route: '/owner/products' }],
+  },
+  {
+    key: 'owner-ops-reports', route: '/owner/operations-reports', role: 'owner',
+    title: 'التقارير التشغيلية', summary: 'تقارير المصروفات والمبيعات والمخزون والرواتب والحصص.',
+    steps: [{ text: 'اختر التقرير التشغيلي المطلوب.' }, { text: 'حدّد الفترة واستعرض أو صدّر.' }],
+    topics: [
+      { id: 'o-opr-view', question: 'كيف أستعرض تقرير تشغيلي؟', keywords: ['تقرير', 'تشغيلي', 'مبيعات', 'مخزون'],
+        steps: [{ text: 'اختر نوع التقرير وحدّد الفترة.' }] },
+    ],
+  },
+  {
+    key: 'owner-platform-invoices', route: '/owner/subscription/invoices', role: 'owner',
+    title: 'فواتير المنصة', summary: 'استعراض فواتير اشتراك صالتك في منصة LogicFit.',
+    steps: [{ text: 'استعرض قائمة فواتير المنصة وحالاتها.' }, { text: 'افتح أي فاتورة لرؤية تفاصيلها.' }],
+    topics: [
+      { id: 'o-pinv-view', question: 'أين أرى فواتير المنصة؟', keywords: ['فواتير', 'منصه', 'اشتراك', 'صاله'],
+        steps: [{ text: 'الفواتير معروضة هنا مع حالتها وتاريخها.' }] },
+    ],
+  },
+
+  // ===================== COACH (remaining) =====================
+  {
+    key: 'coach-muscles', route: '/coach/muscles', role: 'coach',
+    title: 'مكتبة العضلات', summary: 'إدارة مجموعات العضلات المستخدمة في تصنيف التمارين.',
+    steps: [{ text: 'اضغط «إضافة عضلة».' }, { text: 'أدخل الاسم واحفظ.' }],
+    topics: [
+      { id: 'c-mus-new', question: 'كيف أضيف عضلة؟', keywords: ['عضله', 'مجموعه', 'اضافه', 'تصنيف'],
+        steps: [{ text: 'اضغط «إضافة عضلة».' }, { text: 'أدخل الاسم واحفظ.' }] },
+    ],
+  },
+  {
+    key: 'coach-chat', route: '/coach/chat', role: 'coach',
+    title: 'المحادثات', summary: 'التواصل مع متدربيك عبر الرسائل.',
+    steps: [
+      { text: 'اختر محادثة من القائمة (أو ابدأ واحدة جديدة).' },
+      { text: 'اكتب رسالتك في الأسفل واضغط «إرسال».' },
+    ],
+    topics: [
+      { id: 'c-chat-send', question: 'كيف أرسل رسالة لمتدرب؟', keywords: ['رساله', 'محادثه', 'شات', 'ارسال', 'تواصل'],
+        steps: [{ text: 'افتح محادثة المتدرب.' }, { text: 'اكتب الرسالة واضغط إرسال.' }] },
+    ],
+  },
+  {
+    key: 'coach-challenges', route: '/coach/challenges', role: 'coach',
+    title: 'التحديات', summary: 'إنشاء تحديات تحفيزية لمتدربيك ومتابعتها.',
+    steps: [
+      { text: 'اضغط «إضافة تحدٍّ».' },
+      { text: 'حدّد العنوان والهدف والمدة واحفظ.' },
+      { text: 'تابع تقدّم المشاركين.' },
+    ],
+    topics: [
+      { id: 'c-chl-new', question: 'كيف أنشئ تحدٍّ؟', keywords: ['تحدي', 'تحديات', 'انشاء', 'هدف'],
+        steps: [{ text: 'اضغط «إضافة تحدٍّ».' }, { text: 'حدّد الهدف والمدة واحفظ.' }] },
+    ],
+  },
+
+  // ===================== CLIENT (remaining) =====================
+  {
+    key: 'client-meal-log', route: '/client/meal-log', role: 'client',
+    title: 'سجل الوجبات', summary: 'تسجيل ومتابعة وجباتك اليومية.',
+    steps: [{ text: 'اختر اليوم لعرض وجباتك المسجّلة.' }, { text: 'راجع ما تناولته مقابل خطتك الغذائية.' }],
+    topics: [
+      { id: 'cl-ml-view', question: 'كيف أتابع وجباتي؟', keywords: ['وجبات', 'سجل', 'اكل', 'تسجيل'],
+        steps: [{ text: 'اختر التاريخ لعرض وجبات ذلك اليوم.' }] },
+    ],
+  },
+  {
+    key: 'client-my-measurements', route: '/client/my-measurements', role: 'client',
+    title: 'قياساتي', summary: 'عرض قياسات جسمك وتطوّرها.',
+    steps: [{ text: 'استعرض قياساتك المسجّلة والرسوم البيانية.' }, { text: 'قارن التطوّر عبر الفترات.' }],
+    topics: [
+      { id: 'cl-ms-view', question: 'أين أرى قياساتي؟', keywords: ['قياسات', 'وزن', 'دهون', 'تطور'],
+        steps: [{ text: 'القياسات معروضة هنا مع الرسوم. مدربك هو من يسجّلها.' }] },
+    ],
+    pitfalls: [{ problem: 'لا توجد قياسات.', fix: 'مدربك لم يسجّل لك قياسات بعد.' }],
+  },
+  {
+    key: 'client-my-progress', route: '/client/my-progress', role: 'client',
+    title: 'تقدّمي', summary: 'متابعة تقدّمك التدريبي وإنجازاتك.',
+    steps: [{ text: 'استعرض مؤشرات تقدّمك (الجلسات، القياسات، الأهداف).' }],
+    topics: [
+      { id: 'cl-pr-view', question: 'كيف أتابع تقدّمي؟', keywords: ['تقدم', 'انجاز', 'progress', 'متابعه'],
+        steps: [{ text: 'تعرض هذه الشاشة ملخّص تقدّمك عبر الوقت.' }] },
+    ],
+  },
+  {
+    key: 'client-chat', route: '/client/chat', role: 'client',
+    title: 'المحادثات', summary: 'التواصل مع مدربك عبر الرسائل.',
+    steps: [{ text: 'افتح محادثة مدربك.' }, { text: 'اكتب رسالتك واضغط «إرسال».' }],
+    topics: [
+      { id: 'cl-chat-send', question: 'كيف أراسل مدربي؟', keywords: ['رساله', 'مدرب', 'محادثه', 'شات', 'تواصل'],
+        steps: [{ text: 'افتح المحادثة.' }, { text: 'اكتب الرسالة واضغط إرسال.' }] },
+    ],
+  },
+  {
+    key: 'client-challenges', route: '/client/challenges', role: 'client',
+    title: 'التحديات', summary: 'الانضمام للتحديات وتحديث تقدّمك فيها.',
+    steps: [
+      { text: 'استعرض التحديات المتاحة.' },
+      { text: 'اضغط «انضمام» للتحدي المطلوب.' },
+      { text: 'حدّث تقدّمك باستمرار.' },
+    ],
+    topics: [
+      { id: 'cl-chl-join', question: 'كيف أنضم لتحدٍّ؟', keywords: ['تحدي', 'انضمام', 'مشاركه', 'تقدم'],
+        steps: [{ text: 'اضغط «انضمام» على التحدي.' }, { text: 'حدّث تقدّمك من زر التحديث.' }] },
+    ],
+  },
 ];
 
 /** Ordered role journeys shown as the "guided walkthrough" in the global assistant. */
