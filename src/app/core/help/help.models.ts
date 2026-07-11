@@ -25,6 +25,12 @@ export interface HelpTopic {
   jumps?: HelpJump[];
 }
 
+/** A common mistake on a screen and how to resolve it. */
+export interface HelpPitfall {
+  problem: string;
+  fix: string;
+}
+
 /** Curated help for one screen, keyed by a route pattern. */
 export interface ScreenHelp {
   key: string;
@@ -39,6 +45,10 @@ export interface ScreenHelp {
   steps: HelpStep[];
   /** Additional Q&A topics for the local assistant. */
   topics?: HelpTopic[];
+  /** Common mistakes + fixes shown on the local assistant. */
+  pitfalls?: HelpPitfall[];
+  /** Id of an interactive tour that covers this screen's main flow. */
+  tourId?: string;
   note?: string;
   jumps?: HelpJump[];
 }

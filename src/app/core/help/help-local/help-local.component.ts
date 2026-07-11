@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HelpService } from '../help.service';
 import { HelpTopic } from '../help.models';
 import { HelpStepsComponent } from '../help-steps/help-steps.component';
+import { TourService } from '../tour/tour.service';
 
 /**
  * Local, screen-specific assistant. Shows the current screen's steps and lets the
@@ -54,6 +55,12 @@ import { HelpStepsComponent } from '../help-steps/help-steps.component';
               }
             } @else {
               <!-- Default: the screen's main steps + suggested questions -->
+              @if (screen.tourId) {
+                <button class="hl-tour" (click)="startTour(screen.tourId!)">
+                  <i class="pi pi-play-circle"></i> ابدأ جولة تفاعلية على هذه الشاشة
+                </button>
+              }
+
               <p class="hl-section">خطوات المهمة الأساسية</p>
               <app-help-steps [steps]="screen.steps" [note]="screen.note" [jumps]="screen.jumps" (jump)="help.navigate($event)"></app-help-steps>
 
@@ -62,6 +69,18 @@ import { HelpStepsComponent } from '../help-steps/help-steps.component';
                 <div class="hl-chips">
                   @for (t of suggestions(); track t.id) {
                     <button class="hl-chip" (click)="pick(t)">{{ t.question }}</button>
+                  }
+                </div>
+              }
+
+              @if (screen.pitfalls?.length) {
+                <p class="hl-section">أخطاء شائعة وحلولها</p>
+                <div class="hl-pitfalls">
+                  @for (p of screen.pitfalls!; track p.problem) {
+                    <div class="hl-pitfall">
+                      <div class="pf-problem"><i class="pi pi-times-circle"></i> {{ p.problem }}</div>
+                      <div class="pf-fix"><i class="pi pi-check-circle"></i> {{ p.fix }}</div>
+                    </div>
                   }
                 </div>
               }
@@ -103,11 +122,25 @@ import { HelpStepsComponent } from '../help-steps/help-steps.component';
     .hl-empty i { font-size: 1.6rem; display: block; margin-bottom: .5rem; opacity: .6; }
     .hl-empty p { font-size: .86rem; }
     .hl-openglobal { margin-top: .6rem; background: var(--role-soft, rgba(59,130,246,.1)); color: var(--role-solid, var(--primary-500, #3b82f6)); border: none; border-radius: 9px; padding: .5rem 1rem; font-weight: 600; cursor: pointer; }
+    .hl-tour { width: 100%; display: flex; align-items: center; justify-content: center; gap: .5rem; margin-top: .3rem; background: var(--gradient-primary, #3b82f6); color: #fff; border: none; border-radius: 10px; padding: .7rem 1rem; font-weight: 700; font-size: .9rem; cursor: pointer; }
+    .hl-tour:hover { filter: brightness(.97); }
+    .hl-pitfalls { display: flex; flex-direction: column; gap: .6rem; }
+    .hl-pitfall { border: 1px solid var(--border-color); border-radius: 10px; padding: .6rem .8rem; background: var(--bg-secondary); }
+    .pf-problem { display: flex; gap: .4rem; align-items: flex-start; color: var(--text-primary); font-size: .86rem; font-weight: 600; }
+    .pf-problem i { color: #ef4444; margin-top: .15rem; }
+    .pf-fix { display: flex; gap: .4rem; align-items: flex-start; color: var(--text-secondary); font-size: .83rem; margin-top: .25rem; }
+    .pf-fix i { color: #16a34a; margin-top: .15rem; }
   `]
 })
 export class HelpLocalComponent {
   help = inject(HelpService);
+  private tour = inject(TourService);
   query = signal('');
+
+  startTour(id: string): void {
+    this.help.closeLocal();
+    this.tour.start(id);
+  }
   answer = signal<{ matches: HelpTopic[]; scope: 'screen' | 'global' | 'none' } | null>(null);
 
   readonly suggestions = computed<HelpTopic[]>(() => this.help.currentScreen()?.topics ?? []);
