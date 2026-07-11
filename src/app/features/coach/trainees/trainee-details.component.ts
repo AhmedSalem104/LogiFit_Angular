@@ -10,6 +10,7 @@ import { ChartCardComponent } from '../../../shared/components/chart-card/chart-
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { CoachService, Trainee, BodyMeasurement } from '../services/coach.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { MeasurementDialogComponent, MeasurementValue } from '../../../shared/components/measurement-dialog/measurement-dialog.component';
 
 interface TraineeProgress {
   trainee: Trainee;
@@ -30,7 +31,8 @@ interface TraineeProgress {
     ButtonModule,
     PageHeaderComponent,
     ChartCardComponent,
-    LoadingSkeletonComponent
+    LoadingSkeletonComponent,
+    MeasurementDialogComponent
   ],
   template: `
     <div class="trainee-details">
@@ -275,6 +277,14 @@ interface TraineeProgress {
           </p-tabPanel>
         </p-tabView>
       </div>
+
+      <app-measurement-dialog
+        [open]="measurementDialogOpen()"
+        mode="add"
+        [saving]="savingMeasurement()"
+        (save)="onSaveMeasurement($event)"
+        (cancel)="measurementDialogOpen.set(false)"
+      ></app-measurement-dialog>
     </div>
   `,
   styles: [`
@@ -679,6 +689,8 @@ export class TraineeDetailsComponent implements OnInit {
   trainee = signal<Trainee | null>(null);
   measurements = signal<BodyMeasurement[]>([]);
   workoutHistory = signal<{ date: string; workout: string; duration: number }[]>([]);
+  measurementDialogOpen = signal(false);
+  savingMeasurement = signal(false);
 
   weightColorScheme: Color = {
     name: 'weight',
@@ -789,6 +801,26 @@ export class TraineeDetailsComponent implements OnInit {
   }
 
   addMeasurement(): void {
-    console.log('Add measurement');
+    this.measurementDialogOpen.set(true);
+  }
+
+  onSaveMeasurement(value: MeasurementValue): void {
+    const clientId = this.trainee()?.id || this.route.snapshot.paramMap.get('id') || undefined;
+    if (!clientId) { this.notificationService.error('تعذّر تحديد المتدرب'); return; }
+
+    this.savingMeasurement.set(true);
+    this.coachService.createMeasurement({ ...value, clientId }).subscribe({
+      next: (created) => {
+        this.savingMeasurement.set(false);
+        this.measurementDialogOpen.set(false);
+        // Prepend so the newest shows first without a full reload.
+        this.measurements.update(list => [created, ...list]);
+        this.notificationService.success('تم إضافة القياس بنجاح');
+      },
+      error: (e) => {
+        this.savingMeasurement.set(false);
+        this.notificationService.error(e?.translatedMessage || 'تعذّر حفظ القياس');
+      }
+    });
   }
 }

@@ -140,9 +140,63 @@ import { NotificationService } from '../../../core/services/notification.service
           </div>
         </div>
       </div>
+
+      @if (viewingDay(); as day) {
+        <div class="day-overlay" (click)="viewingDay.set(null)">
+          <div class="day-modal" (click)="$event.stopPropagation()">
+            <div class="day-modal-head">
+              <div>
+                <span class="dm-sub">اليوم {{ day.dayNumber }}</span>
+                <h3>{{ day.name }}</h3>
+              </div>
+              <button class="dm-close" (click)="viewingDay.set(null)"><i class="pi pi-times"></i></button>
+            </div>
+            <div class="day-modal-body">
+              @if (day.exercises.length) {
+                <div class="ex-list">
+                  @for (ex of day.exercises; track ex.id; let i = $index) {
+                    <div class="ex-row">
+                      <span class="ex-idx">{{ i + 1 }}</span>
+                      <div class="ex-main">
+                        <b>{{ ex.exerciseName }}</b>
+                        @if (ex.muscleGroup) { <span class="ex-muscle">{{ ex.muscleGroup }}</span> }
+                      </div>
+                      <div class="ex-meta">
+                        <span>{{ ex.sets }} مجموعات</span>
+                        <span>{{ ex.reps }} تكرار</span>
+                        @if (ex.restSeconds) { <span>{{ ex.restSeconds }} ث راحة</span> }
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="dm-empty">لا توجد تمارين في هذا اليوم.</p>
+              }
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `,
   styles: [`
+    .day-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(15,23,42,.55); backdrop-filter: blur(2px); padding: 1rem; }
+    .day-modal { width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+    .day-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 1.2rem 1.4rem; border-bottom: 1px solid var(--border-color); }
+    .day-modal-head h3 { margin: .15rem 0 0; font-size: 1.15rem; font-weight: 700; color: var(--text-primary); }
+    .dm-sub { font-size: .78rem; color: var(--primary-500, #3b82f6); font-weight: 600; }
+    .dm-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.05rem; }
+    .dm-close:hover { color: var(--text-primary); }
+    .day-modal-body { padding: 1.2rem 1.4rem; }
+    .ex-list { display: flex; flex-direction: column; gap: .6rem; }
+    .ex-row { display: flex; align-items: center; gap: .85rem; padding: .75rem; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-secondary); }
+    .ex-idx { flex-shrink: 0; width: 28px; height: 28px; border-radius: 8px; background: var(--role-soft, rgba(59,130,246,.12)); color: var(--role-solid, #3b82f6); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .82rem; }
+    .ex-main { flex: 1; display: flex; flex-direction: column; gap: .15rem; }
+    .ex-main b { color: var(--text-primary); font-size: .95rem; }
+    .ex-muscle { font-size: .75rem; color: var(--text-muted); }
+    .ex-meta { display: flex; flex-wrap: wrap; gap: .5rem; font-size: .78rem; color: var(--text-secondary); }
+    .ex-meta span { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 999px; padding: .1rem .5rem; }
+    .dm-empty { color: var(--text-muted); text-align: center; padding: 1.5rem; }
+  `, `
     .my-program-page {
       max-width: 1200px;
       padding-bottom: 2rem;
@@ -437,6 +491,7 @@ export class MyProgramComponent implements OnInit {
 
   loading = signal(true);
   program = signal<WorkoutProgram | null>(null);
+  viewingDay = signal<WorkoutDay | null>(null);
 
   completedDays(): number {
     return this.program()?.workoutDays?.filter(d => d.isCompleted).length || 0;
@@ -482,7 +537,7 @@ export class MyProgramComponent implements OnInit {
   }
 
   viewDay(day: WorkoutDay): void {
-    console.log('View day', day);
+    this.viewingDay.set(day);
   }
 
   /**

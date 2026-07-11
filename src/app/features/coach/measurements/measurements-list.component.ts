@@ -12,6 +12,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { CoachService, BodyMeasurement, Trainee } from '../services/coach.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { MeasurementDialogComponent } from '../../../shared/components/measurement-dialog/measurement-dialog.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -28,7 +29,8 @@ import Swal from 'sweetalert2';
     DropdownModule,
     CalendarModule,
     PageHeaderComponent,
-    LoadingSkeletonComponent
+    LoadingSkeletonComponent,
+    MeasurementDialogComponent
   ],
   template: `
     <div class="measurements-page">
@@ -348,6 +350,13 @@ import Swal from 'sweetalert2';
           <button class="btn btn-primary" (click)="saveMeasurement()">حفظ</button>
         </ng-template>
       </p-dialog>
+
+      <app-measurement-dialog
+        [open]="viewDialogOpen()"
+        mode="view"
+        [record]="viewingMeasurement()"
+        (cancel)="viewDialogOpen.set(false)"
+      ></app-measurement-dialog>
     </div>
   `,
   styles: [`
@@ -836,6 +845,8 @@ export class MeasurementsListComponent implements OnInit {
   searchQuery = '';
   dialogVisible = false;
   editingMeasurement: BodyMeasurement | null = null;
+  viewDialogOpen = signal(false);
+  viewingMeasurement = signal<BodyMeasurement | null>(null);
 
   measurementForm = {
     traineeId: '',
@@ -987,7 +998,8 @@ export class MeasurementsListComponent implements OnInit {
   }
 
   viewDetails(measurement: BodyMeasurement): void {
-    console.log('View details', measurement);
+    this.viewingMeasurement.set(measurement);
+    this.viewDialogOpen.set(true);
   }
 
   editMeasurement(measurement: BodyMeasurement): void {

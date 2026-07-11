@@ -6,6 +6,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { ProgressBarModule } from 'primeng/progressbar';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ClientService, WorkoutDay, WorkoutExercise, CompletedSet } from '../services/client.service';
 
 @Component({
@@ -209,9 +210,28 @@ import { ClientService, WorkoutDay, WorkoutExercise, CompletedSet } from '../ser
           </button>
         </div>
       </p-dialog>
+
+      @if (video(); as v) {
+        <div class="video-overlay" (click)="closeVideo()">
+          <div class="video-box" (click)="$event.stopPropagation()">
+            <button class="video-close" (click)="closeVideo()"><i class="pi pi-times"></i></button>
+            @if (v.embedUrl) {
+              <iframe [src]="v.embedUrl" title="فيديو التمرين" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            } @else if (v.fileUrl) {
+              <video [src]="v.fileUrl" controls autoplay></video>
+            }
+          </div>
+        </div>
+      }
     </div>
   `,
   styles: [`
+    .video-overlay { position: fixed; inset: 0; z-index: 1100; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.8); padding: 1rem; }
+    .video-box { position: relative; width: 100%; max-width: 820px; background: #000; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+    .video-box iframe, .video-box video { width: 100%; aspect-ratio: 16 / 9; display: block; border: 0; background: #000; }
+    .video-close { position: absolute; top: .6rem; inset-inline-end: .6rem; z-index: 2; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(0,0,0,.55); color: #fff; cursor: pointer; font-size: 1rem; }
+    .video-close:hover { background: rgba(0,0,0,.8); }
+  `, `
     .workout-session {
       min-height: 100vh;
       background: var(--bg-secondary);
@@ -629,7 +649,9 @@ export class WorkoutSessionComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private clientService = inject(ClientService);
+  private sanitizer = inject(DomSanitizer);
 
+  video = signal<{ embedUrl?: SafeResourceUrl; fileUrl?: string } | null>(null);
   currentDay = signal<WorkoutDay | null>(null);
   currentExerciseIndex = signal(0);
   currentSetNumber = signal(1);
@@ -804,6 +826,29 @@ export class WorkoutSessionComponent implements OnInit {
   }
 
   showVideo(): void {
-    console.log('Show video');
+    const url = this.currentExercise()?.videoUrl?.trim();
+    if (!url) return;
+    const embed = this.toEmbedUrl(url);
+    if (embed) {
+      this.video.set({ embedUrl: this.sanitizer.bypassSecurityTrustResourceUrl(embed) });
+    } else if (/\.(mp4|webm|ogg|mov)(\?|$)/i.test(url)) {
+      this.video.set({ fileUrl: url });
+    } else {
+      // Unknown host — open externally rather than risk a blocked embed.
+      window.open(url, '_blank', 'noopener');
+    }
+  }
+
+  closeVideo(): void {
+    this.video.set(null);
+  }
+
+  /** Convert a YouTube/Vimeo watch URL to its embeddable form; null otherwise. */
+  private toEmbedUrl(url: string): string | null {
+    const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
+    if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+    const vimeo = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`;
+    return null;
   }
 }
