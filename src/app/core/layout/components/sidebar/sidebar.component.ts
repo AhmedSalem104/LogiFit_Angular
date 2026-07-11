@@ -877,6 +877,13 @@ export class SidebarComponent {
       items: [
         { label: 'إعدادات الصالة', icon: 'pi-cog', route: '/owner/gym-settings', roles: [UserRole.Owner], permission: 'ManageSettings' },
       ]
+    },
+    {
+      title: 'الحساب',
+      roles: [UserRole.Owner],
+      items: [
+        { label: 'ملفي الشخصي', icon: 'pi-user', route: '/owner/profile', roles: [UserRole.Owner] },
+      ]
     }
   ];
 

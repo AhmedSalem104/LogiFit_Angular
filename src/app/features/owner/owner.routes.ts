@@ -3,6 +3,7 @@ import { Routes } from '@angular/router';
 export const ownerRoutes: Routes = [
   // Main
   { path: 'dashboard', loadComponent: () => import('./dashboard/owner-dashboard.component').then(m => m.OwnerDashboardComponent), title: 'لوحة التحكم - LogicFit' },
+  { path: 'profile', loadComponent: () => import('./profile/owner-profile.component').then(m => m.OwnerProfileComponent), title: 'الملف الشخصي - LogicFit' },
   { path: 'operations', loadComponent: () => import('./operations-dashboard/operations-dashboard.component').then(m => m.OperationsDashboardComponent), title: 'لوحة التشغيل - LogicFit' },
 
   // Members

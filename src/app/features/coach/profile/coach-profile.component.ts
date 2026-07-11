@@ -286,10 +286,43 @@ import { environment } from '../../../../environments/environment';
             </div>
           </div>
         </div>
+
+        <!-- Change Password Card -->
+        <div class="account-info-card">
+          <div class="card-header">
+            <h2><i class="pi pi-lock"></i> تغيير كلمة المرور</h2>
+          </div>
+          <div class="pw-grid">
+            <div class="pw-field">
+              <label>كلمة المرور الحالية</label>
+              <input type="password" [(ngModel)]="pw.current" name="pwCurrent" placeholder="••••••••" />
+            </div>
+            <div class="pw-field">
+              <label>كلمة المرور الجديدة</label>
+              <input type="password" [(ngModel)]="pw.next" name="pwNext" placeholder="8 أحرف + حرف كبير وصغير ورقم" />
+            </div>
+            <div class="pw-field">
+              <label>تأكيد كلمة المرور</label>
+              <input type="password" [(ngModel)]="pw.confirm" name="pwConfirm" placeholder="••••••••" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-save" (click)="changePassword()" [disabled]="changingPw()">
+              <i class="pi pi-spin pi-spinner" *ngIf="changingPw()"></i>
+              <i class="pi pi-check" *ngIf="!changingPw()"></i>
+              <span>{{ changingPw() ? 'جاري التحديث...' : 'تحديث كلمة المرور' }}</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   `,
   styles: [`
+    .pw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; padding: 1.25rem 0; }
+    .pw-field { display: flex; flex-direction: column; gap: .4rem; }
+    .pw-field label { font-size: .85rem; color: var(--text-secondary); font-weight: 500; }
+    .pw-field input { padding: .65rem .85rem; border: 1px solid var(--border-color); border-radius: 9px; background: var(--bg-secondary); color: var(--text-primary); font-size: .95rem; }
+    .pw-field input:focus { outline: none; border-color: var(--primary-500, #3b82f6); }
     .profile-page {
       max-width: 1200px;
     }
@@ -820,6 +853,8 @@ export class CoachProfileComponent implements OnInit {
 
   loading = signal(true);
   saving = signal(false);
+  changingPw = signal(false);
+  pw = { current: '', next: '', confirm: '' };
   uploadingImage = signal(false);
   profile = signal<ProfileResponse | null>(null);
   profilePictureUrl = signal<string | null>(null);
@@ -997,6 +1032,28 @@ export class CoachProfileComponent implements OnInit {
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+  }
+
+  changePassword(): void {
+    const { current, next, confirm } = this.pw;
+    if (!current || !next) { this.notificationService.error('يرجى إدخال كلمة المرور الحالية والجديدة'); return; }
+    if (next.length < 8 || !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/.test(next)) {
+      this.notificationService.error('كلمة المرور الجديدة: 8 أحرف على الأقل وتحتوي حرف كبير وصغير ورقم'); return;
+    }
+    if (next !== confirm) { this.notificationService.error('كلمة المرور الجديدة وتأكيدها غير متطابقين'); return; }
+
+    this.changingPw.set(true);
+    this.authService.changePassword(current, next).subscribe({
+      next: () => {
+        this.changingPw.set(false);
+        this.notificationService.success('تم تغيير كلمة المرور بنجاح');
+        this.pw = { current: '', next: '', confirm: '' };
+      },
+      error: (err) => {
+        this.changingPw.set(false);
+        this.notificationService.error(err?.status === 401 ? 'كلمة المرور الحالية غير صحيحة' : (err?.translatedMessage || 'تعذّر تغيير كلمة المرور'));
+      }
+    });
   }
 
   getRoleName(role: number): string {
