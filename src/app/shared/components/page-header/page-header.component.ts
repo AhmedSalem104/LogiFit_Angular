@@ -1,6 +1,7 @@
-import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { HelpService } from '../../../core/help/help.service';
 
 export interface Breadcrumb {
   label: string;
@@ -29,7 +30,13 @@ export interface Breadcrumb {
 
         <!-- Title & Subtitle -->
         <div class="page-header__titles">
-          <h1 class="page-title">{{ title }}</h1>
+          <h1 class="page-title">
+            {{ title }}
+            <button *ngIf="help.hasLocalHelp()" type="button" class="page-help-btn"
+              (click)="help.openLocal()" aria-label="مساعدة هذه الشاشة" title="مساعدة هذه الشاشة">
+              <i class="pi pi-question-circle"></i>
+            </button>
+          </h1>
           <p class="page-subtitle" *ngIf="subtitle">{{ subtitle }}</p>
         </div>
       </div>
@@ -88,7 +95,27 @@ export interface Breadcrumb {
       color: var(--text-primary);
       margin: 0;
       line-height: 1.3;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
     }
+
+    .page-help-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.6rem;
+      height: 1.6rem;
+      border: none;
+      background: var(--role-soft, rgba(59, 130, 246, 0.12));
+      color: var(--role-solid, #3b82f6);
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: transform 0.15s;
+    }
+
+    .page-help-btn:hover { transform: scale(1.1); }
 
     .page-subtitle {
       font-size: 0.95rem;
@@ -120,6 +147,7 @@ export interface Breadcrumb {
   `]
 })
 export class PageHeaderComponent {
+  help = inject(HelpService);
   @Input() title = '';
   @Input() subtitle?: string;
   @Input() breadcrumbs: Breadcrumb[] = [];

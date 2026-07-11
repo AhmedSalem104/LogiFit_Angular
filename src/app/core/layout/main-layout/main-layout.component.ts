@@ -5,11 +5,13 @@ import { SidebarComponent } from '../components/sidebar/sidebar.component';
 import { HeaderComponent } from '../components/header/header.component';
 import { ThemeState } from '../../../state/theme.state';
 import { AuthService } from '../../auth/services/auth.service';
+import { HelpCenterComponent } from '../../help/help-center/help-center.component';
+import { HelpLocalComponent } from '../../help/help-local/help-local.component';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, SidebarComponent, HeaderComponent],
+  imports: [CommonModule, RouterOutlet, SidebarComponent, HeaderComponent, HelpCenterComponent, HelpLocalComponent],
   template: `
     <div class="layout" [attr.data-role]="roleScope()" [class.sidebar-collapsed]="themeState.sidebarCollapsed()">
       <!-- Sidebar -->
@@ -32,6 +34,10 @@ import { AuthService } from '../../auth/services/auth.service';
       @if (showMobileOverlay) {
         <div class="mobile-overlay" (click)="themeState.toggleSidebar()"></div>
       }
+
+      <!-- Two-layer help assistant (global FAB + drawer, and local screen panel) -->
+      <app-help-center></app-help-center>
+      <app-help-local></app-help-local>
     </div>
   `,
   styles: [`

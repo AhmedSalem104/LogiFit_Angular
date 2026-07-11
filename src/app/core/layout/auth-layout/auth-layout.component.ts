@@ -2,11 +2,13 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { ThemeState } from '../../../state/theme.state';
+import { HelpCenterComponent } from '../../help/help-center/help-center.component';
+import { HelpLocalComponent } from '../../help/help-local/help-local.component';
 
 @Component({
   selector: 'app-auth-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet],
+  imports: [CommonModule, RouterOutlet, HelpCenterComponent, HelpLocalComponent],
   template: `
     <div class="auth-layout">
       <!-- Top actions -->
@@ -81,6 +83,10 @@ import { ThemeState } from '../../../state/theme.state';
         </div>
         <div class="form-footer">© {{ year }} LogicFit — جميع الحقوق محفوظة</div>
       </div>
+
+      <!-- Help assistant on auth screens too -->
+      <app-help-center></app-help-center>
+      <app-help-local></app-help-local>
     </div>
   `,
   styles: [`
