@@ -13,6 +13,7 @@ import { ExportMenuComponent, ExportFormat } from '../../../shared/components/ex
 import { ExportService } from '../../../core/services/export.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { OwnerService, Coach } from '../services/owner.service';
+import { PersonFormDialogComponent, PersonFormValue, PersonFormInitial } from '../../../shared/components/person-form-dialog/person-form-dialog.component';
 import Swal from 'sweetalert2';
 
 // Display interface for table
@@ -39,7 +40,8 @@ interface CoachDisplay {
     TooltipModule,
     PageHeaderComponent,
     LoadingSkeletonComponent,
-    ExportMenuComponent
+    ExportMenuComponent,
+    PersonFormDialogComponent
   ],
   template: `
     <div class="coaches-page">
@@ -203,6 +205,16 @@ interface CoachDisplay {
           </ng-template>
         </p-table>
       </div>
+
+      <app-person-form-dialog
+        [open]="dialogOpen()"
+        [mode]="dialogMode()"
+        entityLabel="مدرب"
+        [initial]="dialogInitial()"
+        [saving]="dialogSaving()"
+        (save)="onDialogSave($event)"
+        (cancel)="closeDialog()"
+      ></app-person-form-dialog>
     </div>
   `,
   styles: [`
@@ -417,6 +429,13 @@ export class CoachesListComponent implements OnInit {
 
   coaches = signal<CoachDisplay[]>([]);
 
+  // Add/Edit dialog state
+  dialogOpen = signal(false);
+  dialogMode = signal<'add' | 'edit'>('add');
+  dialogSaving = signal(false);
+  dialogInitial = signal<PersonFormInitial | null>(null);
+  private editingId: string | null = null;
+
   ngOnInit(): void {
     this.loadCoaches();
   }
@@ -496,8 +515,10 @@ export class CoachesListComponent implements OnInit {
   }
 
   openAddDialog(): void {
-    // TODO: Implement add coach dialog or navigate to add page
-    this.notificationService.info('سيتم إضافة هذه الميزة قريباً');
+    this.editingId = null;
+    this.dialogInitial.set(null);
+    this.dialogMode.set('add');
+    this.dialogOpen.set(true);
   }
 
   viewCoach(coach: CoachDisplay): void {
@@ -506,8 +527,62 @@ export class CoachesListComponent implements OnInit {
   }
 
   editCoach(coach: CoachDisplay): void {
-    // TODO: Implement edit coach dialog
-    this.notificationService.info('سيتم إضافة هذه الميزة قريباً');
+    this.editingId = coach.id;
+    this.dialogMode.set('edit');
+    this.dialogInitial.set({
+      fullName: coach.fullName,
+      phoneNumber: coach.phoneNumber,
+      email: coach.email || undefined
+    });
+    this.dialogOpen.set(true);
+    this.ownerService.getCoachById(coach.id).subscribe({
+      next: (full) => this.dialogInitial.set({
+        fullName: full.profile?.fullName || full.fullName || coach.fullName,
+        phoneNumber: full.phoneNumber || coach.phoneNumber,
+        email: full.email || undefined,
+        gender: full.profile?.gender,
+        birthDate: full.profile?.birthDate
+      }),
+      error: () => { /* keep the row-based prefill */ }
+    });
+  }
+
+  closeDialog(): void {
+    this.dialogOpen.set(false);
+    this.dialogSaving.set(false);
+  }
+
+  onDialogSave(value: PersonFormValue): void {
+    this.dialogSaving.set(true);
+    const done = (msg: string) => {
+      this.dialogSaving.set(false);
+      this.dialogOpen.set(false);
+      this.notificationService.success(msg);
+      this.loadCoaches();
+    };
+    const fail = (err: any) => {
+      this.dialogSaving.set(false);
+      this.notificationService.error(err?.translatedMessage || err?.error?.message || 'تعذّر حفظ البيانات');
+    };
+
+    if (this.dialogMode() === 'add') {
+      this.ownerService.createCoach({
+        fullName: value.fullName,
+        phoneNumber: value.phoneNumber,
+        password: value.password!,
+        email: value.email,
+        gender: value.gender,
+        birthDate: value.birthDate
+      }).subscribe({ next: () => done('تمت إضافة المدرب بنجاح'), error: fail });
+    } else if (this.editingId) {
+      this.ownerService.updateCoach(this.editingId, {
+        fullName: value.fullName,
+        phoneNumber: value.phoneNumber,
+        email: value.email,
+        gender: value.gender,
+        birthDate: value.birthDate
+      }).subscribe({ next: () => done('تم تحديث بيانات المدرب بنجاح'), error: fail });
+    }
   }
 
   deleteCoach(coach: CoachDisplay): void {

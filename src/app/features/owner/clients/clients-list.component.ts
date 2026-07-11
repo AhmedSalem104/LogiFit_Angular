@@ -13,6 +13,7 @@ import { ExportMenuComponent, ExportFormat } from '../../../shared/components/ex
 import { ExportService } from '../../../core/services/export.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { OwnerService, Client } from '../services/owner.service';
+import { PersonFormDialogComponent, PersonFormValue, PersonFormInitial } from '../../../shared/components/person-form-dialog/person-form-dialog.component';
 import Swal from 'sweetalert2';
 
 // Display interface for table
@@ -41,7 +42,8 @@ interface ClientDisplay {
     TooltipModule,
     PageHeaderComponent,
     LoadingSkeletonComponent,
-    ExportMenuComponent
+    ExportMenuComponent,
+    PersonFormDialogComponent
   ],
   template: `
     <div class="clients-page">
@@ -211,6 +213,16 @@ interface ClientDisplay {
           </ng-template>
         </p-table>
       </div>
+
+      <app-person-form-dialog
+        [open]="dialogOpen()"
+        [mode]="dialogMode()"
+        entityLabel="عميل"
+        [initial]="dialogInitial()"
+        [saving]="dialogSaving()"
+        (save)="onDialogSave($event)"
+        (cancel)="closeDialog()"
+      ></app-person-form-dialog>
     </div>
   `,
   styles: [`
@@ -422,6 +434,13 @@ export class ClientsListComponent implements OnInit {
 
   clients = signal<ClientDisplay[]>([]);
 
+  // Add/Edit dialog state
+  dialogOpen = signal(false);
+  dialogMode = signal<'add' | 'edit'>('add');
+  dialogSaving = signal(false);
+  dialogInitial = signal<PersonFormInitial | null>(null);
+  private editingId: string | null = null;
+
   ngOnInit(): void {
     this.loadClients();
   }
@@ -506,8 +525,10 @@ export class ClientsListComponent implements OnInit {
   }
 
   openAddDialog(): void {
-    // TODO: Implement add client dialog or navigate to add page
-    this.notificationService.info('سيتم إضافة هذه الميزة قريباً');
+    this.editingId = null;
+    this.dialogInitial.set(null);
+    this.dialogMode.set('add');
+    this.dialogOpen.set(true);
   }
 
   viewClient(client: ClientDisplay): void {
@@ -516,8 +537,63 @@ export class ClientsListComponent implements OnInit {
   }
 
   editClient(client: ClientDisplay): void {
-    // TODO: Implement edit client dialog
-    this.notificationService.info('سيتم إضافة هذه الميزة قريباً');
+    this.editingId = client.id;
+    this.dialogMode.set('edit');
+    // Prefill from the row immediately, then enrich with gender/birthDate.
+    this.dialogInitial.set({
+      fullName: client.fullName,
+      phoneNumber: client.phoneNumber,
+      email: client.email || undefined
+    });
+    this.dialogOpen.set(true);
+    this.ownerService.getClientById(client.id).subscribe({
+      next: (full) => this.dialogInitial.set({
+        fullName: full.profile?.fullName || full.fullName || client.fullName,
+        phoneNumber: full.phoneNumber || client.phoneNumber,
+        email: full.email || undefined,
+        gender: full.profile?.gender,
+        birthDate: full.profile?.birthDate
+      }),
+      error: () => { /* keep the row-based prefill */ }
+    });
+  }
+
+  closeDialog(): void {
+    this.dialogOpen.set(false);
+    this.dialogSaving.set(false);
+  }
+
+  onDialogSave(value: PersonFormValue): void {
+    this.dialogSaving.set(true);
+    const done = (msg: string) => {
+      this.dialogSaving.set(false);
+      this.dialogOpen.set(false);
+      this.notificationService.success(msg);
+      this.loadClients();
+    };
+    const fail = (err: any) => {
+      this.dialogSaving.set(false);
+      this.notificationService.error(err?.translatedMessage || err?.error?.message || 'تعذّر حفظ البيانات');
+    };
+
+    if (this.dialogMode() === 'add') {
+      this.ownerService.createClient({
+        fullName: value.fullName,
+        phoneNumber: value.phoneNumber,
+        password: value.password!,
+        email: value.email,
+        gender: value.gender,
+        birthDate: value.birthDate
+      }).subscribe({ next: () => done('تمت إضافة العميل بنجاح'), error: fail });
+    } else if (this.editingId) {
+      this.ownerService.updateClient(this.editingId, {
+        fullName: value.fullName,
+        phoneNumber: value.phoneNumber,
+        email: value.email,
+        gender: value.gender,
+        birthDate: value.birthDate
+      }).subscribe({ next: () => done('تم تحديث بيانات العميل بنجاح'), error: fail });
+    }
   }
 
   deleteClient(client: ClientDisplay): void {
