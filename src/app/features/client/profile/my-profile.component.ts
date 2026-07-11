@@ -11,6 +11,7 @@ import { LoadingSkeletonComponent } from '../../../shared/components/loading-ske
 import { ClientService, ClientProfile } from '../services/client.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { AuthService } from '../../../core/auth/services/auth.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-my-profile',
@@ -44,14 +45,15 @@ import { AuthService } from '../../../core/auth/services/auth.service';
           <div class="avatar-section">
             <div class="avatar">
               @if (profile()?.profileImageUrl) {
-                <img [src]="profile()?.profileImageUrl" [alt]="profile()?.fullName" />
+                <img [src]="fullImageUrl(profile()?.profileImageUrl)" [alt]="profile()?.fullName" />
               } @else {
                 {{ getInitials(profile()?.fullName || '') }}
               }
             </div>
-            <button class="change-avatar-btn">
-              <i class="pi pi-camera"></i>
-              تغيير الصورة
+            <input #avatarInput type="file" accept="image/*" hidden (change)="onAvatarSelected($event)" />
+            <button class="change-avatar-btn" (click)="avatarInput.click()" [disabled]="uploadingAvatar()">
+              <i class="pi" [class.pi-camera]="!uploadingAvatar()" [class.pi-spin]="uploadingAvatar()" [class.pi-spinner]="uploadingAvatar()"></i>
+              {{ uploadingAvatar() ? 'جاري الرفع...' : 'تغيير الصورة' }}
             </button>
           </div>
           <div class="profile-info">
@@ -434,13 +436,14 @@ export class MyProfileComponent implements OnInit {
   loading = signal(true);
   saving = signal(false);
   changingPassword = signal(false);
+  uploadingAvatar = signal(false);
   profile = signal<ClientProfile | null>(null);
 
   maxDate = new Date();
 
   genderOptions = [
-    { label: 'ذكر', value: 0 },
-    { label: 'أنثى', value: 1 }
+    { label: 'ذكر', value: 1 },
+    { label: 'أنثى', value: 2 }
   ];
 
   form: FormGroup = this.fb.group({
@@ -453,7 +456,7 @@ export class MyProfileComponent implements OnInit {
 
   passwordForm: FormGroup = this.fb.group({
     currentPassword: ['', Validators.required],
-    newPassword: ['', [Validators.required, Validators.minLength(6)]],
+    newPassword: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)]],
     confirmPassword: ['', Validators.required]
   });
 
@@ -496,7 +499,7 @@ export class MyProfileComponent implements OnInit {
       ...data,
       // Map from nested profile object if present
       fullName: data.profile?.fullName || data.fullName,
-      // Keep gender NUMERIC (0=Male,1=Female) so the dropdown pre-selects; 0 is valid.
+      // Keep gender NUMERIC (1=Male,2=Female) so the dropdown pre-selects.
       gender: data.profile?.gender ?? data.gender,
       birthDate: data.profile?.birthDate || data.birthDate || data.dateOfBirth,
       height: data.profile?.heightCm || data.height,
@@ -548,16 +551,27 @@ export class MyProfileComponent implements OnInit {
       return;
     }
 
-    const { newPassword, confirmPassword } = this.passwordForm.value;
+    const { currentPassword, newPassword, confirmPassword } = this.passwordForm.value;
     if (newPassword !== confirmPassword) {
       this.notificationService.error('كلمة المرور الجديدة وتأكيدها غير متطابقين');
       return;
     }
 
-    // No self-service change-password endpoint exists on the backend yet.
-    // Direct the user to the secure reset flow instead of faking success.
-    this.notificationService.info('لتغيير كلمة المرور، استخدم "نسيت كلمة المرور؟" من شاشة تسجيل الدخول.');
-    this.passwordForm.reset();
+    this.changingPassword.set(true);
+    this.authService.changePassword(currentPassword, newPassword).subscribe({
+      next: () => {
+        this.changingPassword.set(false);
+        this.notificationService.success('تم تغيير كلمة المرور بنجاح');
+        this.passwordForm.reset();
+      },
+      error: (err) => {
+        this.changingPassword.set(false);
+        const msg = err?.status === 401
+          ? 'كلمة المرور الحالية غير صحيحة'
+          : (err?.translatedMessage || err?.error?.message || 'تعذّر تغيير كلمة المرور');
+        this.notificationService.error(msg);
+      }
+    });
   }
 
   confirmDeleteAccount(): void {
@@ -571,5 +585,41 @@ export class MyProfileComponent implements OnInit {
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+  }
+
+  /** Prefix relative upload URLs (e.g. /uploads/...) with the backend origin. */
+  fullImageUrl(url?: string | null): string {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    return `${environment.apiUrl.replace('/api', '')}${url}`;
+  }
+
+  onAvatarSelected(ev: Event): void {
+    const input = ev.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const okTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!okTypes.includes(file.type)) {
+      this.notificationService.error('نوع الملف غير مدعوم. اختر صورة (JPG, PNG, GIF, WEBP).');
+      input.value = ''; return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.notificationService.error('حجم الصورة يتجاوز 5 ميجابايت.');
+      input.value = ''; return;
+    }
+    input.value = '';
+
+    this.uploadingAvatar.set(true);
+    this.clientService.uploadProfilePicture(file).subscribe({
+      next: (res) => {
+        this.uploadingAvatar.set(false);
+        this.profile.update(p => p ? { ...p, profileImageUrl: res.url } : p);
+        this.notificationService.success('تم تحديث الصورة بنجاح');
+      },
+      error: (err) => {
+        this.uploadingAvatar.set(false);
+        this.notificationService.error(err?.translatedMessage || 'تعذّر رفع الصورة');
+      }
+    });
   }
 }

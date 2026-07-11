@@ -10,6 +10,10 @@
       "destination": "https://logicfit.runasp.net/api/:path*"
     },
     {
+      "source": "/uploads/:path*",
+      "destination": "https://logicfit.runasp.net/uploads/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

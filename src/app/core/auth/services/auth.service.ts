@@ -162,6 +162,14 @@ export class AuthService {
   }
 
   /**
+   * Change password for the authenticated user (self). 204 on success,
+   * 401 if the current password is wrong.
+   */
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/change-password`, { currentPassword, newPassword });
+  }
+
+  /**
    * Logout current session and clear locally
    */
   logout(): void {

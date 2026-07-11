@@ -9,7 +9,7 @@ export interface PersonFormValue {
   phoneNumber: string;
   email?: string;
   password?: string;   // add mode only
-  gender?: number;     // 0 = Male, 1 = Female
+  gender?: number;     // 1 = Male, 2 = Female (backend GenderType)
   birthDate?: string;  // yyyy-MM-dd
 }
 
@@ -73,8 +73,8 @@ export interface PersonFormInitial extends Omit<PersonFormValue, 'password'> {}
                 <label>النوع <span class="opt">(اختياري)</span></label>
                 <select formControlName="gender">
                   <option [ngValue]="null">— اختر —</option>
-                  <option [ngValue]="0">ذكر</option>
-                  <option [ngValue]="1">أنثى</option>
+                  <option [ngValue]="1">ذكر</option>
+                  <option [ngValue]="2">أنثى</option>
                 </select>
               </div>
               <div class="pfd-field">

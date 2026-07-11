@@ -431,25 +431,26 @@ export class MySubscriptionsComponent implements OnInit {
 
   // Helper to check if status is active (handles enum, string, and number)
   isActiveStatus(status: SubscriptionStatus | string | number): boolean {
-    return status === 0 || status === SubscriptionStatus.Active || status === 'active';
+    return status === SubscriptionStatus.Active || status === 'active';
   }
 
-  // Helper to get CSS class for status
+  // Helper to get CSS class for status — canonical numeric enum (1=Active..5=Cancelled)
   getStatusClass(status: SubscriptionStatus | string | number): string {
-    // Handle numeric values (from API)
-    if (status === 0 || status === SubscriptionStatus.Active || status === 'active') return 'active';
-    if (status === 1 || status === SubscriptionStatus.Expired || status === 'expired') return 'expired';
-    if (status === 2 || status === SubscriptionStatus.Frozen || status === 'frozen' || status === 'pending') return 'frozen';
-    if (status === 3 || status === SubscriptionStatus.Cancelled || status === 'cancelled') return 'cancelled';
+    if (status === SubscriptionStatus.Active || status === 'active') return 'active';
+    if (status === SubscriptionStatus.Expired || status === 'expired') return 'expired';
+    if (status === SubscriptionStatus.Suspended || status === 'frozen' || status === 'pending') return 'frozen';
+    if (status === SubscriptionStatus.Cancelled || status === 'cancelled') return 'cancelled';
+    if (status === SubscriptionStatus.Trial || status === 'trial') return 'active';
     return '';
   }
 
   getStatusLabel(status: SubscriptionStatus | string | number): string {
-    // Handle numeric values (from API: 0=Active, 1=Expired, 2=Frozen, 3=Cancelled)
-    if (status === 0 || status === SubscriptionStatus.Active) return 'نشط';
-    if (status === 1 || status === SubscriptionStatus.Expired) return 'منتهي';
-    if (status === 2 || status === SubscriptionStatus.Frozen) return 'مجمد';
-    if (status === 3 || status === SubscriptionStatus.Cancelled) return 'ملغي';
+    // Canonical numeric enum: Active=1, Suspended=2, Trial=3, Expired=4, Cancelled=5
+    if (status === SubscriptionStatus.Active) return 'نشط';
+    if (status === SubscriptionStatus.Trial) return 'تجريبي';
+    if (status === SubscriptionStatus.Expired) return 'منتهي';
+    if (status === SubscriptionStatus.Suspended) return 'موقوف';
+    if (status === SubscriptionStatus.Cancelled) return 'ملغي';
 
     // Handle string values (legacy)
     const labels: Record<string, string> = {

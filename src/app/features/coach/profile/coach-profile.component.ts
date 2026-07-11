@@ -836,8 +836,8 @@ export class CoachProfileComponent implements OnInit {
   };
 
   genderOptions = [
-    { label: 'ذكر', value: 0 },
-    { label: 'أنثى', value: 1 }
+    { label: 'ذكر', value: 1 },
+    { label: 'أنثى', value: 2 }
   ];
 
   activityLevelOptions = [
@@ -870,7 +870,7 @@ export class CoachProfileComponent implements OnInit {
         // Populate form
         if (data.profile) {
           this.profileForm.fullName = data.profile.fullName || '';
-          // gender 0 (Male) is valid — use nullish check, not truthiness.
+          // gender is 1=Male / 2=Female — use nullish check to preserve any valid value.
           this.profileForm.gender = data.profile.gender ?? null;
           this.profileForm.birthDate = data.profile.birthDate ? new Date(data.profile.birthDate) : null;
           this.profileForm.heightCm = data.profile.heightCm || null;
@@ -895,7 +895,7 @@ export class CoachProfileComponent implements OnInit {
 
     const request: UpdateProfileRequest = {
       fullName: this.profileForm.fullName || undefined,
-      // gender 0 (Male) must survive — nullish check, not truthiness.
+      // gender 1=Male / 2=Female — nullish check, not truthiness.
       gender: this.profileForm.gender ?? undefined,
       birthDate: this.profileForm.birthDate ? this.toLocalDateString(this.profileForm.birthDate) : undefined,
       heightCm: this.profileForm.heightCm || undefined,

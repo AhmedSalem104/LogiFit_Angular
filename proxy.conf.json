@@ -3,5 +3,10 @@
     "target": "https://logicfit.runasp.net",
     "secure": true,
     "changeOrigin": true
+  },
+  "/uploads": {
+    "target": "https://logicfit.runasp.net",
+    "secure": true,
+    "changeOrigin": true
   }
 }

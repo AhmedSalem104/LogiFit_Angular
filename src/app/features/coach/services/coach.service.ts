@@ -48,7 +48,7 @@ export interface Trainee {
   fullName?: string;
   profileImageUrl?: string;
   profilePictureUrl?: string;
-  gender?: number; // 0=Male, 1=Female
+  gender?: number; // 1=Male, 2=Female
   birthDate?: string;
   heightCm?: number;
   weightKg?: number;
@@ -348,7 +348,7 @@ export interface BodyMeasurement {
 export interface UserProfileDto {
   fullName?: string;
   profilePictureUrl?: string;
-  gender?: number; // 0 = Male, 1 = Female
+  gender?: number; // 1 = Male, 2 = Female
   birthDate?: string;
   heightCm?: number;
   weightKg?: number;
@@ -537,7 +537,7 @@ export interface ClientSubscription {
   planName?: string;
   startDate: string;
   endDate: string;
-  status: number; // 0=Active, 1=Expired, 2=Frozen, 3=Cancelled
+  status: number; // Active=1, Suspended=2, Trial=3, Expired=4, Cancelled=5
   salesCoachId?: string;
   salesCoachName?: string;
   freezes?: SubscriptionFreeze[];
@@ -597,7 +597,7 @@ export class CoachService {
     clientName: string;
     clientPhone: string;
     clientEmail?: string;
-    gender?: number; // 0=Male, 1=Female
+    gender?: number; // 1=Male, 2=Female
     birthDate?: string;
     heightCm?: number;
     activityLevel?: string;

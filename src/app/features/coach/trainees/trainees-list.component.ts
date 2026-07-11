@@ -1201,8 +1201,8 @@ export class TraineesListComponent implements OnInit {
   ];
 
   genderOptions = [
-    { label: 'ذكر', value: 0 },
-    { label: 'أنثى', value: 1 }
+    { label: 'ذكر', value: 1 },
+    { label: 'أنثى', value: 2 }
   ];
 
   activityLevelOptions = [

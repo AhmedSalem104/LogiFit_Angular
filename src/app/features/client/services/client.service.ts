@@ -17,7 +17,7 @@ export interface ClientProfile {
   // Legacy properties for component compatibility
   fullName?: string;
   profileImageUrl?: string;
-  gender?: string | number; // numeric (0=Male,1=Female) from profile; legacy string tolerated
+  gender?: string | number; // numeric (1=Male,2=Female) from profile; legacy string tolerated
   birthDate?: string;
   dateOfBirth?: string;
   height?: number;
@@ -28,7 +28,7 @@ export interface ClientProfile {
 
 export interface ClientProfileDetails {
   fullName?: string;
-  gender?: number; // 0 = Male, 1 = Female
+  gender?: number; // 1 = Male, 2 = Female
   birthDate?: string;
   heightCm?: number;
   activityLevel?: string;
@@ -70,15 +70,16 @@ export interface SubscriptionFreeze {
   reason?: string;
 }
 
-// Subscription Status enum (matches API: 0=Active, 1=Expired, 2=Frozen, 3=Cancelled)
+// Subscription Status enum — canonical backend values (numeric, 1-based).
+// Confirmed by backend: Active=1, Suspended=2, Trial=3, Expired=4, Cancelled=5.
 export enum SubscriptionStatus {
-  Active = 0,
-  Expired = 1,
-  Frozen = 2,
-  Cancelled = 3,
-  // Legacy aliases for backward compatibility
-  Suspended = 2, // Alias for Frozen
-  Trial = 0 // Treat trial as active
+  Active = 1,
+  Suspended = 2,
+  Trial = 3,
+  Expired = 4,
+  Cancelled = 5,
+  // Legacy alias — backend has no distinct "Frozen"; treat as Suspended.
+  Frozen = 2
 }
 
 // Workout Program - matches WorkoutProgramDto from backend
@@ -457,6 +458,13 @@ export class ClientService {
   updateProfile(data: Partial<ClientProfile>): Observable<ClientProfile> {
     const userId = this.getCurrentUserId();
     return this.http.put<ClientProfile>(`${this.apiUrl}/clients/${userId}`, data);
+  }
+
+  /** Upload the authenticated user's avatar (self, multipart field `file`). */
+  uploadProfilePicture(file: File): Observable<{ url: string }> {
+    const fd = new FormData();
+    fd.append('file', file);
+    return this.http.post<{ url: string }>(`${this.apiUrl}/profile/picture`, fd);
   }
 
   // Subscriptions
