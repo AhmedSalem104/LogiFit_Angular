@@ -48,35 +48,36 @@ import { TenantStatusInfo, isTenantStatusCode, tenantStatusInfo } from '../../..
   styles: [`
     .status-page {
       min-height: 100vh; display: flex; align-items: center; justify-content: center;
-      padding: 1.5rem; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      padding: 1.5rem; background: var(--bg-secondary);
     }
     .status-card {
-      width: 100%; max-width: 460px; background: #fff; border-radius: 18px;
-      padding: 2.5rem 2rem; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      width: 100%; max-width: 460px; background: var(--bg-primary);
+      border: 1px solid var(--border-color); border-radius: 18px;
+      padding: 2.5rem 2rem; text-align: center; box-shadow: var(--shadow-lg, 0 20px 60px rgba(0,0,0,.15));
       position: relative;
     }
     .status-icon {
       width: 84px; height: 84px; margin: 0 auto 1.5rem; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      background: #fef2f2; color: #dc2626; font-size: 2.25rem;
+      background: rgba(239, 68, 68, .12); color: #ef4444; font-size: 2.25rem;
     }
-    .status-icon.billing { background: #fffbeb; color: #d97706; }
-    h1 { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: .75rem; }
-    .status-message { color: #475569; line-height: 1.7; margin-bottom: 2rem; }
+    .status-icon.billing { background: rgba(217, 119, 6, .12); color: #d97706; }
+    h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: .75rem; }
+    .status-message { color: var(--text-secondary); line-height: 1.7; margin-bottom: 2rem; }
     .actions { display: flex; flex-direction: column; gap: .85rem; }
-    .support-hint { color: #64748b; font-size: .9rem; margin: 0; }
+    .support-hint { color: var(--text-muted); font-size: .9rem; margin: 0; }
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
       height: 48px; border-radius: 10px; font-size: 1rem; font-weight: 600;
       cursor: pointer; border: none; width: 100%;
     }
-    .btn-primary { background: #3b82f6; color: #fff; }
-    .btn-primary:hover { background: #2563eb; }
-    .btn-ghost { background: transparent; color: #64748b; border: 1px solid #e2e8f0; }
-    .btn-ghost:hover { background: #f8fafc; }
+    .btn-primary { background: var(--primary-500); color: #fff; }
+    .btn-primary:hover { filter: brightness(.95); }
+    .btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); }
+    .btn-ghost:hover { background: var(--bg-secondary); }
     .code-tag {
       position: absolute; top: 1rem; inset-inline-end: 1rem; font-size: .7rem;
-      color: #cbd5e1; font-family: monospace; letter-spacing: .5px;
+      color: var(--text-muted); font-family: monospace; letter-spacing: .5px;
     }
   `]
 })

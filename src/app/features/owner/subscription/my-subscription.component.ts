@@ -221,8 +221,8 @@ type View = 'overview' | 'plans' | 'payment';
   `,
   styles: [`
     .subscription-page { padding: 1.5rem; max-width: 1100px; margin: 0 auto; }
-    .onboarding-banner { display:flex; align-items:center; gap:.9rem; background:#fffbeb; border:1px solid #fcd34d; color:#92400e; border-radius:12px; padding:1rem 1.25rem; margin-bottom:1.25rem; }
-    .onboarding-banner i { font-size:1.5rem; } .onboarding-banner b { display:block; margin-bottom:.15rem; } .onboarding-banner span { font-size:.85rem; }
+    .onboarding-banner { display:flex; align-items:center; gap:.9rem; background:rgba(217,119,6,.10); border:1px solid rgba(217,119,6,.35); color:#d97706; border-radius:12px; padding:1rem 1.25rem; margin-bottom:1.25rem; }
+    .onboarding-banner i { font-size:1.5rem; } .onboarding-banner b { display:block; margin-bottom:.15rem; color:var(--text-primary); } .onboarding-banner span { font-size:.85rem; color:var(--text-secondary); }
     .page-head { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap; }
     h1 { font-size:1.5rem; font-weight:700; color:var(--text-primary); }
     h2 { font-size:1.25rem; font-weight:700; color:var(--text-primary); }
