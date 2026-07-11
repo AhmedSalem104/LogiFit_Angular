@@ -144,8 +144,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           break;
 
         case 403:
-          errorMessage = 'ليس لديك صلاحية للوصول لهذه الصفحة';
-          router.navigate([authService.getRedirectUrl()]);
+          // Permission denied on a data request. Do NOT navigate away — route
+          // access is already enforced by guards, and bouncing to the dashboard
+          // on any data 403 makes screens appear broken. Surface a message and
+          // let the screen render its own empty/error state.
+          errorMessage = error.error?.message || 'ليس لديك صلاحية لتنفيذ هذا الإجراء';
           break;
 
         case 404:
