@@ -53,7 +53,7 @@ import Swal from 'sweetalert2';
         [breadcrumbs]="[{label: 'لوحة التحكم', route: '/owner/dashboard'}, {label: 'الاشتراكات'}]"
       >
         <div class="header-actions">
-          <button class="btn btn-primary" (click)="openSubscriptionDialog()">
+          <button class="btn btn-primary" data-tour="add-subscription" (click)="openSubscriptionDialog()">
             <i class="pi pi-plus"></i>
             <span>اشتراك جديد</span>
           </button>

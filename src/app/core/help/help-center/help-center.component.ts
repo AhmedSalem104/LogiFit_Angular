@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HelpService } from '../help.service';
 import { HelpTopic } from '../help.models';
 import { HelpStepsComponent } from '../help-steps/help-steps.component';
+import { TourService } from '../tour/tour.service';
 
 /**
  * Global help assistant: a persistent floating button + a slide-in drawer with
@@ -60,6 +61,20 @@ import { HelpStepsComponent } from '../help-steps/help-steps.component';
                   <span>مساعدة هذه الشاشة: <b>{{ s.title }}</b></span>
                   <i class="pi pi-angle-left chev"></i>
                 </button>
+              }
+
+              <!-- Interactive spotlight tours -->
+              @if (tour.availableTours().length) {
+                <p class="hd-section">جولات تفاعلية <span class="hd-badge">مباشر على الشاشة</span></p>
+                <div class="hd-tours">
+                  @for (t of tour.availableTours(); track t.id) {
+                    <button class="hd-tour" (click)="startTour(t.id)">
+                      <span class="tour-icon"><i class="pi {{ t.icon }}"></i></span>
+                      <span class="tour-titles"><b>{{ t.title }}</b><small>{{ t.description }}</small></span>
+                      <i class="pi pi-play-circle tour-play"></i>
+                    </button>
+                  }
+                </div>
               }
 
               <!-- Guided flows for the role -->
@@ -150,12 +165,27 @@ import { HelpStepsComponent } from '../help-steps/help-steps.component';
     .hd-empty { text-align: center; color: var(--text-muted); padding: 2rem 1rem; }
     .hd-empty i { font-size: 1.8rem; display: block; margin-bottom: .6rem; opacity: .6; }
     .hd-empty p { font-size: .88rem; }
+
+    .hd-badge { font-size: .62rem; font-weight: 700; background: var(--role-soft, rgba(59,130,246,.12)); color: var(--role-solid, #3b82f6); padding: .1rem .45rem; border-radius: 999px; margin-inline-start: .4rem; letter-spacing: 0; text-transform: none; }
+    .hd-tours { display: flex; flex-direction: column; gap: .6rem; margin-bottom: .3rem; }
+    .hd-tour { display: flex; align-items: center; gap: .75rem; width: 100%; text-align: start; padding: .8rem 1rem; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-primary); cursor: pointer; }
+    .hd-tour:hover { border-color: var(--role-solid, var(--primary-500, #3b82f6)); background: var(--bg-secondary); }
+    .tour-icon { width: 34px; height: 34px; flex-shrink: 0; border-radius: 9px; background: var(--gradient-primary, #3b82f6); color: #fff; display: flex; align-items: center; justify-content: center; }
+    .tour-titles { display: flex; flex-direction: column; flex: 1; }
+    .tour-titles small { color: var(--text-secondary); font-size: .78rem; }
+    .tour-play { color: var(--role-solid, var(--primary-500, #3b82f6)); font-size: 1.2rem; }
   `]
 })
 export class HelpCenterComponent {
   help = inject(HelpService);
+  tour = inject(TourService);
   query = signal('');
   results = signal<HelpTopic[] | null>(null);
+
+  startTour(id: string): void {
+    this.help.closeGlobal();
+    this.tour.start(id);
+  }
 
   onSearch(value: string): void {
     this.query.set(value);

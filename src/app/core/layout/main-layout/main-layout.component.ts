@@ -7,11 +7,12 @@ import { ThemeState } from '../../../state/theme.state';
 import { AuthService } from '../../auth/services/auth.service';
 import { HelpCenterComponent } from '../../help/help-center/help-center.component';
 import { HelpLocalComponent } from '../../help/help-local/help-local.component';
+import { TourOverlayComponent } from '../../help/tour/tour-overlay.component';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, SidebarComponent, HeaderComponent, HelpCenterComponent, HelpLocalComponent],
+  imports: [CommonModule, RouterOutlet, SidebarComponent, HeaderComponent, HelpCenterComponent, HelpLocalComponent, TourOverlayComponent],
   template: `
     <div class="layout" [attr.data-role]="roleScope()" [class.sidebar-collapsed]="themeState.sidebarCollapsed()">
       <!-- Sidebar -->
@@ -38,6 +39,9 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
       <!-- Two-layer help assistant (global FAB + drawer, and local screen panel) -->
       <app-help-center></app-help-center>
       <app-help-local></app-help-local>
+
+      <!-- Interactive spotlight tours -->
+      <app-tour-overlay></app-tour-overlay>
     </div>
   `,
   styles: [`

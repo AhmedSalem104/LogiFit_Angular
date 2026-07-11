@@ -55,7 +55,7 @@ interface CoachDisplay {
             buttonLabel="تصدير"
             (export)="onExport($event)"
           ></app-export-menu>
-          <button class="btn btn-primary" (click)="openAddDialog()">
+          <button class="btn btn-primary" data-tour="add-coach" (click)="openAddDialog()">
             <i class="pi pi-plus"></i>
             <span>إضافة مدرب</span>
           </button>

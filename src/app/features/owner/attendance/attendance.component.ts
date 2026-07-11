@@ -81,7 +81,7 @@ interface ClientOption {
       </div>
 
       <!-- Quick Check-in Section -->
-      <div class="card checkin-card">
+      <div class="card checkin-card" data-tour="attendance-checkin">
         <h3 class="section-title">
           <i class="pi pi-sign-in"></i>
           تسجيل حضور سريع

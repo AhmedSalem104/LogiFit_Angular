@@ -57,7 +57,7 @@ interface ClientDisplay {
             buttonLabel="تصدير"
             (export)="onExport($event)"
           ></app-export-menu>
-          <button class="btn btn-primary" (click)="openAddDialog()">
+          <button class="btn btn-primary" data-tour="add-client" (click)="openAddDialog()">
             <i class="pi pi-plus"></i>
             <span>إضافة عميل</span>
           </button>

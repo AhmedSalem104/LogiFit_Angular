@@ -36,14 +36,14 @@ export interface PersonFormInitial extends Omit<PersonFormValue, 'password'> {}
           </div>
 
           <form [formGroup]="form" (ngSubmit)="submit()" class="pfd-body">
-            <div class="pfd-field">
+            <div class="pfd-field" data-tour="pf-fullName">
               <label>الاسم الكامل <span class="req">*</span></label>
               <input type="text" formControlName="fullName" placeholder="أدخل الاسم الكامل"
                 [class.invalid]="invalid('fullName')" />
               <span class="err" *ngIf="invalid('fullName')">الاسم مطلوب</span>
             </div>
 
-            <div class="pfd-field">
+            <div class="pfd-field" data-tour="pf-phone">
               <label>رقم الهاتف <span class="req">*</span></label>
               <input type="tel" formControlName="phoneNumber" placeholder="01xxxxxxxxx"
                 [class.invalid]="invalid('phoneNumber')" />
@@ -58,7 +58,7 @@ export interface PersonFormInitial extends Omit<PersonFormValue, 'password'> {}
             </div>
 
             @if (mode === 'add') {
-              <div class="pfd-field">
+              <div class="pfd-field" data-tour="pf-password">
                 <label>كلمة المرور <span class="req">*</span></label>
                 <input type="password" formControlName="password" placeholder="8 أحرف على الأقل"
                   [class.invalid]="invalid('password')" />
@@ -85,7 +85,7 @@ export interface PersonFormInitial extends Omit<PersonFormValue, 'password'> {}
 
             <div class="pfd-actions">
               <button type="button" class="btn btn-ghost" (click)="cancel.emit()" [disabled]="saving">إلغاء</button>
-              <button type="submit" class="btn btn-primary" [disabled]="saving">
+              <button type="submit" class="btn btn-primary" data-tour="pf-submit" [disabled]="saving">
                 <i class="pi pi-spin pi-spinner" *ngIf="saving"></i>
                 <span>{{ mode === 'add' ? 'إضافة' : 'حفظ التعديلات' }}</span>
               </button>

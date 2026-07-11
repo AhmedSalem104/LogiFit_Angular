@@ -81,7 +81,7 @@ type View = 'overview' | 'plans' | 'payment';
             </div>
 
             <div class="actions">
-              <button class="btn btn-primary" (click)="goToPlans()"><i class="pi pi-arrow-up"></i> ترقية الباقة</button>
+              <button class="btn btn-primary" data-tour="platform-plans" (click)="goToPlans()"><i class="pi pi-arrow-up"></i> ترقية الباقة</button>
               <button class="btn btn-secondary" (click)="renew()"><i class="pi pi-refresh"></i> تجديد</button>
             </div>
           </div>
@@ -117,7 +117,7 @@ type View = 'overview' | 'plans' | 'payment';
             <i class="pi pi-star empty-icon"></i>
             <h2>لا يوجد اشتراك بعد</h2>
             <p class="muted">اختر باقة لتفعيل صالتك على منصة LogicFit</p>
-            <button class="btn btn-primary" (click)="goToPlans()">عرض الباقات</button>
+            <button class="btn btn-primary" data-tour="platform-plans" (click)="goToPlans()">عرض الباقات</button>
           </div>
         }
 
