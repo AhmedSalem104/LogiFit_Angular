@@ -266,6 +266,22 @@ Vercel: Build = `npm run build`, Output = `dist/logicfit-app/browser`.
 
 ---
 
+## 9.6 بوابات حالة الجيم (مُنفّذ من `FRONTEND_TENANT_ACCESS_GUIDE.md`)
+
+كل طلب محمي قد يرجّع كود مُصنّف `TENANT_*` في `error.error.code` (العقد = `code` مش الرسالة) لو الجيم موقوف/منتهٍ/مؤرشف/بانتظار موافقة.
+
+**الطبقة المركزية** (`core/tenant/`):
+- `tenant-status.ts`: كتالوج الأكواد + تصنيفها (`billing` 402 / `blocked` 403 / `onboarding` PendingApproval / `notfound` 404) + الرسائل والأيقونات + `isTenantStatusCode()` / `tenantStatusInfo()`.
+- `tenant-status.service.ts` (signals): `block`, `onboarding`, `isGated`, `setBlock()`, `setOnboarding()`, `resolve()`, `clear()`. تُمسح تلقائياً في `AuthService` عند نجاح المصادقة و عند الخروج.
+
+**المعالجة:**
+- **Interceptor عام** (`error.interceptor.ts`): أي `code` يبدأ بـ `TENANT_` (ما عدا طلبات `/auth/`) → `onboarding` يوجّه لـ `/owner/subscription?onboarding=1` (بدون logout)؛ الباقي يسجّل الحالة، يعمل logout للحالات blocked، ويوجّه لـ `/gym-unavailable?reason=CODE`.
+- **شاشة الدخول** (`login.component.ts`): تعرض رسالة الحالة حسب `code` بدل «بيانات خاطئة»؛ `TENANT_NOT_FOUND` يرجّع لخطوة إدخال الـ subdomain.
+- **شاشة `/gym-unavailable`** (`features/tenant/gym-unavailable/`): تقرأ الحالة من الخدمة أو `?reason=`؛ زر تجديد للمالك (billing) أو رسالة دعم (blocked).
+- **وضع الأونبوردنج**: بانر في `my-subscription.component.ts` عند `TENANT_PENDING_APPROVAL` (endpoints مسموحة فقط تحت `/api/tenant/*`).
+
+---
+
 ## 10. نقاط تستحق الانتباه (Tech-debt / مخاطر)
 
 - ملفات مكونات عملاقة (builders 4000+ سطر) — أي تعديل يحتاج حذر واختبار يدوي.

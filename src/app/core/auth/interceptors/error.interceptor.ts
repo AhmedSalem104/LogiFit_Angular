@@ -5,6 +5,8 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, catchError, filter, take, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
+import { TenantStatusService } from '../../tenant/tenant-status.service';
+import { isTenantStatusCode, tenantStatusInfo } from '../../tenant/tenant-status';
 
 // ---- Single-flight refresh state (module scope) ----
 let isRefreshing = false;
@@ -58,12 +60,53 @@ function handle401(
  * Global HTTP error handler: token refresh (401), plan-limit gating (402),
  * permission (403), and translated messages for the rest.
  */
+/**
+ * Tenant access gates: any protected request may suddenly return a typed
+ * `TENANT_*` code (the token could have been issued before the gym was blocked).
+ * Handle it globally — the ONE exception is /auth/ requests (login/register),
+ * where the auth screen itself renders the status message instead of redirecting.
+ */
+function handleTenantCode(
+  code: string,
+  auth: AuthService,
+  tenant: TenantStatusService,
+  router: Router
+): string {
+  const info = tenantStatusInfo(code as any);
+
+  if (info.kind === 'onboarding') {
+    // PendingApproval → billing-only mode, keep the session, no logout.
+    tenant.setOnboarding();
+    if (!router.url.startsWith('/owner/subscription')) {
+      router.navigate(['/owner/subscription'], { queryParams: { onboarding: 1 } });
+    }
+    return info.message;
+  }
+
+  // Blocked (403 suspended/archived) or billing (402 expired/cancelled...).
+  tenant.setBlock(info.code);
+  if (info.logout) {
+    auth.logout();
+  }
+  router.navigate(['/gym-unavailable'], { queryParams: { reason: info.code } });
+  return info.message;
+}
+
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
+  const tenantStatus = inject(TenantStatusService);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
+      // Typed tenant-access gate on a protected request → handle globally.
+      // Skip /auth/ requests: the auth screen surfaces the status itself.
+      const tenantCode = error.error?.code;
+      if (isTenantStatusCode(tenantCode) && !req.url.includes('/auth/')) {
+        const msg = handleTenantCode(tenantCode, authService, tenantStatus, router);
+        return throwError(() => ({ ...error, tenantCode, translatedMessage: msg }));
+      }
+
       // 401 on a protected endpoint → attempt silent refresh + retry
       if (error.status === 401 && !req.url.includes('/auth/')) {
         return handle401(req, next, authService);

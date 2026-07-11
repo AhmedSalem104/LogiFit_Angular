@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { NotificationService } from '../../../core/services/notification.service';
+import { TenantStatusService } from '../../../core/tenant/tenant-status.service';
 import { TenantBillingService } from './tenant-billing.service';
 import {
   PlatformPlan, MySubscription, PlatformPaymentMethod, PaymentRequest,
@@ -29,6 +30,16 @@ type View = 'overview' | 'plans' | 'payment';
           <i class="pi pi-credit-card"></i> فواتير المنصة
         </a>
       </div>
+
+      @if (onboarding()) {
+        <div class="onboarding-banner">
+          <i class="pi pi-hourglass"></i>
+          <div>
+            <b>صالتك بانتظار الموافقة</b>
+            <span>أكمل اختيار الباقة ورفع إثبات الدفع. سيتم تفعيل باقي النظام تلقائياً بعد موافقة الإدارة.</span>
+          </div>
+        </div>
+      }
 
       @if (loading()) {
         <div class="loading"><i class="pi pi-spin pi-spinner"></i> جاري التحميل...</div>
@@ -210,6 +221,8 @@ type View = 'overview' | 'plans' | 'payment';
   `,
   styles: [`
     .subscription-page { padding: 1.5rem; max-width: 1100px; margin: 0 auto; }
+    .onboarding-banner { display:flex; align-items:center; gap:.9rem; background:#fffbeb; border:1px solid #fcd34d; color:#92400e; border-radius:12px; padding:1rem 1.25rem; margin-bottom:1.25rem; }
+    .onboarding-banner i { font-size:1.5rem; } .onboarding-banner b { display:block; margin-bottom:.15rem; } .onboarding-banner span { font-size:.85rem; }
     .page-head { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap; }
     h1 { font-size:1.5rem; font-weight:700; color:var(--text-primary); }
     h2 { font-size:1.25rem; font-weight:700; color:var(--text-primary); }
@@ -269,8 +282,13 @@ export class MySubscriptionComponent implements OnInit {
   private billing = inject(TenantBillingService);
   private notify = inject(NotificationService);
   private route = inject(ActivatedRoute);
+  private tenantStatus = inject(TenantStatusService);
 
   readonly PRStatus = PaymentRequestStatus;
+
+  /** Pending-approval (billing-only) mode — from the interceptor or ?onboarding=1. */
+  readonly onboarding = computed(() =>
+    this.tenantStatus.onboarding() || !!this.route.snapshot.queryParamMap.get('onboarding'));
 
   loading = signal(true);
   submitting = signal(false);

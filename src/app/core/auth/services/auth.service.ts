@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError, switchMap, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { StorageService } from '../../services/storage.service';
+import { TenantStatusService } from '../../tenant/tenant-status.service';
 import {
   LoginRequest,
   RegisterRequest,
@@ -48,7 +49,8 @@ export class AuthService {
   constructor(
     private http: HttpClient,
     private router: Router,
-    private storage: StorageService
+    private storage: StorageService,
+    private tenantStatus: TenantStatusService
   ) {
     // Load from storage after DI is ready
     this.token.set(this.loadTokenFromStorage());
@@ -336,6 +338,9 @@ export class AuthService {
     this.storage.setItem(environment.userKey, userInfo);
     this.storage.setString(environment.tenantIdKey, response.tenantId);
     this.currentUser.set(userInfo);
+
+    // Fresh, successful auth to a reachable gym → drop any prior tenant gate.
+    this.tenantStatus.clear();
   }
 
   /**
@@ -356,6 +361,7 @@ export class AuthService {
     this.token.set(null);
     this.currentUser.set(null);
     this.permissionsSig.set([]);
+    this.tenantStatus.clear();
   }
 
   /**

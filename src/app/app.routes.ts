@@ -44,6 +44,15 @@ export const routes: Routes = [
       import('./features/client/client.routes').then(m => m.clientRoutes)
   },
 
+  // Tenant blocked (suspended / expired / archived) — no guard: a logged-out
+  // blocked user must still be able to see the status screen.
+  {
+    path: 'gym-unavailable',
+    loadComponent: () =>
+      import('./features/tenant/gym-unavailable/gym-unavailable.component')
+        .then(m => m.GymUnavailableComponent)
+  },
+
   // Default redirect
   {
     path: '',

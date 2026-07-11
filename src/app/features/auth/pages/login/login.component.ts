@@ -5,6 +5,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } 
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { BrandingService } from '../../../../core/services/branding.service';
+import { TenantStatusService } from '../../../../core/tenant/tenant-status.service';
 
 @Component({
   selector: 'app-login',
@@ -192,6 +193,7 @@ export class LoginComponent implements OnInit {
   private router = inject(Router);
   private notification = inject(NotificationService);
   private branding = inject(BrandingService);
+  private tenantStatus = inject(TenantStatusService);
 
   loginForm: FormGroup;
   loading = false;
@@ -315,6 +317,21 @@ export class LoginComponent implements OnInit {
       },
       error: (error) => {
         this.loading = false;
+
+        // Tenant access gate returned at login → show the status message (per code)
+        // instead of a generic "wrong credentials". A wrong gym code sends the user
+        // back to step 1 to re-enter the subdomain.
+        const info = this.tenantStatus.resolve(error.error?.code);
+        if (info) {
+          if (info.code === 'TENANT_NOT_FOUND') {
+            this.changeGym();
+            this.resolveError.set(info.message);
+          } else {
+            this.errorMessage = info.message;
+          }
+          return;
+        }
+
         this.errorMessage = error.translatedMessage || error.error?.message || 'خطأ في تسجيل الدخول';
       }
     });

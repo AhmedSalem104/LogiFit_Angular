@@ -45,7 +45,21 @@
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: LogicFit Angular Application\n\nFeatures:\n- Multi-role authentication \\(Owner, Coach, Client\\)\n- Owner dashboard with reports and statistics\n- Coach dashboard with trainee management\n- Client portal with workout and diet tracking\n- Subscription management system\n- Workout programs builder\n- Diet plans builder\n- Body measurements tracking\n- Export functionality \\(PDF, Word, CSV\\)\n- Arabic/English language support\n- Dark/Light theme support\n- Responsive design with PrimeNG\n\nAPI Integration:\n- Connected clients-list to API\n- Connected coaches-list to API  \n- Connected plans-list to API\n- Connected subscriptions-list to API\n- Proper error handling with mock data fallback\n\nVercel Deployment:\n- Added vercel.json configuration\n- Updated production environment\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\ndocs: Add professional README with full documentation\n\n- Project overview and features\n- Tech stack details \\(Angular 18, PrimeNG, TailwindCSS\\)\n- Installation and setup instructions\n- Project structure documentation\n- API endpoints reference\n- Theme system and i18n documentation\n- Deployment guides \\(Vercel, Docker\\)\n- Contributing guidelines\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(dir:*)",
+      "Bash(./node_modules/.bin/ng build --progress)",
+      "WebFetch(domain:logicfit.runasp.net)",
+      "Bash(grep:*)",
+      "Bash(xargs wc:*)",
+      "WebFetch(domain:logi-fit-angular.vercel.app)",
+      "Bash(tee /tmp/tsc.log)"
     ],
     "deny": [],
     "ask": []
