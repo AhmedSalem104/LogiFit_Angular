@@ -1324,7 +1324,7 @@ export class DietPlansListComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error duplicating plan:', err);
-          alert('فشل في نسخ الخطة');
+          this.notificationService.error('فشل في نسخ الخطة');
         }
       });
     }
@@ -1344,7 +1344,7 @@ export class DietPlansListComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error toggling plan:', err);
-        alert('فشل في تحديث حالة الخطة');
+        this.notificationService.error('فشل في تحديث حالة الخطة');
       }
     });
   }
@@ -1360,7 +1360,7 @@ export class DietPlansListComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error deleting plan:', err);
-          alert('فشل في حذف الخطة');
+          this.notificationService.error('فشل في حذف الخطة');
         }
       });
     }
@@ -1388,7 +1388,7 @@ export class DietPlansListComponent implements OnInit {
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      alert('يرجى السماح بالنوافذ المنبثقة للطباعة');
+      this.notificationService.error('يرجى السماح بالنوافذ المنبثقة للطباعة');
       return;
     }
 

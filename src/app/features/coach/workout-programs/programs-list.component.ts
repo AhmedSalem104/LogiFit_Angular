@@ -783,7 +783,7 @@ export class ProgramsListComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error duplicating program:', err);
-          alert('فشل في نسخ البرنامج');
+          this.notificationService.error('فشل في نسخ البرنامج');
         }
       });
     }
@@ -802,7 +802,7 @@ export class ProgramsListComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error toggling program:', err);
-        alert('فشل في تحديث حالة البرنامج');
+        this.notificationService.error('فشل في تحديث حالة البرنامج');
       }
     });
   }
@@ -818,7 +818,7 @@ export class ProgramsListComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error deleting program:', err);
-          alert('فشل في حذف البرنامج');
+          this.notificationService.error('فشل في حذف البرنامج');
         }
       });
     }
