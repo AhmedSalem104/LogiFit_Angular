@@ -9,7 +9,7 @@ import { TenantBillingService } from './tenant-billing.service';
 import {
   PlatformPlan, MySubscription, PlatformPaymentMethod, PaymentRequest,
   TenantSubscriptionSummary, UsageMetric,
-  TenantSubscriptionStatus, PaymentRequestStatus,
+  TenantSubscriptionStatus, PaymentRequestStatus, PaymentRequestOperation,
   TENANT_SUB_STATUS_AR, PAYMENT_REQUEST_STATUS_AR, BILLING_CYCLE_AR, FEATURE_AR
 } from './tenant-billing.models';
 
@@ -208,6 +208,9 @@ type View = 'overview' | 'plans' | 'payment';
                 <label>ملاحظات (اختياري)</label>
                 <textarea [(ngModel)]="form.notes" rows="2"></textarea>
               </div>
+              @if (form.operation === PaymentRequestOperation.Extend) {
+                <div class="field"><label>Extension days</label><input type="number" min="1" max="3660" [(ngModel)]="form.extensionDays" /></div>
+              }
             </div>
 
             <button class="btn btn-primary" [disabled]="submitting()" (click)="submitProof()">
@@ -279,6 +282,7 @@ type View = 'overview' | 'plans' | 'payment';
   `]
 })
 export class MySubscriptionComponent implements OnInit {
+  readonly PaymentRequestOperation = PaymentRequestOperation;
   private billing = inject(TenantBillingService);
   private notify = inject(NotificationService);
   private route = inject(ActivatedRoute);
@@ -299,7 +303,7 @@ export class MySubscriptionComponent implements OnInit {
   paymentRequests = signal<PaymentRequest[]>([]);
   summary = signal<TenantSubscriptionSummary | null>(null);
 
-  form: { planId: string; paymentMethodId?: string; transactionNumber?: string; paymentDate?: string; notes?: string; proof?: File } = { planId: '' };
+  form: { planId: string; paymentMethodId?: string; transactionNumber?: string; paymentDate?: string; notes?: string; proof?: File; operation?: PaymentRequestOperation; extensionDays?: number } = { planId: '' };
 
   ngOnInit(): void {
     this.load();
@@ -332,6 +336,7 @@ export class MySubscriptionComponent implements OnInit {
   goToPlans(): void { this.view.set('plans'); }
 
   choosePlan(plan: PlatformPlan): void {
+    this.form.operation = this.sub()?.hasSubscription ? PaymentRequestOperation.Upgrade : PaymentRequestOperation.NewSubscription;
     this.submitting.set(true);
     const req$ = this.sub()?.hasSubscription ? this.billing.upgrade(plan.id) : this.billing.selectPlan(plan.id);
     req$.subscribe({
@@ -341,6 +346,7 @@ export class MySubscriptionComponent implements OnInit {
   }
 
   renew(): void {
+    this.form.operation = PaymentRequestOperation.Renew;
     this.submitting.set(true);
     this.billing.renew().subscribe({
       next: (summary) => { this.submitting.set(false); this.startPayment(summary); },
@@ -355,7 +361,7 @@ export class MySubscriptionComponent implements OnInit {
 
   private startPayment(summary: TenantSubscriptionSummary): void {
     this.summary.set(summary);
-    this.form = { planId: summary.planId };
+    this.form = { planId: summary.planId, operation: this.form.operation ?? PaymentRequestOperation.NewSubscription };
     this.billing.getPaymentMethods().subscribe({
       next: (methods) => this.paymentMethods.set([...methods].sort((a, b) => a.displayOrder - b.displayOrder)),
       error: () => this.paymentMethods.set([])

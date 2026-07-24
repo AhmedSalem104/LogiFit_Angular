@@ -1,12 +1,12 @@
 {
   "/api": {
-    "target": "https://logicfit.runasp.net",
-    "secure": true,
+    "target": "http://localhost:5026",
+    "secure": false,
     "changeOrigin": true
   },
   "/uploads": {
-    "target": "https://logicfit.runasp.net",
-    "secure": true,
+    "target": "http://localhost:5026",
+    "secure": false,
     "changeOrigin": true
   }
 }
