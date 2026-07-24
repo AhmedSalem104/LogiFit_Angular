@@ -282,6 +282,7 @@ type View = 'overview' | 'plans' | 'payment';
   `]
 })
 export class MySubscriptionComponent implements OnInit {
+  readonly PaymentRequestOperation = PaymentRequestOperation;
   private billing = inject(TenantBillingService);
   private notify = inject(NotificationService);
   private route = inject(ActivatedRoute);
