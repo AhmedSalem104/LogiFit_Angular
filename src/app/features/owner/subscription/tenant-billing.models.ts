@@ -166,7 +166,7 @@ export const INVOICE_STATUS_AR: Record<SubscriptionInvoiceStatus, string> = {
 
 export const BILLING_CYCLE_AR: Record<BillingCycle, string> = {
   [BillingCycle.Monthly]: 'شهري',
-  [BillingCycle.Quarterly]: 'ربع سنوي',
+  [BillingCycle.SemiAnnual]: '6 أشهر',
   [BillingCycle.Annual]: 'سنوي'
 };
 
