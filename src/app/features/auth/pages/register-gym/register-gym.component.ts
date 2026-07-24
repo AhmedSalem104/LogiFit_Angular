@@ -34,9 +34,14 @@ import { environment } from '../../../../../environments/environment';
         <li><span class="num">3</span> سجّل الدخول من هذا التطبيق برقم هاتف المالك</li>
       </ul>
 
-      <a [href]="platformUrl" target="_blank" rel="noopener" class="btn btn-primary w-full">
+      <a [href]="registrationUrl" target="_blank" rel="noopener" class="btn btn-primary w-full">
         <i class="pi pi-external-link"></i>
         <span>الذهاب إلى منصة التسجيل</span>
+      </a>
+
+      <a [href]="dashboardUrl" target="_blank" rel="noopener" class="dashboard-link">
+        <i class="pi pi-shield"></i>
+        <span>دخول لوحة إدارة المنصة</span>
       </a>
 
       <div class="login-link">
@@ -63,8 +68,13 @@ import { environment } from '../../../../../environments/environment';
     .login-link { margin-top:2rem; padding-top:2rem; border-top:1px solid var(--border-color); color:var(--text-secondary); }
     .login-link a { color:#3b82f6; text-decoration:none; font-weight:500; margin-inline-start:.25rem; }
     .login-link a:hover { text-decoration:underline; }
+    .dashboard-link { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; margin-top:1rem; color:#64748b; text-decoration:none; font-size:.9rem; }
+    .dashboard-link:hover { color:#3b82f6; }
   `]
 })
 export class RegisterGymComponent {
-  readonly platformUrl = environment.platformUrl;
+  /** Keep registration inside the frontend; never open the API as a web page. */
+  /** Gym provisioning is managed from the platform dashboard, never the tenant API. */
+  readonly registrationUrl = `${environment.platformDashboardUrl}/auth/login`;
+  readonly dashboardUrl = environment.platformDashboardUrl;
 }

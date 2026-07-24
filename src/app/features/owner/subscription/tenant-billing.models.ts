@@ -8,11 +8,12 @@ export enum TenantSubscriptionStatus {
 export enum PaymentRequestStatus {
   Pending = 1, Approved = 2, Rejected = 3, Cancelled = 4, Expired = 5
 }
+export enum PaymentRequestOperation { NewSubscription = 1, Renew = 2, Upgrade = 3, Extend = 4 }
 export enum SubscriptionInvoiceStatus {
   Unpaid = 1, PendingReview = 2, Paid = 3, Cancelled = 4, Overdue = 5
 }
 export enum BillingCycle {
-  Monthly = 1, Quarterly = 2, Annual = 3
+  Monthly = 1, SemiAnnual = 2, Annual = 3
 }
 
 export type FeatureCode =
@@ -110,6 +111,7 @@ export interface PaymentRequest {
   planId: string;
   planName: string;
   tenantSubscriptionId: string;
+  operation: PaymentRequestOperation;
   amount: number;
   currency: string;
   paymentMethodId?: string;
@@ -131,6 +133,8 @@ export interface CreatePaymentRequestForm {
   transactionNumber?: string;
   paymentDate?: string;
   notes?: string;
+  operation?: PaymentRequestOperation;
+  extensionDays?: number;
 }
 
 // ---- Display helpers ----

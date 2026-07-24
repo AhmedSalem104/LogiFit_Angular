@@ -70,6 +70,8 @@ export class TenantBillingService {
     if (form.transactionNumber) fd.append('transactionNumber', form.transactionNumber);
     if (form.paymentDate) fd.append('paymentDate', form.paymentDate);
     if (form.notes) fd.append('notes', form.notes);
+    fd.append('operation', String(form.operation ?? 1));
+    if (form.extensionDays) fd.append('extensionDays', String(form.extensionDays));
     return this.http.post<PaymentRequest>(`${this.api}/payment-requests`, fd);
   }
 }

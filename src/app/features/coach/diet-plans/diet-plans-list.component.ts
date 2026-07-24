@@ -413,7 +413,7 @@ import { NotificationService } from '../../../core/services/notification.service
                       <span class="meal-time">{{ meal.time }}</span>
                     }
                   </div>
-                  @if (meal.items?.length) {
+                  @if (meal.items.length) {
                     <table class="meals-table">
                       <thead>
                         <tr>
