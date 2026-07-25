@@ -1,8 +1,8 @@
 export const environment = {
   production: true,
-  // Relative — proxied to the backend via vercel.json rewrites to avoid CORS.
-  // The real backend is https://logicfit.runasp.net/api
-  apiUrl: 'https://logicfit-saas.runasp.net/api',
+  // Production API base. Vercel rewrites /api requests to this backend via vercel.json.
+  // Keep browser requests same-origin; vercel.json rewrites /api to the current backend.
+  apiUrl: '/api',
   platformUrl: 'https://logicfit-saas.runasp.net',
   platformDashboardUrl: 'https://logi-fit-platform-admin-dashboard.vercel.app',
   tokenKey: 'logicfit_token',

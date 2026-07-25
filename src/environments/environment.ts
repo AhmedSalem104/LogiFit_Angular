@@ -1,8 +1,9 @@
 export const environment = {
   production: false,
-  // Relative — proxied to the backend (proxy.conf.json in dev, vercel.json in prod)
-  // to avoid CORS. The real backend is https://logicfit.runasp.net/api
-  apiUrl: 'https://logicfit-saas.runasp.net/api',
+  // Shared API base used by the deployed LogicFit backend.
+  // Local development can switch to the proxy target in proxy.conf.json when needed.
+  // Keep browser requests same-origin; proxy.conf.json forwards them to the current backend.
+  apiUrl: '/api',
   platformUrl: 'https://logicfit-saas.runasp.net',
   platformDashboardUrl: 'http://localhost:4300',
   tokenKey: 'logicfit_token',
