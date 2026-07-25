@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { ThemeState } from '../../../state/theme.state';
+import { BrandingService } from '../../services/branding.service';
 import { HelpCenterComponent } from '../../help/help-center/help-center.component';
 import { HelpLocalComponent } from '../../help/help-local/help-local.component';
 
@@ -30,7 +31,7 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
       </div>
 
       <!-- Left Side - Branding -->
-      <div class="auth-branding">
+      <div class="auth-branding" [style.background-image]="branding.branding()?.loginBackgroundUrl ? 'linear-gradient(135deg, rgba(11,18,32,.78), rgba(29,78,216,.72)), url(' + branding.branding()!.loginBackgroundUrl + ')' : null">
         <!-- animated backdrop -->
         <div class="orb orb-1"></div>
         <div class="orb orb-2"></div>
@@ -45,7 +46,8 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
                   stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
-            <span class="logo-word">Logic<b>Fit</b></span>
+            @if (branding.branding()?.logoUrl) { <img class="tenant-logo" [src]="branding.branding()!.logoUrl" [alt]="branding.branding()?.name || 'Gym logo'"> }
+            <span class="logo-word">{{ branding.branding()?.appName || branding.branding()?.name || 'LogicFit' }}</span>
           </div>
 
           <h1>منصّة متكاملة لإدارة صالتك الرياضية</h1>
@@ -137,6 +139,7 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
       border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.25);
     }
     .logo-mark svg { width: 30px; height: 30px; }
+    .tenant-logo { width: 56px; height: 56px; object-fit: contain; border-radius: 16px; background: rgba(255,255,255,.14); padding: .35rem; }
     .logo-word { font-size: 1.9rem; font-weight: 800; letter-spacing: .3px; }
     .logo-word b { font-weight: 600; opacity: .82; }
 
@@ -197,5 +200,6 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
 })
 export class AuthLayoutComponent {
   themeState = inject(ThemeState);
+  branding = inject(BrandingService);
   readonly year = 2026;
 }
