@@ -3833,3 +3833,121 @@ textarea,
     }
   }
 }
+
+// ========================================
+// Responsive foundation — all gym workspaces
+// The page modules use a mixture of PrimeNG tables, native tables, cards and
+// dialog forms. These guardrails keep the shared chrome usable without forcing
+// every domain screen to duplicate the same mobile CSS.
+// ========================================
+html,
+body {
+  min-width: 320px;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+p-table,
+.p-datatable,
+.p-datatable-wrapper,
+.table-container,
+.table-wrapper,
+.data-card,
+.report-table {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.p-datatable-wrapper,
+.table-container,
+.table-wrapper {
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.p-datatable-wrapper > table,
+.p-datatable-table,
+.table-container > table,
+.table-wrapper > table {
+  min-width: max-content;
+}
+
+.p-datatable-wrapper:focus-visible,
+.table-container:focus-visible,
+.table-wrapper:focus-visible {
+  outline: 3px solid var(--input-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .p-datatable .p-datatable-header {
+    padding: .875rem 1rem;
+  }
+
+  .p-datatable .p-datatable-thead > tr > th,
+  .p-datatable .p-datatable-tbody > tr > td {
+    padding: .75rem .875rem;
+    font-size: .82rem;
+  }
+
+  .p-paginator {
+    padding: .75rem .5rem;
+    gap: .125rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .p-paginator .p-paginator-current {
+    width: 100%;
+    text-align: center;
+    margin: .25rem 0 0;
+  }
+
+  .page-header,
+  .table-header,
+  .table-toolbar,
+  .header-actions,
+  .table-actions,
+  .filter-row,
+  .filters-row,
+  .form-actions,
+  .modal-actions {
+    flex-wrap: wrap;
+  }
+
+  .page-header > *,
+  .table-header > *,
+  .table-toolbar > *,
+  .header-actions > *,
+  .table-actions > *,
+  .filter-row > *,
+  .filters-row > * {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .p-datatable .p-datatable-thead > tr > th,
+  .p-datatable .p-datatable-tbody > tr > td {
+    padding: .625rem .75rem;
+  }
+
+  .p-paginator .p-paginator-pages {
+    display: none;
+  }
+
+  .p-dialog {
+    width: calc(100vw - 1rem) !important;
+    max-width: calc(100vw - 1rem) !important;
+    margin: .5rem !important;
+  }
+}

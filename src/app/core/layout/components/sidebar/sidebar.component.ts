@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../../auth/services/auth.service';
@@ -46,11 +46,38 @@ interface NavGroup {
             <span class="logo-subtitle">Gym Management</span>
           </div>
         </div>
+        <button
+          class="pin-button"
+          type="button"
+          (click)="togglePin()"
+          [attr.aria-label]="isPinned ? 'إلغاء تثبيت القائمة' : 'تثبيت القائمة مفتوحة'"
+          [title]="isPinned ? 'إلغاء تثبيت القائمة' : 'تثبيت القائمة مفتوحة'"
+        >
+          <i class="pi" [class.pi-lock]="isPinned" [class.pi-thumbtack]="!isPinned"></i>
+        </button>
+      </div>
+
+      <!-- Permission-aware navigation search. It only searches links available to the signed-in user. -->
+      <div class="sidebar-search" [class.has-query]="searchTerm().length > 0">
+        <i class="pi pi-search search-icon" aria-hidden="true"></i>
+        <input
+          #navigationSearch
+          type="search"
+          [value]="searchTerm()"
+          (input)="setSearch(navigationSearch.value)"
+          placeholder="ابحث في القائمة..."
+          aria-label="البحث في قائمة التنقل"
+        />
+        @if (searchTerm()) {
+          <button type="button" class="clear-search" (click)="clearSearch()" aria-label="مسح البحث" title="مسح البحث">
+            <i class="pi pi-times"></i>
+          </button>
+        }
       </div>
 
       <!-- Navigation -->
       <nav class="sidebar-nav">
-        @for (group of visibleNavGroups; track group.title) {
+        @for (group of filteredNavGroups; track group.title) {
           <div class="nav-section">
             <div class="section-title">
               <span class="title-text">{{ group.title }}</span>
@@ -65,6 +92,7 @@ interface NavGroup {
                       routerLinkActive="active"
                       class="nav-link"
                       [title]="isCollapsed ? item.label : ''"
+                      (click)="onNavigate()"
                     >
                       <div class="nav-icon-wrapper">
                         <i [class]="'pi ' + item.icon"></i>
@@ -79,6 +107,12 @@ interface NavGroup {
                 }
               }
             </ul>
+          </div>
+        } @empty {
+          <div class="nav-empty-state">
+            <i class="pi pi-search"></i>
+            <strong>لا توجد نتيجة</strong>
+            <span>جرّب كلمة أقصر أو مختلفة.</span>
           </div>
         }
       </nav>
@@ -140,6 +174,8 @@ interface NavGroup {
         width: 80px;
 
         .logo-text,
+        .pin-button,
+        .sidebar-search,
         .section-title .title-text,
         .nav-text,
         .nav-badge,
@@ -156,6 +192,12 @@ interface NavGroup {
         .section-title .title-line {
           opacity: 1;
           width: 24px;
+        }
+
+        .sidebar-search {
+          min-height: 0;
+          max-height: 0;
+          border-width: 0;
         }
 
         .nav-link {
@@ -187,6 +229,8 @@ interface NavGroup {
           width: 280px;
 
           .logo-text,
+          .pin-button,
+          .sidebar-search,
           .section-title .title-text,
           .nav-text,
           .nav-badge,
@@ -199,6 +243,14 @@ interface NavGroup {
           .section-title .title-line {
             opacity: 0;
             width: 0;
+          }
+
+          .sidebar-search {
+            min-height: 44px;
+            max-height: 44px;
+            margin: .875rem .75rem 0;
+            padding: 0;
+            border-width: 1px;
           }
 
           .nav-link {
@@ -262,6 +314,10 @@ interface NavGroup {
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
       position: relative;
       z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
     }
 
     .logo-wrapper {
@@ -327,6 +383,88 @@ interface NavGroup {
       white-space: nowrap;
       letter-spacing: 0.05em;
       text-transform: uppercase;
+    }
+
+    .pin-button {
+      width: 34px;
+      height: 34px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      color: rgba(203, 213, 225, 0.9);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex: 0 0 auto;
+      transition: color .2s ease, background .2s ease, border-color .2s ease, transform .2s ease, opacity .2s ease;
+
+      &:hover {
+        color: white;
+        background: rgba(59, 130, 246, 0.2);
+        border-color: rgba(96, 165, 250, 0.5);
+        transform: translateY(-1px);
+      }
+    }
+
+    .sidebar-search {
+      position: relative;
+      z-index: 1;
+      margin: 0.875rem 0.75rem 0;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.38);
+      transition: border-color .2s ease, background .2s ease, opacity .25s ease, max-height .3s ease, margin .3s ease;
+
+      &:focus-within {
+        border-color: rgba(96, 165, 250, 0.75);
+        background: rgba(15, 23, 42, 0.72);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, .15);
+      }
+
+      .search-icon {
+        position: absolute;
+        inset-inline-start: 0.875rem;
+        color: rgba(148, 163, 184, 0.85);
+        font-size: .875rem;
+        pointer-events: none;
+      }
+
+      input {
+        width: 100%;
+        min-width: 0;
+        height: 42px;
+        border: 0;
+        outline: 0;
+        color: #f8fafc;
+        background: transparent;
+        padding: 0 2.5rem 0 2.25rem;
+        font: inherit;
+        font-size: .8rem;
+
+        &::placeholder { color: rgba(148, 163, 184, .78); }
+        &::-webkit-search-cancel-button { display: none; }
+      }
+    }
+
+    .clear-search {
+      position: absolute;
+      inset-inline-end: .4rem;
+      width: 30px;
+      height: 30px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: rgba(203, 213, 225, .72);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover { color: white; background: rgba(255, 255, 255, .1); }
     }
 
     /* ========================================
@@ -401,6 +539,22 @@ interface NavGroup {
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
+    }
+
+    .nav-empty-state {
+      min-height: 170px;
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: .45rem;
+      text-align: center;
+      color: rgba(203, 213, 225, .82);
+
+      > i { font-size: 1.4rem; color: #60a5fa; }
+      strong { font-size: .88rem; }
+      span { color: rgba(148, 163, 184, .88); font-size: .72rem; }
     }
 
     .nav-link {
@@ -642,8 +796,7 @@ interface NavGroup {
       .sidebar {
         transform: translateX(100%);
 
-        &:not(.collapsed),
-        &.collapsed.hovered {
+        &:not(.collapsed) {
           transform: translateX(0);
         }
       }
@@ -651,11 +804,17 @@ interface NavGroup {
       :host-context([dir="ltr"]) .sidebar {
         transform: translateX(-100%);
 
-        &:not(.collapsed),
-        &.collapsed.hovered {
+        &:not(.collapsed) {
           transform: translateX(0);
         }
       }
+    }
+
+    @media (max-width: 480px) {
+      .sidebar { width: min(86vw, 320px); }
+      .sidebar-header { padding: 1.125rem 1rem; }
+      .sidebar-nav { padding-inline: .55rem; }
+      .sidebar-search { margin-inline: .55rem; }
     }
   `]
 })
@@ -664,9 +823,14 @@ export class SidebarComponent {
   themeState = inject(ThemeState);
 
   isHovered = false;
+  readonly searchTerm = signal('');
 
   get isCollapsed(): boolean {
     return this.themeState.sidebarCollapsed() && !this.isHovered;
+  }
+
+  get isPinned(): boolean {
+    return !this.themeState.sidebarCollapsed();
   }
 
   onMouseEnter(): void {
@@ -677,6 +841,23 @@ export class SidebarComponent {
 
   onMouseLeave(): void {
     this.isHovered = false;
+  }
+
+  togglePin(): void {
+    this.themeState.toggleSidebar();
+  }
+
+  setSearch(value: string): void {
+    this.searchTerm.set(value.trim());
+  }
+
+  clearSearch(): void {
+    this.searchTerm.set('');
+  }
+
+  onNavigate(): void {
+    this.clearSearch();
+    this.themeState.closeMobileSidebar();
   }
 
   getRoleLabel(): string {
@@ -912,6 +1093,21 @@ export class SidebarComponent {
     return this.navGroups
       .filter(group => this.matchesPanel(group.roles) && this.matchesPermission(group.permission))
       .map(group => ({ ...group, items: group.items.filter(item => this.canShowItem(item)) }))
+      .filter(group => group.items.length > 0);
+  }
+
+  get filteredNavGroups(): NavGroup[] {
+    const query = this.searchTerm().toLocaleLowerCase('ar-EG');
+    if (!query) return this.visibleNavGroups;
+
+    return this.visibleNavGroups
+      .map(group => ({
+        ...group,
+        items: group.items.filter(item =>
+          group.title.toLocaleLowerCase('ar-EG').includes(query) ||
+          item.label.toLocaleLowerCase('ar-EG').includes(query)
+        )
+      }))
       .filter(group => group.items.length > 0);
   }
 

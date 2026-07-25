@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, HostListener, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../components/sidebar/sidebar.component';
@@ -154,7 +154,7 @@ import { TourOverlayComponent } from '../../help/tour/tour-overlay.component';
     }
   `]
 })
-export class MainLayoutComponent {
+export class MainLayoutComponent implements OnInit {
   themeState = inject(ThemeState);
   private auth = inject(AuthService);
 
@@ -164,6 +164,15 @@ export class MainLayoutComponent {
     if (this.auth.isClient()) return 'client';
     return 'owner'; // Owner / Manager / Receptionist / Accountant (back-office)
   });
+
+  ngOnInit(): void {
+    this.themeState.syncViewport();
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.themeState.syncViewport();
+  }
 
   get showMobileOverlay(): boolean {
     return !this.themeState.sidebarCollapsed() && window.innerWidth <= 1024;
