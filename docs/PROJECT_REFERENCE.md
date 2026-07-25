@@ -199,9 +199,14 @@ PayrollStatus       { Draft=1, Approved=2, Paid=3, Cancelled=4 }
 ## 7. الحالة والثيم (`state/theme.state.ts`)
 
 Signals: `darkMode`, `language` (`ar`/`en`), `sidebarCollapsed`. Computed: `theme()`, `direction()` (rtl/ltr)، `isRtl()`.
-الأفعال: `toggleDarkMode`, `setTheme`, `toggleLanguage`, `setLanguage`, `toggleSidebar`, `setSidebarCollapsed`. يُحفظ في `localStorage` (مفاتيح `logicfit_theme` / `logicfit_lang`).
+الأفعال: `toggleDarkMode`, `setTheme`, `toggleLanguage`, `setLanguage`, `toggleSidebar`, `setSidebarCollapsed`, `syncViewport`, `closeMobileSidebar`.
+يُحفظ الثيم واللغة في `localStorage` (مفاتيح `logicfit_theme` / `logicfit_lang`).
 
-> ⚠️ **`loadLanguage()` يكتب `'en'` بشكل ثابت في localStorage (السطر ~138)** — اللغة الافتراضية عملياً إنجليزي رغم كون العربية اللغة الأساسية للـ UI. يستحق المراجعة عند العمل على i18n.
+- اللغة الافتراضية لأول زيارة هي العربية/RTL، ثم يُحترم اختيار المستخدم المحفوظ.
+- القائمة الجانبية لها حالتان منفصلتان: desktop compact rail يتوسع عند hover ويمكن تثبيته، وmobile drawer مغلق افتراضياً. حفظ التثبيت يستخدم `logicfit_sidebar_pinned`.
+- `syncViewport()` يستدعى من `MainLayoutComponent` عند البداية وتغيير حجم الشاشة؛ لذلك لا يبقى drawer أو overlay مفتوحًا خطأً بعد الانتقال بين tablet وdesktop.
+
+راجع [دليل التصميم والـResponsive](RESPONSIVE-DESIGN.md) لتفاصيل النقاط الفاصلة والجداول والحوارات، و[تدفقات مساحات العمل](WORKSPACE-FLOWS.md) لكتالوج الشاشات والصلاحيات.
 
 ---
 

@@ -1,4 +1,4 @@
-import { Injectable, signal, effect } from '@angular/core';
+import { Injectable, signal, effect, computed } from '@angular/core';
 import { environment } from '../../environments/environment';
 
 export type Theme = 'light' | 'dark';
@@ -12,12 +12,18 @@ export class ThemeState {
   // Theme state
   private _darkMode = signal<boolean>(this.loadTheme() === 'dark');
   private _language = signal<Language>(this.loadLanguage());
-  private _sidebarCollapsed = signal<boolean>(false);
+  // Desktop starts as a compact rail that expands on hover.  The user can pin it
+  // open, while phones always start with a closed drawer.
+  private _isMobileViewport = signal<boolean>(this.isMobileViewport());
+  private _sidebarPinned = signal<boolean>(this.loadSidebarPinned());
+  private _mobileSidebarOpen = signal<boolean>(false);
 
   // Public readonly signals
   readonly darkMode = this._darkMode.asReadonly();
   readonly language = this._language.asReadonly();
-  readonly sidebarCollapsed = this._sidebarCollapsed.asReadonly();
+  readonly sidebarCollapsed = computed(() =>
+    this._isMobileViewport() ? !this._mobileSidebarOpen() : !this._sidebarPinned()
+  );
 
   // Computed
   readonly theme = (): Theme => this._darkMode() ? 'dark' : 'light';
@@ -77,14 +83,41 @@ export class ThemeState {
    * Toggle sidebar
    */
   toggleSidebar(): void {
-    this._sidebarCollapsed.update(v => !v);
+    if (this._isMobileViewport()) {
+      this._mobileSidebarOpen.update(v => !v);
+      return;
+    }
+
+    this._sidebarPinned.update(v => !v);
+    this.saveSidebarPinned(this._sidebarPinned());
   }
 
   /**
    * Set sidebar state
    */
   setSidebarCollapsed(collapsed: boolean): void {
-    this._sidebarCollapsed.set(collapsed);
+    if (this._isMobileViewport()) {
+      this._mobileSidebarOpen.set(!collapsed);
+      return;
+    }
+
+    this._sidebarPinned.set(!collapsed);
+    this.saveSidebarPinned(!collapsed);
+  }
+
+  /** Keeps the drawer behaviour in sync when the viewport crosses the tablet breakpoint. */
+  syncViewport(width = typeof window === 'undefined' ? 0 : window.innerWidth): void {
+    const isMobile = width <= 1024;
+    if (isMobile && !this._isMobileViewport()) {
+      this._mobileSidebarOpen.set(false);
+    }
+    this._isMobileViewport.set(isMobile);
+  }
+
+  closeMobileSidebar(): void {
+    if (this._isMobileViewport()) {
+      this._mobileSidebarOpen.set(false);
+    }
   }
 
   /**
@@ -130,13 +163,13 @@ export class ThemeState {
     localStorage.setItem(environment.themeKey, theme);
   }
 
-  /**
-   * Load language from storage - Always returns 'en'
-   */
+  /** Load the user preference and use Arabic/RTL on a first visit. */
   private loadLanguage(): Language {
-    // Always use English
-    localStorage.setItem(environment.langKey, 'en');
-    return 'en';
+    const saved = localStorage.getItem(environment.langKey);
+    if (saved === 'ar' || saved === 'en') {
+      return saved;
+    }
+    return 'ar';
   }
 
   /**
@@ -144,5 +177,18 @@ export class ThemeState {
    */
   private saveLanguage(lang: Language): void {
     localStorage.setItem(environment.langKey, lang);
+  }
+
+  private isMobileViewport(): boolean {
+    return typeof window !== 'undefined' && window.innerWidth <= 1024;
+  }
+
+  private loadSidebarPinned(): boolean {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('logicfit_sidebar_pinned') === 'true';
+  }
+
+  private saveSidebarPinned(pinned: boolean): void {
+    localStorage.setItem('logicfit_sidebar_pinned', String(pinned));
   }
 }
