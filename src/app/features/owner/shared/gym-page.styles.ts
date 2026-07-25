@@ -120,4 +120,34 @@ export const GYM_PAGE_STYLES = `
     border-bottom: 1px solid var(--border-color);
   }
   .section-title i { color: var(--primary-500); }
+
+  @media (max-width: 768px) {
+    .toolbar,
+    .dialog-actions,
+    .header-actions {
+      align-items: stretch;
+    }
+    .toolbar > *,
+    .header-actions > * {
+      min-width: 0;
+    }
+    .toolbar .search-input,
+    .toolbar .flex-fill {
+      flex-basis: 100%;
+    }
+    .dialog-actions {
+      flex-wrap: wrap;
+    }
+    .dialog-actions .btn,
+    .dialog-actions button {
+      flex: 1 1 140px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .toolbar { padding: .875rem; gap: .625rem; }
+    .mini-stat { padding: .875rem 1rem; }
+    .mini-stat__value { font-size: 1.2rem; }
+    .action-btn { width: 38px; height: 38px; margin: .12rem; }
+  }
 `;

@@ -183,6 +183,14 @@ import { interval, Subscription } from 'rxjs';
     .branch-head { display:flex; justify-content:space-between; align-items:center; }
     .branch-stats { display:flex; gap:1rem; font-size:.8rem; color: var(--text-secondary); }
     .branch-stats i { margin-left: .25rem; }
+
+    @media (max-width: 640px) {
+      .kpi-card.kpi-wide { grid-column: 1 / -1; }
+      .kpi-tri { grid-template-columns: 1fr; }
+      .kpi-today { flex-wrap: wrap; gap: .45rem .875rem; }
+      .branch-grid { grid-template-columns: 1fr; }
+      .branch-stats { flex-wrap: wrap; gap: .4rem .8rem; }
+    }
   `]
 })
 export class OperationsDashboardComponent implements OnInit, OnDestroy {

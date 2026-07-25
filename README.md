@@ -234,7 +234,7 @@ src/
 │
 ├── assets/i18n/                   # ar.json / en.json
 ├── environments/
-└── docs/PROJECT_REFERENCE.md      # full technical reference
+└── docs/                           # technical, flow, API and responsive documentation
 ```
 
 ---
@@ -277,7 +277,9 @@ Coaching     /api/workoutprograms, /api/dietplans, /api/exercises  # ownership-c
 Reports      /api/reports/*, /api/operations-dashboard             # ViewReports
 ```
 
-> 📎 The full endpoint map, enums, and conventions live in [`docs/PROJECT_REFERENCE.md`](docs/PROJECT_REFERENCE.md).
+> 📎 The full endpoint map, input/output contracts, and access rules live in
+> [`docs/API-ENDPOINT-CATALOG.md`](docs/API-ENDPOINT-CATALOG.md). The workspace
+> flows and responsive contract are in [`docs/README.md`](docs/README.md).
 
 ### Unified Error Handling
 | Status | Meaning | Frontend behavior |
@@ -300,6 +302,19 @@ Reports      /api/reports/*, /api/operations-dashboard             # ViewReports
 themeState.toggleDarkMode();   // switch theme
 themeState.setLanguage('ar');  // switch language (sets RTL)
 ```
+
+---
+
+## 📚 Documentation
+
+| Document | Purpose |
+|---|---|
+| [Documentation center](docs/README.md) | Entry point and update rules. |
+| [Project reference](docs/PROJECT_REFERENCE.md) | Architecture, services, models and local development. |
+| [Workspace flows](docs/WORKSPACE-FLOWS.md) | Owner, coach and client screens, permissions and user journeys. |
+| [Complete screen operations guide](docs/SCREEN-OPERATIONS-GUIDE.md) | Purpose, data, controls, permissions, business limits and error behavior for every user-facing screen. |
+| [API endpoint catalog](docs/API-ENDPOINT-CATALOG.md) | All Tenant and Platform routes, access, inputs and declared responses. |
+| [Responsive design guide](docs/RESPONSIVE-DESIGN.md) | Sidebar, breakpoints, tables, dialogs and visual QA. |
 
 ---
 
