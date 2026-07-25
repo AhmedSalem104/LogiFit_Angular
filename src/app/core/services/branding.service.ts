@@ -11,9 +11,38 @@ export interface TenantBranding {
   subdomain: string;
   appName?: string;
   logoUrl?: string;
+  logoDarkUrl?: string;
+  logoLightUrl?: string;
+  logoIconUrl?: string;
+  faviconUrl?: string;
   coverImageUrl?: string;
+  loginBackgroundUrl?: string;
+  dashboardBannerUrl?: string;
+  galleryImages?: string[];
   primaryColor?: string;
+  primaryHoverColor?: string;
+  primaryForegroundColor?: string;
   secondaryColor?: string;
+  secondaryHoverColor?: string;
+  secondaryForegroundColor?: string;
+  accentColor?: string;
+  backgroundColor?: string;
+  surfaceColor?: string;
+  cardColor?: string;
+  sidebarColor?: string;
+  sidebarTextColor?: string;
+  headerColor?: string;
+  headerTextColor?: string;
+  textPrimaryColor?: string;
+  textSecondaryColor?: string;
+  borderColor?: string;
+  inputBackgroundColor?: string;
+  successColor?: string;
+  warningColor?: string;
+  dangerColor?: string;
+  infoColor?: string;
+  borderRadius?: string;
+  themeMode?: string;
   fontFamily?: string;
   customCss?: string;
   invoiceLogoUrl?: string;
@@ -118,13 +147,29 @@ export class BrandingService {
   /** Apply colors, fonts, app name and custom CSS to the document. */
   apply(b: TenantBranding): void {
     const root = document.documentElement;
-    if (b.primaryColor) root.style.setProperty('--brand-primary', b.primaryColor);
-    if (b.secondaryColor) root.style.setProperty('--brand-secondary', b.secondaryColor);
-    if (b.primaryColor) root.style.setProperty('--accent-color', b.primaryColor);
-    if (b.fontFamily) root.style.setProperty('--brand-font', b.fontFamily);
+    const vars: Record<string, string | undefined> = {
+      '--brand-primary': b.primaryColor, '--brand-primary-hover': b.primaryHoverColor,
+      '--brand-primary-foreground': b.primaryForegroundColor, '--brand-secondary': b.secondaryColor,
+      '--brand-secondary-hover': b.secondaryHoverColor, '--brand-secondary-foreground': b.secondaryForegroundColor,
+      '--accent-color': b.accentColor ?? b.primaryColor, '--bg-page': b.backgroundColor,
+      '--bg-surface': b.surfaceColor, '--card-color': b.cardColor, '--sidebar-color': b.sidebarColor,
+      '--sidebar-text-color': b.sidebarTextColor, '--header-color': b.headerColor,
+      '--header-text-color': b.headerTextColor, '--text': b.textPrimaryColor,
+      '--text-muted': b.textSecondaryColor, '--border': b.borderColor,
+      '--input-background': b.inputBackgroundColor, '--success-color': b.successColor,
+      '--warning-color': b.warningColor, '--danger-color': b.dangerColor, '--info-color': b.infoColor,
+      '--brand-font': b.fontFamily, '--radius': b.borderRadius
+    };
+    Object.entries(vars).forEach(([key, value]) => value && root.style.setProperty(key, value));
 
     if (b.appName) {
       document.title = b.appName;
+    }
+
+    if (b.faviconUrl) {
+      const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]') ?? document.createElement('link');
+      link.rel = 'icon'; link.href = b.faviconUrl;
+      if (!link.parentElement) document.head.appendChild(link);
     }
 
     if (b.customCss) {

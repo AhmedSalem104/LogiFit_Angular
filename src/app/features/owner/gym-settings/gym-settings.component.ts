@@ -185,6 +185,26 @@ import { environment } from '../../../../environments/environment';
           </div>
         </div>
 
+        <!-- White-label branding -->
+        <div class="settings-card branding-card">
+          <div class="card-header"><i class="pi pi-palette"></i><h3>الهوية البصرية</h3><span class="branding-hint">تظهر لجميع مستخدمي الجيم</span></div>
+          <div class="card-body branding-grid">
+            <div class="form-group"><label>اسم التطبيق</label><input pInputText [(ngModel)]="form.appName" placeholder="اسم التطبيق داخل الجيم" /></div>
+            <div class="form-group"><label>الخط</label><input pInputText [(ngModel)]="form.fontFamily" placeholder="Cairo" /></div>
+            <div class="form-group color-field"><label>اللون الأساسي</label><input type="color" [(ngModel)]="form.primaryColor" /><input pInputText [(ngModel)]="form.primaryColor" /></div>
+            <div class="form-group color-field"><label>اللون الثانوي</label><input type="color" [(ngModel)]="form.secondaryColor" /><input pInputText [(ngModel)]="form.secondaryColor" /></div>
+            <div class="form-group color-field"><label>لون التمييز</label><input type="color" [(ngModel)]="form.accentColor" /><input pInputText [(ngModel)]="form.accentColor" /></div>
+            <div class="form-group color-field"><label>خلفية التطبيق</label><input type="color" [(ngModel)]="form.backgroundColor" /><input pInputText [(ngModel)]="form.backgroundColor" /></div>
+            <div class="form-group"><label>هاتف الدعم</label><input pInputText [(ngModel)]="form.supportPhone" /></div>
+            <div class="form-group"><label>بريد الدعم</label><input pInputText [(ngModel)]="form.supportEmail" /></div>
+            <div class="form-group full-width"><label>رابط صورة خلفية الدخول</label><input pInputText [(ngModel)]="form.loginBackgroundUrl" placeholder="https://..." /></div>
+            <div class="form-group full-width"><label>رابط بانر لوحة التحكم</label><input pInputText [(ngModel)]="form.dashboardBannerUrl" placeholder="https://..." /></div>
+            <div class="branding-preview full-width" [style.background]="'linear-gradient(120deg,' + (form.primaryColor || '#2563eb') + ',' + (form.secondaryColor || '#4f46e5') + ')'">
+              <strong>{{ form.appName || form.name || 'LogicFit' }}</strong><span>معاينة الهوية والألوان</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Save Button -->
         <div class="save-section">
           <button pButton label="حفظ التغييرات" icon="pi pi-check" (click)="saveSettings()" [loading]="saving()" class="save-btn"></button>
@@ -507,6 +527,17 @@ import { environment } from '../../../../environments/environment';
     .save-btn {
       min-width: 180px;
     }
+    .branding-card { grid-column: 1 / -1; }
+    .branding-hint { color: var(--text-muted); font-size: .75rem; }
+    .branding-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem 1.25rem; }
+    .branding-grid .form-group { margin:0; }
+    .branding-grid .full-width { grid-column:1 / -1; }
+    .color-field { display:grid; grid-template-columns:1fr 2.25rem; align-items:end; gap:.5rem; }
+    .color-field label { grid-column:1 / -1; }
+    .color-field input[type=color] { width:2.25rem; height:2.25rem; padding:0; border:0; background:transparent; }
+    .color-field input[type=text] { grid-column:1; grid-row:2; }
+    .branding-preview { display:flex; align-items:center; justify-content:space-between; min-height:5rem; padding:1rem 1.25rem; border-radius:1rem; color:#fff; box-shadow:0 10px 24px rgba(15,23,42,.14); }
+    .branding-preview strong { font-size:1.15rem; }.branding-preview span { opacity:.85; font-size:.8rem; }
 
     /* Responsive */
     @media (max-width: 900px) {
@@ -532,6 +563,7 @@ import { environment } from '../../../../environments/environment';
       .gym-name-display h2 { font-size: 1.2rem; }
 
       .card-body { padding: 16px; }
+      .branding-grid { grid-template-columns:1fr; }.branding-grid .full-width { grid-column:auto; }
 
       .gallery-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -580,7 +612,17 @@ export class GymSettingsComponent implements OnInit {
           facebook: data.facebook || '',
           instagram: data.instagram || '',
           website: data.website || '',
-          openingHours: data.openingHours || ''
+          openingHours: data.openingHours || '',
+          appName: data.brandingSettings?.appName || '',
+          fontFamily: data.brandingSettings?.fontFamily || '',
+          primaryColor: data.brandingSettings?.primaryColor || '#2563eb',
+          secondaryColor: data.brandingSettings?.secondaryColor || '#4f46e5',
+          accentColor: data.brandingSettings?.accentColor || '#06b6d4',
+          backgroundColor: data.brandingSettings?.backgroundColor || '#f4f7fb',
+          supportPhone: data.brandingSettings?.supportPhone || '',
+          supportEmail: data.brandingSettings?.supportEmail || '',
+          loginBackgroundUrl: data.brandingSettings?.loginBackgroundUrl || '',
+          dashboardBannerUrl: data.brandingSettings?.dashboardBannerUrl || ''
         };
         this.loading.set(false);
       },
