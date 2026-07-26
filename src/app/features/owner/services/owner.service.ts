@@ -298,6 +298,7 @@ export interface UpdateGymProfileRequest {
   name?: string;
   description?: string;
   phone?: string;
+  phoneNumber?: string;
   email?: string;
   address?: string;
   facebook?: string;
