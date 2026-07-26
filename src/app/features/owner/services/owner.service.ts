@@ -280,10 +280,10 @@ export interface GymProfile {
   logoUrl?: string;
   coverImageUrl?: string;
   galleryImages?: string[];
+  openingHours?: string;
   facebook?: string;
   instagram?: string;
   website?: string;
-  openingHours?: string;
   brandingSettings?: BrandingSettings;
 }
 
@@ -292,6 +292,7 @@ export interface BrandingSettings {
   backgroundColor?: string | null; surfaceColor?: string | null; sidebarColor?: string | null; headerColor?: string | null;
   appName?: string | null; fontFamily?: string | null; loginBackgroundUrl?: string | null;
   dashboardBannerUrl?: string | null; supportPhone?: string | null; supportEmail?: string | null;
+  facebookUrl?: string | null; instagramUrl?: string | null; websiteUrl?: string | null; openingHours?: string | null;
 }
 
 export interface UpdateGymProfileRequest {
@@ -304,7 +305,6 @@ export interface UpdateGymProfileRequest {
   facebook?: string;
   instagram?: string;
   website?: string;
-  openingHours?: string;
   appName?: string;
   fontFamily?: string;
   primaryColor?: string;
@@ -318,6 +318,10 @@ export interface UpdateGymProfileRequest {
   dashboardBannerUrl?: string;
   supportPhone?: string;
   supportEmail?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  websiteUrl?: string;
+  openingHours?: string;
 }
 
 // ==================== Enums ====================
