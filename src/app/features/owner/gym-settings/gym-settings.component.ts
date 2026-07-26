@@ -689,11 +689,13 @@ export class GymSettingsComponent implements OnInit {
         this.ownerService.getGymProfile().subscribe({
           next: (saved) => {
             const b = saved.brandingSettings;
-            const matches = [
-              ['primaryColor', payload.primaryColor], ['secondaryColor', payload.secondaryColor],
-              ['sidebarColor', payload.sidebarColor], ['headerColor', payload.headerColor],
-              ['loginBackgroundUrl', payload.loginBackgroundUrl], ['dashboardBannerUrl', payload.dashboardBannerUrl]
-            ].every(([key, value]) => !value || (b as any)?.[key] === value);
+            const matches =
+              (!payload.primaryColor || b?.primaryColor === payload.primaryColor) &&
+              (!payload.secondaryColor || b?.secondaryColor === payload.secondaryColor) &&
+              (!payload.sidebarColor || b?.sidebarColor === payload.sidebarColor) &&
+              (!payload.headerColor || b?.headerColor === payload.headerColor) &&
+              (!payload.loginBackgroundUrl || b?.loginBackgroundUrl === payload.loginBackgroundUrl) &&
+              (!payload.dashboardBannerUrl || b?.dashboardBannerUrl === payload.dashboardBannerUrl);
             this.brandingSaving.set(false);
             if (!matches) {
               this.notify.error('تم استلام الطلب لكن الخادم لم يعكس التعديل. تأكد من نشر Backend الأخير واتصال قاعدة البيانات.');
