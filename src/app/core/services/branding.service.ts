@@ -192,9 +192,12 @@ export class BrandingService {
       '--primary-700': primaryHover, '--primary-400': primary,
       '--gradient-primary': `linear-gradient(135deg, ${primary} 0%, ${secondary} 100%)`,
       '--bg-secondary': b.surfaceColor || b.backgroundColor,
+      '--bg-tertiary': b.surfaceColor,
       '--card-bg': b.cardColor || b.surfaceColor,
       '--border-color': b.borderColor, '--input-bg': b.inputBackgroundColor,
-      '--text-primary': b.textPrimaryColor, '--text-secondary': b.textSecondaryColor
+      '--text-primary': b.textPrimaryColor, '--text-secondary': b.textSecondaryColor,
+      '--success': b.successColor, '--warning': b.warningColor, '--danger': b.dangerColor,
+      '--info': b.infoColor
     };
     Object.entries(vars).forEach(([key, value]) => value && root.style.setProperty(key, value));
 
