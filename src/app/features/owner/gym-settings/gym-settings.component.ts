@@ -183,9 +183,8 @@ import { environment } from '../../../../environments/environment';
               }
             </div>
           </div>
-        </div>
-
-        <!-- White-label branding -->
+        <!-- White-label branding is intentionally first so the owner sees the
+             tenant identity controls before secondary profile details. -->
         <div class="settings-card branding-card">
           <div class="card-header"><i class="pi pi-palette"></i><h3>الهوية البصرية</h3><span class="branding-hint">تظهر لجميع مستخدمي الجيم</span></div>
           <div class="card-body branding-grid">
@@ -208,6 +207,7 @@ import { environment } from '../../../../environments/environment';
             </div>
             <div class="full-width branding-actions"><button pButton type="button" label="حفظ الهوية فقط" icon="pi pi-save" (click)="saveBranding()" [loading]="brandingSaving()" class="save-btn"></button><small>ستظهر التغييرات بعد الحفظ لجميع مستخدمي الجيم.</small></div>
           </div>
+        </div>
         </div>
 
         <!-- Save Button -->
@@ -532,7 +532,9 @@ import { environment } from '../../../../environments/environment';
     .save-btn {
       min-width: 180px;
     }
-    .branding-card { grid-column: 1 / -1; }
+    .branding-card { grid-column: 1 / -1; order: -1; }
+    .branding-card .upload-field { min-height: 7rem; }
+    .branding-image-preview { display: block; width: 100%; max-height: 110px; object-fit: cover; border-radius: .65rem; margin-top: .65rem; border: 1px solid var(--border-color); }
     .branding-hint { color: var(--text-muted); font-size: .75rem; }
     .branding-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem 1.25rem; }
     .branding-grid .form-group { margin:0; }
@@ -654,6 +656,10 @@ export class GymSettingsComponent implements OnInit {
     const payload: UpdateGymProfileRequest = {
       ...this.form,
       phoneNumber: this.form.phone,
+      facebookUrl: this.form.facebook,
+      instagramUrl: this.form.instagram,
+      websiteUrl: this.form.website,
+      openingHours: this.form.openingHours,
     };
     this.ownerService.updateGymProfile(payload).subscribe({
       next: () => {
