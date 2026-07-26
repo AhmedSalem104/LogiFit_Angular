@@ -22,11 +22,11 @@ import { environment } from '../../../../environments/environment';
       ></app-page-header>
 
       <nav class="settings-nav" aria-label="أقسام إعدادات الصالة">
-        <button type="button" (click)="scrollToSection('branding-section')">الهوية والألوان</button>
-        <button type="button" (click)="scrollToSection('profile-section')">بيانات الجيم</button>
-        <button type="button" (click)="scrollToSection('contact-section')">التواصل</button>
-        <button type="button" (click)="scrollToSection('social-section')">التواصل الاجتماعي</button>
-        <button type="button" (click)="scrollToSection('gallery-section')">معرض الصور</button>
+        <button type="button" [class.active]="activeTab() === 'branding'" (click)="selectTab('branding')">الهوية والألوان</button>
+        <button type="button" [class.active]="activeTab() === 'profile'" (click)="selectTab('profile')">بيانات الجيم</button>
+        <button type="button" [class.active]="activeTab() === 'contact'" (click)="selectTab('contact')">التواصل</button>
+        <button type="button" [class.active]="activeTab() === 'social'" (click)="selectTab('social')">التواصل الاجتماعي</button>
+        <button type="button" [class.active]="activeTab() === 'gallery'" (click)="selectTab('gallery')">معرض الصور</button>
       </nav>
       @if (hasInvalidFields()) {
         <div class="validation-summary" role="alert"><i class="pi pi-exclamation-triangle"></i> راجع البريد والروابط وأكواد الألوان قبل الحفظ.</div>
@@ -39,7 +39,7 @@ import { environment } from '../../../../environments/environment';
         </div>
       } @else {
         <!-- Cover Image Section -->
-        <div class="cover-section">
+        <div class="cover-section" [hidden]="activeTab() !== 'profile'">
           <div class="cover-image" [style.backgroundImage]="profile()?.coverImageUrl ? 'url(' + getFullUrl(profile()!.coverImageUrl!) + ')' : ''">
             @if (!profile()?.coverImageUrl) {
               <div class="cover-placeholder">
@@ -80,7 +80,7 @@ import { environment } from '../../../../environments/environment';
         <!-- Settings Form -->
         <div class="settings-grid">
           <!-- Basic Info Card -->
-          <div id="profile-section" class="settings-card">
+          <div id="profile-section" class="settings-card" [hidden]="activeTab() !== 'profile'">
             <div class="card-header">
               <i class="pi pi-info-circle"></i>
               <h3>المعلومات الأساسية</h3>
@@ -102,7 +102,7 @@ import { environment } from '../../../../environments/environment';
           </div>
 
           <!-- Contact Info Card -->
-          <div id="contact-section" class="settings-card">
+          <div id="contact-section" class="settings-card" [hidden]="activeTab() !== 'contact'">
             <div class="card-header">
               <i class="pi pi-phone"></i>
               <h3>معلومات التواصل</h3>
@@ -134,7 +134,7 @@ import { environment } from '../../../../environments/environment';
           </div>
 
           <!-- Social Media Card -->
-          <div id="social-section" class="settings-card">
+          <div id="social-section" class="settings-card" [hidden]="activeTab() !== 'social'">
             <div class="card-header">
               <i class="pi pi-share-alt"></i>
               <h3>التواصل الاجتماعي</h3>
@@ -165,7 +165,7 @@ import { environment } from '../../../../environments/environment';
           </div>
 
           <!-- Gallery Card -->
-          <div id="gallery-section" class="settings-card gallery-card">
+          <div id="gallery-section" class="settings-card gallery-card" [hidden]="activeTab() !== 'gallery'">
             <div class="card-header">
               <i class="pi pi-images"></i>
               <h3>معرض الصور</h3>
@@ -197,7 +197,7 @@ import { environment } from '../../../../environments/environment';
           </div>
         <!-- White-label branding is intentionally first so the owner sees the
              tenant identity controls before secondary profile details. -->
-        <div id="branding-section" class="settings-card branding-card">
+        <div id="branding-section" class="settings-card branding-card" [hidden]="activeTab() !== 'branding'">
           <div class="card-header"><i class="pi pi-palette"></i><h3>الهوية البصرية</h3><span class="branding-hint">تظهر لجميع مستخدمي الجيم</span></div>
           <div class="card-body branding-grid">
             <div class="form-group"><label>اسم التطبيق</label><input pInputText [(ngModel)]="form.appName" placeholder="اسم التطبيق داخل الجيم" /></div>
@@ -239,7 +239,8 @@ import { environment } from '../../../../environments/environment';
 
     .settings-nav { position: sticky; top: 78px; z-index: 20; display: flex; gap: .5rem; flex-wrap: wrap; padding: .7rem; margin-bottom: 1rem; background: var(--card-bg, #fff); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 8px 20px rgba(15,23,42,.08); }
     .settings-nav button { border: 0; border-radius: 999px; padding: .55rem .9rem; background: var(--bg-secondary, #f1f5f9); color: var(--text-primary, #334155); cursor: pointer; transition: .2s ease; }
-    .settings-nav button:hover { background: var(--primary-500, #2563eb); color: #fff; }
+    .settings-nav button:hover, .settings-nav button.active { background: var(--primary-500, #2563eb); color: #fff; }
+    [hidden] { display: none !important; }
     .validation-summary { margin-bottom: 1rem; padding: .75rem 1rem; border: 1px solid #fecaca; border-radius: 12px; color: #b91c1c; background: #fef2f2; }
     .sticky-save-bar { position: sticky; bottom: 1rem; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.25rem; padding: .75rem 1rem; border: 1px solid var(--border-color); border-radius: 14px; background: color-mix(in srgb, var(--card-bg, #fff) 92%, transparent); box-shadow: 0 12px 28px rgba(15,23,42,.16); }
     .sticky-save-bar > span { color: var(--text-secondary); font-size: .9rem; }
@@ -622,6 +623,7 @@ export class GymSettingsComponent implements OnInit {
   loading = signal(true);
   saving = signal(false);
   brandingSaving = signal(false);
+  activeTab = signal<'branding' | 'profile' | 'contact' | 'social' | 'gallery'>('branding');
   hasUnsavedChanges = signal(false);
   private initialFormSnapshot = '';
 
@@ -665,6 +667,11 @@ export class GymSettingsComponent implements OnInit {
     Object.entries(vars).forEach(([key, value]) => {
       if (value) root.style.setProperty(key, value);
     });
+  }
+
+  selectTab(tab: 'branding' | 'profile' | 'contact' | 'social' | 'gallery'): void {
+    this.activeTab.set(tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   scrollToSection(id: string): void {
