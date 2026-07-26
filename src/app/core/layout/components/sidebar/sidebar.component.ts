@@ -148,7 +148,7 @@ interface NavGroup {
       right: 0;
       height: 100vh;
       width: 280px;
-      background: linear-gradient(180deg, #0a0f1a 0%, #131b2e 50%, #1a2540 100%);
+      background: var(--sidebar-bg, linear-gradient(180deg, #0a0f1a 0%, #131b2e 50%, #1a2540 100%));
       display: flex;
       flex-direction: column;
       transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);

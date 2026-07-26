@@ -371,3 +371,38 @@ Licensed under the MIT License — see [LICENSE](LICENSE) for details.
 
 <p align="center"><strong>Built with ❤️ using Angular</strong></p>
 <p align="center"><a href="#top">⬆️ Back to Top</a></p>
+
+## Architecture and documentation
+
+```mermaid
+flowchart LR
+  User[Gym user] --> App[LogicFit Angular Gym App]
+  App --> Auth[JWT + Tenant Context]
+  App --> API[Tenant API]
+  API --> DB[(Tenant-isolated database)]
+  Platform[Platform Admin] --> PlatformAPI[Platform API]
+  PlatformAPI --> DB
+  API --> Branding[Branding and asset endpoints]
+  Branding --> App
+```
+
+The Gym App is separate from Platform Management. Tenant branding is applied only to this application through CSS design tokens, while the platform dashboard retains its independent identity.
+
+| Guide | Description |
+|---|---|
+| [Screen Catalog](docs/SCREEN-CATALOG.md) | Detailed route and screen reference, role flows, states, and diagrams |
+| [API Endpoint Catalog](docs/API-ENDPOINT-CATALOG.md) | Frontend API families and responsibilities |
+| [White-label Branding](docs/WHITELABEL-BRANDING.md) | Tenant colors, logos, images, caching, and isolation |
+| [Screen Operations Guide](docs/SCREEN-OPERATIONS-GUIDE.md) | CRUD, loading, empty, error, print, and export conventions |
+| [Responsive Design](docs/RESPONSIVE-DESIGN.md) | RTL/LTR and desktop/tablet/mobile rules |
+| [Workspace Flows](docs/WORKSPACE-FLOWS.md) | Authentication, subscriptions, payment proof, and role flows |
+
+### Local verification
+
+```bash
+npm ci
+npm start
+npm run build
+```
+
+Set the API base URL in `src/environments/environment.ts` and `environment.prod.ts`. Never commit credentials or tokens. Protected requests use the backend-issued JWT and trusted tenant context.

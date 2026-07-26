@@ -6,6 +6,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { ChartCardComponent } from '../../../shared/components/chart-card/chart-card.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
+import { BrandingService } from '../../../core/services/branding.service';
 import { ReportsService } from '../services/reports.service';
 import {
   DashboardReport,
@@ -29,6 +30,15 @@ import {
   ],
   template: `
     <div class="dashboard">
+      @if (branding.branding()?.dashboardBannerUrl || branding.branding()?.name) {
+        <section class="tenant-hero" [style.background-image]="branding.branding()?.dashboardBannerUrl ? 'linear-gradient(90deg, rgba(15,23,42,.88), rgba(15,23,42,.35)), url(' + branding.branding()!.dashboardBannerUrl + ')' : null">
+          <div>
+            <span class="tenant-hero-kicker">لوحة الجيم</span>
+            <h2>{{ branding.branding()?.appName || branding.branding()?.name }}</h2>
+            <p>مرحباً بعودتك. هذه نظرة مباشرة على أداء صالتك.</p>
+          </div>
+        </section>
+      }
       <!-- Header -->
       <app-page-header
         title="لوحة التحكم"
@@ -224,6 +234,23 @@ import {
       max-width: 1400px;
     }
 
+    .tenant-hero {
+      min-height: 150px;
+      margin-bottom: 1.5rem;
+      padding: 1.75rem 2rem;
+      border-radius: 20px;
+      background-color: var(--brand-primary, #2563eb);
+      background-size: cover;
+      background-position: center;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 14px 32px rgba(15, 23, 42, .16);
+    }
+    .tenant-hero-kicker { font-size: .78rem; opacity: .82; }
+    .tenant-hero h2 { margin: .35rem 0; font-size: 1.65rem; }
+    .tenant-hero p { margin: 0; opacity: .9; }
+
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -349,6 +376,7 @@ import {
 })
 export class OwnerDashboardComponent implements OnInit {
   private reportsService = inject(ReportsService);
+  readonly branding = inject(BrandingService);
 
   // Data signals
   dashboard = signal<DashboardReport | null>(null);

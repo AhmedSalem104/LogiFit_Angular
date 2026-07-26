@@ -19,6 +19,7 @@ export interface TenantBranding {
   loginBackgroundUrl?: string;
   dashboardBannerUrl?: string;
   galleryImages?: string[];
+  assets?: Array<{ id?: string; assetType?: string; imageUrl?: string; desktopImageUrl?: string; tabletImageUrl?: string; mobileImageUrl?: string; altText?: string; sortOrder?: number }>;
   primaryColor?: string;
   primaryHoverColor?: string;
   primaryForegroundColor?: string;
@@ -82,7 +83,30 @@ export class BrandingService {
 
   /** Fetch branding for an identifier (subdomain or custom domain). Public / anonymous. */
   getBranding(identifier: string): Observable<TenantBranding> {
-    return this.http.get<TenantBranding>(`${this.api}/branding/${identifier}`);
+    return this.http.get<TenantBranding>(`${this.api}/branding/${identifier}`).pipe(
+      tap(b => this.normalizeUrls(b))
+    );
+  }
+
+  /** Converts API-relative upload paths into URLs served by the backend, not Vercel. */
+  resolveAssetUrl(url: string | null | undefined): string {
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url) || url.startsWith('data:')) return url;
+    const origin = environment.production ? 'https://logicfit-saas.runasp.net' : window.location.origin;
+    return `${origin}${url.startsWith('/') ? '' : '/'}${url}`;
+  }
+
+  private normalizeUrls(b: TenantBranding): void {
+    for (const key of ['logoUrl','logoDarkUrl','logoLightUrl','logoIconUrl','faviconUrl','coverImageUrl','loginBackgroundUrl','dashboardBannerUrl','invoiceLogoUrl'] as const) {
+      if (b[key]) b[key] = this.resolveAssetUrl(b[key]);
+    }
+    if (b.galleryImages) b.galleryImages = b.galleryImages.map(url => this.resolveAssetUrl(url));
+    if (b.assets) for (const asset of b.assets) {
+      if (asset.imageUrl) asset.imageUrl = this.resolveAssetUrl(asset.imageUrl);
+      if (asset.desktopImageUrl) asset.desktopImageUrl = this.resolveAssetUrl(asset.desktopImageUrl);
+      if (asset.tabletImageUrl) asset.tabletImageUrl = this.resolveAssetUrl(asset.tabletImageUrl);
+      if (asset.mobileImageUrl) asset.mobileImageUrl = this.resolveAssetUrl(asset.mobileImageUrl);
+    }
   }
 
   /**
@@ -147,19 +171,33 @@ export class BrandingService {
   /** Apply colors, fonts, app name and custom CSS to the document. */
   apply(b: TenantBranding): void {
     const root = document.documentElement;
+    const primary = b.primaryColor || '#2563eb';
+    const primaryHover = b.primaryHoverColor || primary;
+    const secondary = b.secondaryColor || '#4f46e5';
+    const sidebar = b.sidebarColor || '#0f172a';
     const vars: Record<string, string | undefined> = {
-      '--brand-primary': b.primaryColor, '--brand-primary-hover': b.primaryHoverColor,
+      '--brand-primary': primary, '--brand-primary-hover': primaryHover,
       '--brand-primary-foreground': b.primaryForegroundColor, '--brand-secondary': b.secondaryColor,
       '--brand-secondary-hover': b.secondaryHoverColor, '--brand-secondary-foreground': b.secondaryForegroundColor,
-      '--accent-color': b.accentColor ?? b.primaryColor, '--bg-page': b.backgroundColor,
+      '--accent-color': b.accentColor ?? primary, '--bg-page': b.backgroundColor,
       '--bg-surface': b.surfaceColor, '--card-color': b.cardColor, '--sidebar-color': b.sidebarColor,
-      '--sidebar-bg': b.sidebarColor, '--sidebar-text-color': b.sidebarTextColor,
+      '--sidebar-bg': sidebar, '--sidebar-text-color': b.sidebarTextColor,
       '--header-color': b.headerColor, '--bg-primary': b.headerColor,
       '--header-text-color': b.headerTextColor, '--text': b.textPrimaryColor,
       '--text-muted': b.textSecondaryColor, '--border': b.borderColor,
       '--input-background': b.inputBackgroundColor, '--success-color': b.successColor,
       '--warning-color': b.warningColor, '--danger-color': b.dangerColor, '--info-color': b.infoColor,
-      '--brand-font': b.fontFamily, '--radius': b.borderRadius
+      '--brand-font': b.fontFamily, '--radius': b.borderRadius,
+      '--primary-500': primary, '--primary-600': primaryHover,
+      '--primary-700': primaryHover, '--primary-400': primary,
+      '--gradient-primary': `linear-gradient(135deg, ${primary} 0%, ${secondary} 100%)`,
+      '--bg-secondary': b.surfaceColor || b.backgroundColor,
+      '--bg-tertiary': b.surfaceColor,
+      '--card-bg': b.cardColor || b.surfaceColor,
+      '--border-color': b.borderColor, '--input-bg': b.inputBackgroundColor,
+      '--text-primary': b.textPrimaryColor, '--text-secondary': b.textSecondaryColor,
+      '--success': b.successColor, '--warning': b.warningColor, '--danger': b.dangerColor,
+      '--info': b.infoColor
     };
     Object.entries(vars).forEach(([key, value]) => value && root.style.setProperty(key, value));
 
