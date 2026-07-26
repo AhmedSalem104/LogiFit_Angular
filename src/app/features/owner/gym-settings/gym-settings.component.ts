@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -21,13 +21,16 @@ import { environment } from '../../../../environments/environment';
         [breadcrumbs]="[{label: 'لوحة التحكم', route: '/owner/dashboard'}, {label: 'إعدادات الصالة'}]"
       ></app-page-header>
 
-      <nav class="settings-tabs" aria-label="أقسام إعدادات الصالة">
-        <button type="button" [class.active]="activeTab() === 'branding'" (click)="selectTab('branding')"><i class="pi pi-palette"></i> الهوية والألوان</button>
-        <button type="button" [class.active]="activeTab() === 'profile'" (click)="selectTab('profile')"><i class="pi pi-building"></i> بيانات الجيم</button>
-        <button type="button" [class.active]="activeTab() === 'contact'" (click)="selectTab('contact')"><i class="pi pi-phone"></i> التواصل</button>
-        <button type="button" [class.active]="activeTab() === 'social'" (click)="selectTab('social')"><i class="pi pi-share-alt"></i> التواصل الاجتماعي</button>
-        <button type="button" [class.active]="activeTab() === 'gallery'" (click)="selectTab('gallery')"><i class="pi pi-images"></i> معرض الصور</button>
+      <nav class="settings-nav" aria-label="أقسام إعدادات الصالة">
+        <button type="button" (click)="scrollToSection('branding-section')">الهوية والألوان</button>
+        <button type="button" (click)="scrollToSection('profile-section')">بيانات الجيم</button>
+        <button type="button" (click)="scrollToSection('contact-section')">التواصل</button>
+        <button type="button" (click)="scrollToSection('social-section')">التواصل الاجتماعي</button>
+        <button type="button" (click)="scrollToSection('gallery-section')">معرض الصور</button>
       </nav>
+      @if (hasInvalidFields()) {
+        <div class="validation-summary" role="alert"><i class="pi pi-exclamation-triangle"></i> راجع البريد والروابط وأكواد الألوان قبل الحفظ.</div>
+      }
 
       @if (loading()) {
         <div class="loading-state">
@@ -36,7 +39,7 @@ import { environment } from '../../../../environments/environment';
         </div>
       } @else {
         <!-- Cover Image Section -->
-        <div class="cover-section" [hidden]="activeTab() !== 'profile'">
+        <div class="cover-section">
           <div class="cover-image" [style.backgroundImage]="profile()?.coverImageUrl ? 'url(' + getFullUrl(profile()!.coverImageUrl!) + ')' : ''">
             @if (!profile()?.coverImageUrl) {
               <div class="cover-placeholder">
@@ -77,7 +80,7 @@ import { environment } from '../../../../environments/environment';
         <!-- Settings Form -->
         <div class="settings-grid">
           <!-- Basic Info Card -->
-          <div class="settings-card" [hidden]="activeTab() !== 'profile'">
+          <div id="profile-section" class="settings-card">
             <div class="card-header">
               <i class="pi pi-info-circle"></i>
               <h3>المعلومات الأساسية</h3>
@@ -99,7 +102,7 @@ import { environment } from '../../../../environments/environment';
           </div>
 
           <!-- Contact Info Card -->
-          <div class="settings-card" [hidden]="activeTab() !== 'contact'">
+          <div id="contact-section" class="settings-card">
             <div class="card-header">
               <i class="pi pi-phone"></i>
               <h3>معلومات التواصل</h3>
@@ -116,8 +119,9 @@ import { environment } from '../../../../environments/environment';
                 <label>البريد الإلكتروني</label>
                 <div class="input-with-icon">
                   <i class="pi pi-envelope"></i>
-                  <input type="email" pInputText [(ngModel)]="form.email" placeholder="info@gym.com" />
+                  <input type="email" pInputText [(ngModel)]="form.email" placeholder="info@gym.com" [class.invalid-field]="form.email && !isValidEmail(form.email)" aria-describedby="gym-email-error" />
                 </div>
+                @if (form.email && !isValidEmail(form.email)) { <small id="gym-email-error" class="field-error">أدخل بريدا إلكترونيا صحيحا.</small> }
               </div>
               <div class="form-group">
                 <label>العنوان</label>
@@ -130,7 +134,7 @@ import { environment } from '../../../../environments/environment';
           </div>
 
           <!-- Social Media Card -->
-          <div class="settings-card" [hidden]="activeTab() !== 'social'">
+          <div id="social-section" class="settings-card">
             <div class="card-header">
               <i class="pi pi-share-alt"></i>
               <h3>التواصل الاجتماعي</h3>
@@ -140,28 +144,28 @@ import { environment } from '../../../../environments/environment';
                 <label>Facebook</label>
                 <div class="input-with-icon">
                   <i class="pi pi-facebook"></i>
-                  <input type="url" pInputText [(ngModel)]="form.facebook" placeholder="https://facebook.com/..." />
+                  <input type="url" pInputText [(ngModel)]="form.facebook" placeholder="https://facebook.com/..." [class.invalid-field]="form.facebook && !isValidUrl(form.facebook)" />
                 </div>
               </div>
               <div class="form-group">
                 <label>Instagram</label>
                 <div class="input-with-icon">
                   <i class="pi pi-instagram"></i>
-                  <input type="url" pInputText [(ngModel)]="form.instagram" placeholder="https://instagram.com/..." />
+                  <input type="url" pInputText [(ngModel)]="form.instagram" placeholder="https://instagram.com/..." [class.invalid-field]="form.instagram && !isValidUrl(form.instagram)" />
                 </div>
               </div>
               <div class="form-group">
                 <label>الموقع الإلكتروني</label>
                 <div class="input-with-icon">
                   <i class="pi pi-globe"></i>
-                  <input type="url" pInputText [(ngModel)]="form.website" placeholder="https://www.gym.com" />
+                  <input type="url" pInputText [(ngModel)]="form.website" placeholder="https://www.gym.com" [class.invalid-field]="form.website && !isValidUrl(form.website)" />
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Gallery Card -->
-          <div class="settings-card gallery-card" [hidden]="activeTab() !== 'gallery'">
+          <div id="gallery-section" class="settings-card gallery-card">
             <div class="card-header">
               <i class="pi pi-images"></i>
               <h3>معرض الصور</h3>
@@ -193,7 +197,7 @@ import { environment } from '../../../../environments/environment';
           </div>
         <!-- White-label branding is intentionally first so the owner sees the
              tenant identity controls before secondary profile details. -->
-        <div class="settings-card branding-card" [hidden]="activeTab() !== 'branding'">
+        <div id="branding-section" class="settings-card branding-card">
           <div class="card-header"><i class="pi pi-palette"></i><h3>الهوية البصرية</h3><span class="branding-hint">تظهر لجميع مستخدمي الجيم</span></div>
           <div class="card-body branding-grid">
             <div class="form-group"><label>اسم التطبيق</label><input pInputText [(ngModel)]="form.appName" placeholder="اسم التطبيق داخل الجيم" /></div>
@@ -203,7 +207,7 @@ import { environment } from '../../../../environments/environment';
             <div class="form-group color-field"><label>لون القائمة الجانبية</label><input type="color" [(ngModel)]="form.sidebarColor" /><input pInputText [(ngModel)]="form.sidebarColor" /></div>
             <div class="form-group color-field"><label>لون شريط التنقل</label><input type="color" [(ngModel)]="form.headerColor" /><input pInputText [(ngModel)]="form.headerColor" /></div>
             <div class="form-group"><label>هاتف الدعم</label><input pInputText [(ngModel)]="form.supportPhone" /></div>
-            <div class="form-group"><label>بريد الدعم</label><input pInputText [(ngModel)]="form.supportEmail" /></div>
+            <div class="form-group"><label>بريد الدعم</label><input type="email" pInputText [(ngModel)]="form.supportEmail" [class.invalid-field]="form.supportEmail && !isValidEmail(form.supportEmail)" /></div>
             <div class="form-group upload-field"><label>خلفية تسجيل الدخول</label><input type="file" accept="image/jpeg,image/png,image/webp" (change)="uploadBrandingImage($event, 'LoginBackground')" /><small>{{ form.loginBackgroundUrl ? 'تم رفع الصورة' : 'اختر صورة من جهازك' }}</small>@if (form.loginBackgroundUrl) { <img class="branding-image-preview" [src]="getFullUrl(form.loginBackgroundUrl)" alt="معاينة خلفية تسجيل الدخول" /> }</div>
             <div class="form-group upload-field"><label>بانر لوحة التحكم</label><input type="file" accept="image/jpeg,image/png,image/webp" (change)="uploadBrandingImage($event, 'DashboardHero')" /><small>{{ form.dashboardBannerUrl ? 'تم رفع الصورة' : 'اختر صورة من جهازك' }}</small>@if (form.dashboardBannerUrl) { <img class="branding-image-preview" [src]="getFullUrl(form.dashboardBannerUrl)" alt="معاينة بانر لوحة التحكم" /> }</div>
             <div class="branding-preview full-width" [style.background]="'linear-gradient(120deg,' + (form.primaryColor || '#2563eb') + ',' + (form.secondaryColor || '#4f46e5') + ')'">
@@ -213,15 +217,18 @@ import { environment } from '../../../../environments/environment';
               <aside><b>{{ form.appName || form.name || 'LogicFit' }}</b><span>القائمة الجانبية</span></aside>
               <section><header>شريط التنقل والمعاينة المباشرة</header><div><button>زر أساسي</button><button class="secondary">زر ثانوي</button></div></section>
             </div>
-            <div class="full-width branding-actions"><button pButton type="button" label="حفظ الهوية فقط" icon="pi pi-save" (click)="saveBranding()" [loading]="brandingSaving()" class="save-btn"></button><small>ستظهر التغييرات بعد الحفظ لجميع مستخدمي الجيم.</small></div>
+            <div class="full-width branding-actions"><small>يتم حفظ الهوية مع باقي إعدادات الصالة من زر الحفظ الموحد.</small></div>
           </div>
         </div>
         </div>
 
         <!-- Save Button -->
-        <div class="save-section">
-          <button pButton label="حفظ التغييرات" icon="pi pi-check" (click)="saveSettings()" [loading]="saving()" class="save-btn"></button>
-        </div>
+        @if (hasUnsavedChanges()) {
+          <div class="sticky-save-bar" role="region" aria-label="تغييرات غير محفوظة">
+            <span><i class="pi pi-info-circle"></i> توجد تغييرات غير محفوظة</span>
+            <div><button pButton type="button" label="إلغاء" class="p-button-text" (click)="cancelChanges()" [disabled]="saving()"></button><button pButton type="button" label="حفظ كل التغييرات" icon="pi pi-save" (click)="saveSettings()" [loading]="saving()"></button></div>
+          </div>
+        }
       }
     </div>
   `,
@@ -230,12 +237,17 @@ import { environment } from '../../../../environments/environment';
       padding-bottom: 40px;
     }
 
-    .settings-tabs { display:flex; flex-wrap:wrap; gap:.5rem; margin:0 0 1rem; padding:.65rem; position:sticky; top:76px; z-index:20; background:var(--card-bg,#fff); border:1px solid var(--border-color); border-radius:14px; box-shadow:0 8px 22px rgba(15,23,42,.08); }
-    .settings-tabs button { border:0; border-radius:10px; padding:.65rem .9rem; display:inline-flex; align-items:center; gap:.45rem; background:var(--bg-secondary,#f8fafc); color:var(--text-primary,#0f172a); cursor:pointer; transition:.2s ease; }
-    .settings-tabs button:hover, .settings-tabs button.active { background:var(--primary-500,#2563eb); color:#fff; }
-    .settings-tabs button:focus-visible { outline:3px solid color-mix(in srgb,var(--primary-500,#2563eb) 40%, transparent); outline-offset:2px; }
-    [hidden] { display:none !important; }
-    .branding-image-preview { display:block; width:100%; max-height:150px; margin-top:.6rem; border-radius:10px; object-fit:cover; border:1px solid var(--border-color); }
+    .settings-nav { position: sticky; top: 78px; z-index: 20; display: flex; gap: .5rem; flex-wrap: wrap; padding: .7rem; margin-bottom: 1rem; background: var(--card-bg, #fff); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 8px 20px rgba(15,23,42,.08); }
+    .settings-nav button { border: 0; border-radius: 999px; padding: .55rem .9rem; background: var(--bg-secondary, #f1f5f9); color: var(--text-primary, #334155); cursor: pointer; transition: .2s ease; }
+    .settings-nav button:hover { background: var(--primary-500, #2563eb); color: #fff; }
+    .validation-summary { margin-bottom: 1rem; padding: .75rem 1rem; border: 1px solid #fecaca; border-radius: 12px; color: #b91c1c; background: #fef2f2; }
+    .sticky-save-bar { position: sticky; bottom: 1rem; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.25rem; padding: .75rem 1rem; border: 1px solid var(--border-color); border-radius: 14px; background: color-mix(in srgb, var(--card-bg, #fff) 92%, transparent); box-shadow: 0 12px 28px rgba(15,23,42,.16); }
+    .sticky-save-bar > span { color: var(--text-secondary); font-size: .9rem; }
+    .sticky-save-bar > div { display: flex; gap: .5rem; }
+    input[type="email"], input[type="url"], input[type="tel"], .color-field input[type="text"] { direction: ltr; text-align: left; }
+    .settings-card { scroll-margin-top: 145px; }
+    .invalid-field { border-color: #dc2626 !important; box-shadow: 0 0 0 1px #dc2626; }
+    .field-error { display: block; margin-top: .35rem; color: #b91c1c; font-size: .8rem; }
 
     /* Loading */
     .loading-state {
@@ -597,6 +609,8 @@ import { environment } from '../../../../environments/environment';
 
       .save-section { justify-content: center; }
       .save-btn { width: 100%; }
+      .sticky-save-bar { flex-direction: column; align-items: stretch; bottom: .5rem; }
+      .sticky-save-bar > div button { flex: 1; }
     }
   `]
 })
@@ -608,7 +622,8 @@ export class GymSettingsComponent implements OnInit {
   loading = signal(true);
   saving = signal(false);
   brandingSaving = signal(false);
-  activeTab = signal<'branding' | 'profile' | 'contact' | 'social' | 'gallery'>('branding');
+  hasUnsavedChanges = signal(false);
+  private initialFormSnapshot = '';
 
   form: UpdateGymProfileRequest = {
     name: '',
@@ -622,9 +637,65 @@ export class GymSettingsComponent implements OnInit {
     openingHours: ''
   };
 
-  selectTab(tab: 'branding' | 'profile' | 'contact' | 'social' | 'gallery'): void {
-    this.activeTab.set(tab);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  @HostListener('input')
+  @HostListener('change')
+  markDirty(): void {
+    this.applyLivePreviewTheme();
+    this.hasUnsavedChanges.set(JSON.stringify(this.form) !== this.initialFormSnapshot);
+  }
+
+  private applyLivePreviewTheme(): void {
+    const root = document.documentElement;
+    const vars: Record<string, string | undefined> = {
+      '--brand-primary': this.form.primaryColor,
+      '--brand-secondary': this.form.secondaryColor,
+      '--primary-400': this.form.primaryColor,
+      '--primary-500': this.form.primaryColor,
+      '--primary-600': this.form.primaryColor,
+      '--primary-700': this.form.primaryColor,
+      '--sidebar-bg': this.form.sidebarColor,
+      '--sidebar-color': this.form.sidebarColor,
+      '--header-color': this.form.headerColor,
+      '--bg-primary': this.form.headerColor,
+      '--bg-secondary': this.form.backgroundColor,
+      '--bg-tertiary': this.form.surfaceColor,
+      '--card-bg': this.form.surfaceColor,
+      '--brand-font': this.form.fontFamily
+    };
+    Object.entries(vars).forEach(([key, value]) => {
+      if (value) root.style.setProperty(key, value);
+    });
+  }
+
+  scrollToSection(id: string): void {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  cancelChanges(): void {
+    this.loadProfile();
+    this.notify.info('تم إلغاء التغييرات غير المحفوظة');
+  }
+
+  isValidEmail(value: string | undefined): boolean {
+    return !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
+  isValidUrl(value: string | undefined): boolean {
+    if (!value) return true;
+    try { const url = new URL(value); return url.protocol === 'http:' || url.protocol === 'https:'; } catch { return false; }
+  }
+
+  isValidHex(value: string | undefined): boolean {
+    return !value || /^#[0-9a-f]{6}$/i.test(value);
+  }
+
+  hasInvalidFields(): boolean {
+    return !this.isValidEmail(this.form.email) || !this.isValidEmail(this.form.supportEmail) ||
+      !this.isValidHex(this.form.primaryColor) || !this.isValidHex(this.form.secondaryColor) ||
+      !this.isValidHex(this.form.sidebarColor) || !this.isValidHex(this.form.headerColor) ||
+      !this.isValidUrl(this.form.facebookUrl || this.form.facebook) ||
+      !this.isValidUrl(this.form.instagramUrl || this.form.instagram) ||
+      !this.isValidUrl(this.form.websiteUrl || this.form.website);
   }
 
   ngOnInit(): void {
@@ -659,6 +730,9 @@ export class GymSettingsComponent implements OnInit {
           loginBackgroundUrl: data.brandingSettings?.loginBackgroundUrl || '',
           dashboardBannerUrl: data.brandingSettings?.dashboardBannerUrl || ''
         };
+        this.applyLivePreviewTheme();
+        this.initialFormSnapshot = JSON.stringify(this.form);
+        this.hasUnsavedChanges.set(false);
         this.loading.set(false);
       },
       error: () => {
@@ -671,6 +745,15 @@ export class GymSettingsComponent implements OnInit {
   saveSettings(): void {
     if (!this.form.name?.trim()) {
       this.notify.warn('اسم الصالة مطلوب');
+      return;
+    }
+    if (!this.isValidEmail(this.form.email) || !this.isValidEmail(this.form.supportEmail) ||
+        !this.isValidHex(this.form.primaryColor) || !this.isValidHex(this.form.secondaryColor) ||
+        !this.isValidHex(this.form.sidebarColor) || !this.isValidHex(this.form.headerColor) ||
+        !this.isValidUrl(this.form.facebookUrl || this.form.facebook) ||
+        !this.isValidUrl(this.form.instagramUrl || this.form.instagram) ||
+        !this.isValidUrl(this.form.websiteUrl || this.form.website)) {
+      this.notify.warn('يرجى تصحيح الحقول المميزة بالأحمر قبل الحفظ');
       return;
     }
     this.saving.set(true);
@@ -805,7 +888,8 @@ export class GymSettingsComponent implements OnInit {
       next: (res) => {
         if (assetType === 'LoginBackground') this.form.loginBackgroundUrl = res.imageUrl;
         else this.form.dashboardBannerUrl = res.imageUrl;
-        this.saveBranding();
+        this.markDirty();
+        this.notify.success('تم رفع الصورة، اضغط حفظ كل التغييرات لاعتمادها');
       },
       error: () => this.notify.error('تعذر رفع صورة الهوية')
     });
@@ -826,6 +910,7 @@ export class GymSettingsComponent implements OnInit {
 
   getFullUrl(path: string): string {
     if (path.startsWith('http')) return path;
-    return environment.apiUrl.replace('/api', '') + path;
+    const origin = environment.production ? 'https://logicfit-saas.runasp.net' : window.location.origin;
+    return `${origin}${path.startsWith('/') ? '' : '/'}${path}`;
   }
 }
