@@ -193,12 +193,12 @@ import { environment } from '../../../../environments/environment';
             <div class="form-group"><label>الخط</label><input pInputText [(ngModel)]="form.fontFamily" placeholder="Cairo" /></div>
             <div class="form-group color-field"><label>اللون الأساسي</label><input type="color" [(ngModel)]="form.primaryColor" /><input pInputText [(ngModel)]="form.primaryColor" /></div>
             <div class="form-group color-field"><label>اللون الثانوي</label><input type="color" [(ngModel)]="form.secondaryColor" /><input pInputText [(ngModel)]="form.secondaryColor" /></div>
-            <div class="form-group color-field"><label>لون التمييز</label><input type="color" [(ngModel)]="form.accentColor" /><input pInputText [(ngModel)]="form.accentColor" /></div>
-            <div class="form-group color-field"><label>خلفية التطبيق</label><input type="color" [(ngModel)]="form.backgroundColor" /><input pInputText [(ngModel)]="form.backgroundColor" /></div>
+            <div class="form-group color-field"><label>لون القائمة الجانبية</label><input type="color" [(ngModel)]="form.sidebarColor" /><input pInputText [(ngModel)]="form.sidebarColor" /></div>
+            <div class="form-group color-field"><label>لون شريط التنقل</label><input type="color" [(ngModel)]="form.headerColor" /><input pInputText [(ngModel)]="form.headerColor" /></div>
             <div class="form-group"><label>هاتف الدعم</label><input pInputText [(ngModel)]="form.supportPhone" /></div>
             <div class="form-group"><label>بريد الدعم</label><input pInputText [(ngModel)]="form.supportEmail" /></div>
-            <div class="form-group full-width"><label>رابط صورة خلفية الدخول</label><input pInputText [(ngModel)]="form.loginBackgroundUrl" placeholder="https://..." /></div>
-            <div class="form-group full-width"><label>رابط بانر لوحة التحكم</label><input pInputText [(ngModel)]="form.dashboardBannerUrl" placeholder="https://..." /></div>
+            <div class="form-group upload-field"><label>خلفية تسجيل الدخول</label><input type="file" accept="image/jpeg,image/png,image/webp" (change)="uploadBrandingImage($event, 'LoginBackground')" /><small>{{ form.loginBackgroundUrl ? 'تم رفع الصورة' : 'اختر صورة من جهازك' }}</small></div>
+            <div class="form-group upload-field"><label>بانر لوحة التحكم</label><input type="file" accept="image/jpeg,image/png,image/webp" (change)="uploadBrandingImage($event, 'DashboardHero')" /><small>{{ form.dashboardBannerUrl ? 'تم رفع الصورة' : 'اختر صورة من جهازك' }}</small></div>
             <div class="branding-preview full-width" [style.background]="'linear-gradient(120deg,' + (form.primaryColor || '#2563eb') + ',' + (form.secondaryColor || '#4f46e5') + ')'">
               <strong>{{ form.appName || form.name || 'LogicFit' }}</strong><span>معاينة الهوية والألوان</span>
             </div>
@@ -617,6 +617,8 @@ export class GymSettingsComponent implements OnInit {
           fontFamily: data.brandingSettings?.fontFamily || '',
           primaryColor: data.brandingSettings?.primaryColor || '#2563eb',
           secondaryColor: data.brandingSettings?.secondaryColor || '#4f46e5',
+          sidebarColor: data.brandingSettings?.sidebarColor || '#0f172a',
+          headerColor: data.brandingSettings?.headerColor || '#ffffff',
           accentColor: data.brandingSettings?.accentColor || '#06b6d4',
           backgroundColor: data.brandingSettings?.backgroundColor || '#f4f7fb',
           supportPhone: data.brandingSettings?.supportPhone || '',
@@ -709,6 +711,19 @@ export class GymSettingsComponent implements OnInit {
         this.notify.success('تم إضافة الصورة بنجاح');
       },
       error: () => this.notify.error('حدث خطأ في رفع الصورة')
+    });
+  }
+
+  uploadBrandingImage(event: Event, assetType: 'LoginBackground' | 'DashboardHero'): void {
+    const file = this.validImage(event);
+    if (!file) return;
+    this.ownerService.uploadBrandingAsset(file, assetType).subscribe({
+      next: (res) => {
+        if (assetType === 'LoginBackground') this.form.loginBackgroundUrl = res.imageUrl;
+        else this.form.dashboardBannerUrl = res.imageUrl;
+        this.notify.success('تم رفع صورة الهوية بنجاح');
+      },
+      error: () => this.notify.error('تعذر رفع صورة الهوية')
     });
   }
 
