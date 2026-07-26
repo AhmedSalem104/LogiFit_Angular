@@ -93,11 +93,14 @@ export class TourOverlayComponent {
 
   constructor() {
     // Re-locate whenever the step changes (or the tour starts/stops).
+    // locate() updates the overlay geometry signals asynchronously. Angular 18
+    // blocks signal writes from effects by default (NG0600), so explicitly allow
+    // these UI-position updates inside the effect.
     effect(() => {
       const step = this.tour.currentStep();
       if (!step) { this.targetEl = null; this.box.set(null); return; }
       this.locate();
-    });
+    }, { allowSignalWrites: true });
   }
 
   private async locate(): Promise<void> {
