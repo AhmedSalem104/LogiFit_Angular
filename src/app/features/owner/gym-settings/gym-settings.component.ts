@@ -683,7 +683,30 @@ export class GymSettingsComponent implements OnInit {
     };
     this.brandingSaving.set(true);
     this.ownerService.updateGymProfile(payload).subscribe({
-      next: () => { this.brandingSaving.set(false); this.notify.success('تم حفظ الهوية البصرية بنجاح'); this.loadProfile(); },
+      next: () => {
+        // PUT returns 204; verify persistence with a fresh server read before
+        // telling the owner that the change was saved.
+        this.ownerService.getGymProfile().subscribe({
+          next: (saved) => {
+            const b = saved.brandingSettings;
+            const matches =
+              (!payload.primaryColor || b?.primaryColor === payload.primaryColor) &&
+              (!payload.secondaryColor || b?.secondaryColor === payload.secondaryColor) &&
+              (!payload.sidebarColor || b?.sidebarColor === payload.sidebarColor) &&
+              (!payload.headerColor || b?.headerColor === payload.headerColor) &&
+              (!payload.loginBackgroundUrl || b?.loginBackgroundUrl === payload.loginBackgroundUrl) &&
+              (!payload.dashboardBannerUrl || b?.dashboardBannerUrl === payload.dashboardBannerUrl);
+            this.brandingSaving.set(false);
+            if (!matches) {
+              this.notify.error('تم استلام الطلب لكن الخادم لم يعكس التعديل. تأكد من نشر Backend الأخير واتصال قاعدة البيانات.');
+              return;
+            }
+            this.profile.set(saved);
+            this.notify.success('تم حفظ الهوية البصرية والتحقق منها بنجاح');
+          },
+          error: () => { this.brandingSaving.set(false); this.notify.error('تم الحفظ لكن تعذر التحقق من البيانات من الخادم'); }
+        });
+      },
       error: (error) => { this.brandingSaving.set(false); this.notify.error(error?.error?.message || error?.error || 'تعذر حفظ الهوية البصرية'); }
     });
   }
