@@ -641,14 +641,18 @@ export class GymSettingsComponent implements OnInit {
       return;
     }
     this.saving.set(true);
-    this.ownerService.updateGymProfile(this.form).subscribe({
+    const payload: UpdateGymProfileRequest = {
+      ...this.form,
+      phoneNumber: this.form.phone,
+    };
+    this.ownerService.updateGymProfile(payload).subscribe({
       next: () => {
         this.notify.success('تم حفظ الإعدادات بنجاح');
         this.saving.set(false);
         this.loadProfile();
       },
-      error: () => {
-        this.notify.error('حدث خطأ في حفظ الإعدادات');
+      error: (error) => {
+        this.notify.error(error?.error?.message || error?.error || 'تعذر حفظ الإعدادات. تحقق من الباقة والصلاحيات والاتصال.');
         this.saving.set(false);
       }
     });
@@ -721,7 +725,11 @@ export class GymSettingsComponent implements OnInit {
       next: (res) => {
         if (assetType === 'LoginBackground') this.form.loginBackgroundUrl = res.imageUrl;
         else this.form.dashboardBannerUrl = res.imageUrl;
-        this.notify.success('تم رفع صورة الهوية بنجاح');
+        const patch: UpdateGymProfileRequest = { ...this.form, phoneNumber: this.form.phone };
+        this.ownerService.updateGymProfile(patch).subscribe({
+          next: () => this.notify.success('تم رفع صورة الهوية وحفظها بنجاح'),
+          error: (error) => this.notify.error(error?.error?.message || 'تم رفع الصورة لكن تعذر حفظ إعداد الهوية')
+        });
       },
       error: () => this.notify.error('تعذر رفع صورة الهوية')
     });
