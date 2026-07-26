@@ -202,6 +202,11 @@ import { environment } from '../../../../environments/environment';
             <div class="branding-preview full-width" [style.background]="'linear-gradient(120deg,' + (form.primaryColor || '#2563eb') + ',' + (form.secondaryColor || '#4f46e5') + ')'">
               <strong>{{ form.appName || form.name || 'LogicFit' }}</strong><span>معاينة الهوية والألوان</span>
             </div>
+            <div class="theme-live-preview full-width" [style.--preview-sidebar]="form.sidebarColor || '#0f172a'" [style.--preview-header]="form.headerColor || '#ffffff'" [style.--preview-primary]="form.primaryColor || '#2563eb'">
+              <aside><b>{{ form.appName || form.name || 'LogicFit' }}</b><span>القائمة الجانبية</span></aside>
+              <section><header>شريط التنقل والمعاينة المباشرة</header><div><button>زر أساسي</button><button class="secondary">زر ثانوي</button></div></section>
+            </div>
+            <div class="full-width branding-actions"><button pButton type="button" label="حفظ الهوية فقط" icon="pi pi-save" (click)="saveBranding()" [loading]="brandingSaving()" class="save-btn"></button><small>ستظهر التغييرات بعد الحفظ لجميع مستخدمي الجيم.</small></div>
           </div>
         </div>
 
@@ -538,6 +543,10 @@ import { environment } from '../../../../environments/environment';
     .color-field input[type=text] { grid-column:1; grid-row:2; }
     .branding-preview { display:flex; align-items:center; justify-content:space-between; min-height:5rem; padding:1rem 1.25rem; border-radius:1rem; color:#fff; box-shadow:0 10px 24px rgba(15,23,42,.14); }
     .branding-preview strong { font-size:1.15rem; }.branding-preview span { opacity:.85; font-size:.8rem; }
+    .branding-actions { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }.branding-actions small { color:var(--text-muted); }
+    .theme-live-preview { display:grid; grid-template-columns:180px 1fr; min-height:130px; overflow:hidden; border:1px solid var(--border-color); border-radius:1rem; background:var(--bg-secondary); }
+    .theme-live-preview aside { display:flex; flex-direction:column; gap:.5rem; padding:1rem; color:#fff; background:var(--preview-sidebar); }.theme-live-preview aside span { opacity:.7; font-size:.72rem; }
+    .theme-live-preview section header { padding:1rem; color:#1f2937; background:var(--preview-header); border-bottom:1px solid var(--border-color); font-weight:700; }.theme-live-preview section div { display:flex; gap:.6rem; padding:1rem; }.theme-live-preview button { border:0; border-radius:.6rem; padding:.55rem .9rem; color:#fff; background:var(--preview-primary); cursor:pointer; }.theme-live-preview button.secondary { opacity:.75; }
 
     /* Responsive */
     @media (max-width: 900px) {
@@ -581,6 +590,7 @@ export class GymSettingsComponent implements OnInit {
   profile = signal<GymProfile | null>(null);
   loading = signal(true);
   saving = signal(false);
+  brandingSaving = signal(false);
 
   form: UpdateGymProfileRequest = {
     name: '',
@@ -658,6 +668,26 @@ export class GymSettingsComponent implements OnInit {
     });
   }
 
+  saveBranding(): void {
+    const payload: UpdateGymProfileRequest = {
+      primaryColor: this.form.primaryColor,
+      secondaryColor: this.form.secondaryColor,
+      sidebarColor: this.form.sidebarColor,
+      headerColor: this.form.headerColor,
+      ...(this.form.appName?.trim() ? { appName: this.form.appName.trim() } : {}),
+      ...(this.form.fontFamily?.trim() ? { fontFamily: this.form.fontFamily.trim() } : {}),
+      ...(this.form.supportPhone?.trim() ? { supportPhone: this.form.supportPhone.trim() } : {}),
+      ...(this.form.supportEmail?.trim() ? { supportEmail: this.form.supportEmail.trim() } : {}),
+      ...(this.form.loginBackgroundUrl ? { loginBackgroundUrl: this.form.loginBackgroundUrl } : {}),
+      ...(this.form.dashboardBannerUrl ? { dashboardBannerUrl: this.form.dashboardBannerUrl } : {})
+    };
+    this.brandingSaving.set(true);
+    this.ownerService.updateGymProfile(payload).subscribe({
+      next: () => { this.brandingSaving.set(false); this.notify.success('تم حفظ الهوية البصرية بنجاح'); this.loadProfile(); },
+      error: (error) => { this.brandingSaving.set(false); this.notify.error(error?.error?.message || error?.error || 'تعذر حفظ الهوية البصرية'); }
+    });
+  }
+
   /** Reject non-images and files > 5 MB before uploading; clears the input for retry. */
   private validImage(event: Event): File | null {
     const input = event.target as HTMLInputElement;
@@ -725,11 +755,7 @@ export class GymSettingsComponent implements OnInit {
       next: (res) => {
         if (assetType === 'LoginBackground') this.form.loginBackgroundUrl = res.imageUrl;
         else this.form.dashboardBannerUrl = res.imageUrl;
-        const patch: UpdateGymProfileRequest = { ...this.form, phoneNumber: this.form.phone };
-        this.ownerService.updateGymProfile(patch).subscribe({
-          next: () => this.notify.success('تم رفع صورة الهوية وحفظها بنجاح'),
-          error: (error) => this.notify.error(error?.error?.message || 'تم رفع الصورة لكن تعذر حفظ إعداد الهوية')
-        });
+        this.saveBranding();
       },
       error: () => this.notify.error('تعذر رفع صورة الهوية')
     });
