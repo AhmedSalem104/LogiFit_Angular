@@ -289,7 +289,7 @@ export interface GymProfile {
 
 export interface BrandingSettings {
   primaryColor?: string | null; secondaryColor?: string | null; accentColor?: string | null;
-  backgroundColor?: string | null; surfaceColor?: string | null; sidebarColor?: string | null;
+  backgroundColor?: string | null; surfaceColor?: string | null; sidebarColor?: string | null; headerColor?: string | null;
   appName?: string | null; fontFamily?: string | null; loginBackgroundUrl?: string | null;
   dashboardBannerUrl?: string | null; supportPhone?: string | null; supportEmail?: string | null;
 }
@@ -312,6 +312,7 @@ export interface UpdateGymProfileRequest {
   backgroundColor?: string;
   surfaceColor?: string;
   sidebarColor?: string;
+  headerColor?: string;
   loginBackgroundUrl?: string;
   dashboardBannerUrl?: string;
   supportPhone?: string;
@@ -560,6 +561,13 @@ export class OwnerService {
     const formData = new FormData();
     formData.append('file', file);
     return this.http.post<{ url: string }>(`${this.apiUrl}/gymprofile/gallery`, formData);
+  }
+
+  uploadBrandingAsset(file: File, assetType: string): Observable<{ id: string; imageUrl: string; assetType: string; sortOrder: number }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('assetType', assetType);
+    return this.http.post<{ id: string; imageUrl: string; assetType: string; sortOrder: number }>(`${this.apiUrl}/gymprofile/assets`, formData);
   }
 
   deleteGymGalleryImage(imageUrl: string): Observable<void> {
