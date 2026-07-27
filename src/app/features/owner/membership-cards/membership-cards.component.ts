@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -15,6 +15,7 @@ import { AccessControlService } from '../services/access-control.service';
 import { OwnerService, Client } from '../services/owner.service';
 import { MembershipCard } from '../../../shared/models/gym-management.models';
 import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
+import QRCode from 'qrcode';
 
 @Component({
   selector: 'app-membership-cards',
@@ -110,9 +111,7 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
     <p-dialog [(visible)]="qrDialogVisible" [modal]="true" [style]="{width:'420px'}"
               header="بطاقة العضوية" [dismissableMask]="true">
       <div class="qr-card" *ngIf="selectedCard">
-        <div class="qr-placeholder">
-          <i class="pi pi-qrcode"></i>
-        </div>
+        <canvas #qrCanvas class="qr-image" aria-label="QR code"></canvas>
         <div class="qr-info">
           <div class="qr-row"><span class="label">رقم البطاقة:</span> <code>{{ selectedCard.cardNumber }}</code></div>
           <div class="qr-row"><span class="label">العميل:</span> <span>{{ selectedCard.clientName }}</span></div>
@@ -123,6 +122,7 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
         </div>
       </div>
       <div class="dialog-actions">
+        <button class="btn btn-primary" (click)="downloadQr()"><i class="pi pi-download"></i> تنزيل QR</button>
         <button class="btn btn-ghost" (click)="qrDialogVisible=false">إغلاق</button>
       </div>
     </p-dialog>
@@ -144,12 +144,7 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
       display:flex; flex-direction:column; gap:1rem; align-items:center;
       padding: 1rem;
     }
-    .qr-placeholder {
-      width: 160px; height: 160px; border-radius: 16px;
-      background: linear-gradient(135deg,#1e293b,#0f172a);
-      color: #60a5fa; display:flex; align-items:center; justify-content:center;
-      font-size: 5rem;
-    }
+    .qr-image { width: 220px; height: 220px; border-radius: 12px; background: #fff; padding: 10px; }
     .qr-info { width: 100%; display: flex; flex-direction: column; gap: .5rem; }
     .qr-row { display:flex; justify-content:space-between; gap:.5rem; padding: .35rem 0; border-bottom:1px dashed var(--border-color); }
     .qr-row .label { color: var(--text-secondary); font-size:.85rem; }
@@ -176,6 +171,7 @@ export class MembershipCardsComponent implements OnInit {
   selectedCard: MembershipCard | null = null;
   issueForm: { clientId: string; expiresAt?: string; cardNumber?: string } = { clientId: '' };
   revokeReason = '';
+  @ViewChild('qrCanvas') qrCanvas?: ElementRef<HTMLCanvasElement>;
 
   activeCount = computed(() => this.cards().filter(c => c.isActive && !c.revokedAt && !c.isExpired).length);
   expiredCount = computed(() => this.cards().filter(c => c.isExpired).length);
@@ -219,7 +215,25 @@ export class MembershipCardsComponent implements OnInit {
     });
   }
 
-  showQr(c: MembershipCard) { this.selectedCard = c; this.qrDialogVisible = true; }
+  showQr(c: MembershipCard) {
+    this.selectedCard = c;
+    this.qrDialogVisible = true;
+    setTimeout(() => this.renderQr(c.qrCode), 0);
+  }
+
+  private async renderQr(value: string): Promise<void> {
+    if (!this.qrCanvas?.nativeElement) return;
+    await QRCode.toCanvas(this.qrCanvas.nativeElement, value, { width: 200, margin: 1, errorCorrectionLevel: 'M' });
+  }
+
+  downloadQr(): void {
+    const canvas = this.qrCanvas?.nativeElement;
+    if (!canvas || !this.selectedCard) return;
+    const link = document.createElement('a');
+    link.download = `logicfit-${this.selectedCard.cardNumber}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
 
   revoke(c: MembershipCard) {
     this.selectedCard = c; this.revokeReason = '';

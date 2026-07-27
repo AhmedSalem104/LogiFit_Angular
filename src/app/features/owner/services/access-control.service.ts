@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
   MembershipCard, IssueCardRequest, RevokeCardRequest,
-  GateAccessResponse, CheckInQrRequest, GateAccessLog, GateAccessResult
+  GateAccessResponse, CheckInQrRequest, GateAccessLog, GateAccessResult, QrMemberLookup
 } from '../../../shared/models/gym-management.models';
 
 @Injectable({ providedIn: 'root' })
@@ -31,6 +31,10 @@ export class AccessControlService {
   // Gate Access
   checkInQr(body: CheckInQrRequest): Observable<GateAccessResponse> {
     return this.http.post<GateAccessResponse>(`${this.api}/GateAccess/check-in-qr`, body);
+  }
+
+  scanQr(qrCode: string): Observable<QrMemberLookup> {
+    return this.http.get<QrMemberLookup>(`${this.api}/GateAccess/scan`, { params: { qrCode } });
   }
 
   logs(params?: {
