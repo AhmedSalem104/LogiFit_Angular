@@ -4,7 +4,7 @@ export const environment = {
   // Local development can switch to the proxy target in proxy.conf.json when needed.
   // Keep browser requests same-origin; proxy.conf.json forwards them to the current backend.
   apiUrl: '/api',
-  platformUrl: 'https://logicfit-saas.runasp.net',
+  platformUrl: 'https://logicfit-saas-model.runasp.net',
   platformDashboardUrl: 'http://localhost:4300',
   tokenKey: 'logicfit_token',
   refreshTokenKey: 'logicfit_refresh_token',
