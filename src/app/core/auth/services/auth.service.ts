@@ -340,7 +340,8 @@ export class AuthService {
       fullName: response.fullName,
       role: mappedRole,
       roles: mappedRoles.length ? mappedRoles : [mappedRole],
-      tenantId: response.tenantId
+      tenantId: response.tenantId,
+      mustChangePassword: response.mustChangePassword === true
     };
 
     this.storage.setItem(environment.userKey, userInfo);
