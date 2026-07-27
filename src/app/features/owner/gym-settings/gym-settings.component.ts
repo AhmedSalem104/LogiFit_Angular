@@ -917,7 +917,7 @@ export class GymSettingsComponent implements OnInit {
 
   getFullUrl(path: string): string {
     if (path.startsWith('http')) return path;
-    const origin = environment.production ? 'https://logicfit-saas.runasp.net' : window.location.origin;
+    const origin = environment.production ? 'https://logicfit-saas-model.runasp.net' : window.location.origin;
     return `${origin}${path.startsWith('/') ? '' : '/'}${path}`;
   }
 }

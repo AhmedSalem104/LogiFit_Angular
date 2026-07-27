@@ -92,7 +92,7 @@ export class BrandingService {
   resolveAssetUrl(url: string | null | undefined): string {
     if (!url) return '';
     if (/^https?:\/\//i.test(url) || url.startsWith('data:')) return url;
-    const origin = environment.production ? 'https://logicfit-saas.runasp.net' : window.location.origin;
+    const origin = environment.production ? 'https://logicfit-saas-model.runasp.net' : window.location.origin;
     return `${origin}${url.startsWith('/') ? '' : '/'}${url}`;
   }
 

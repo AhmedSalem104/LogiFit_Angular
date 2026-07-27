@@ -1,11 +1,11 @@
 {
   "/api": {
-    "target": "https://logicfit-saas.runasp.net",
+    "target": "https://logicfit-saas-model.runasp.net",
     "secure": false,
     "changeOrigin": true
   },
   "/uploads": {
-    "target": "https://logicfit-saas.runasp.net",
+    "target": "https://logicfit-saas-model.runasp.net",
     "secure": false,
     "changeOrigin": true
   }
