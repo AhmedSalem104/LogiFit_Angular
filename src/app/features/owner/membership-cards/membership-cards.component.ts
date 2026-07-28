@@ -218,19 +218,30 @@ export class MembershipCardsComponent implements OnInit {
   showQr(c: MembershipCard) {
     this.selectedCard = c;
     this.qrDialogVisible = true;
+    if (!c.qrCode?.trim()) { this.toast.error('لا توجد قيمة QR لهذه البطاقة'); return; }
     setTimeout(() => this.renderQr(c.qrCode), 0);
   }
 
   private async renderQr(value: string): Promise<void> {
-    if (!this.qrCanvas?.nativeElement) return;
-    await QRCode.toCanvas(this.qrCanvas.nativeElement, value, { width: 200, margin: 1, errorCorrectionLevel: 'M' });
+    const canvas = this.qrCanvas?.nativeElement;
+    if (!canvas) return;
+    try {
+      await QRCode.toCanvas(canvas, value, {
+        width: 220,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+        color: { dark: '#0f172a', light: '#ffffff' }
+      });
+    } catch {
+      this.toast.error('تعذر توليد QR للبطاقة');
+    }
   }
 
   downloadQr(): void {
     const canvas = this.qrCanvas?.nativeElement;
     if (!canvas || !this.selectedCard) return;
     const link = document.createElement('a');
-    link.download = `logicfit-${this.selectedCard.cardNumber}.png`;
+    link.download = `logicfit-${this.selectedCard.cardNumber}-qr.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   }
