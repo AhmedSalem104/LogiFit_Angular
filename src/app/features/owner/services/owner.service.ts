@@ -324,6 +324,10 @@ export interface UpdateGymProfileRequest {
   openingHours?: string;
 }
 
+export interface OnboardClientRequest extends CreateClientRequest {
+  membership?: { planId: string; startDate: string; paymentMethod?: string; amountPaid?: number; issueCard?: boolean } | null;
+}
+
 // ==================== Enums ====================
 export const SubscriptionStatus = {
   Active: 1,
@@ -381,6 +385,10 @@ export class OwnerService {
 
   createClient(data: CreateClientRequest): Observable<string> {
     return this.http.post<string>(`${this.apiUrl}/clients`, data);
+  }
+
+  onboardClient(data: OnboardClientRequest): Observable<{ clientId: string; subscriptionId?: string; membershipCardId?: string }> {
+    return this.http.post<{ clientId: string; subscriptionId?: string; membershipCardId?: string }>(`${this.apiUrl}/clients/onboard`, data);
   }
 
   updateClient(id: string, data: UpdateClientRequest): Observable<void> {

@@ -577,14 +577,10 @@ export class ClientsListComponent implements OnInit {
     };
 
     if (this.dialogMode() === 'add') {
-      this.ownerService.createClient({
-        fullName: value.fullName,
-        phoneNumber: value.phoneNumber,
-        password: value.password!,
-        email: value.email,
-        gender: value.gender,
-        birthDate: value.birthDate
+      this.onboardWithOptionalMembership(value, done, fail);
+      /*
       }).subscribe({ next: () => done('تمت إضافة العميل بنجاح'), error: fail });
+      */
     } else if (this.editingId) {
       this.ownerService.updateClient(this.editingId, {
         fullName: value.fullName,
@@ -594,6 +590,20 @@ export class ClientsListComponent implements OnInit {
         birthDate: value.birthDate
       }).subscribe({ next: () => done('تم تحديث بيانات العميل بنجاح'), error: fail });
     }
+  }
+
+  private onboardWithOptionalMembership(value: PersonFormValue, done: (msg: string) => void, fail: (err: any) => void): void {
+    this.ownerService.getSubscriptionPlans(true).subscribe({
+      next: plans => {
+        const options = plans.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        Swal.fire({ title: 'Membership (optional)', html: `<select id="onboard-plan" class="swal2-select"><option value="">Without membership</option>${options}</select><input id="onboard-start" type="date" class="swal2-input" value="${new Date().toISOString().slice(0,10)}">`, showCancelButton: true, confirmButtonText: 'Create', cancelButtonText: 'Cancel', preConfirm: () => ({ planId: (document.getElementById('onboard-plan') as HTMLSelectElement).value, startDate: (document.getElementById('onboard-start') as HTMLInputElement).value }) }).then(result => {
+          if (!result.isConfirmed) { this.dialogSaving.set(false); return; }
+          const membership = result.value.planId ? { planId: result.value.planId, startDate: result.value.startDate, issueCard: true } : null;
+          this.ownerService.onboardClient({ ...value, password: value.password!, membership }).subscribe({ next: () => done('Client created successfully'), error: fail });
+        });
+      },
+      error: () => this.ownerService.onboardClient({ ...value, password: value.password!, membership: null }).subscribe({ next: () => done('Client created successfully'), error: fail })
+    });
   }
 
   deleteClient(client: ClientDisplay): void {
