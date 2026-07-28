@@ -54,4 +54,23 @@ export class AccessControlService {
     if (params?.take) p = p.set('take', params.take);
     return this.http.get<GateAccessLog[]>(`${this.api}/GateAccess/logs`, { params: p });
   }
+
+  toggleStaffQr(body: { qrCode: string; branchId?: string | null }): Observable<StaffAttendanceRecord> {
+    return this.http.post<StaffAttendanceRecord>(`${this.api}/staff-attendance/toggle-qr`, body);
+  }
+
+  staffAttendance(params?: { fromDate?: string; toDate?: string; branchId?: string; userId?: string }): Observable<StaffAttendanceRecord[]> {
+    let p = new HttpParams();
+    if (params?.fromDate) p = p.set('fromDate', params.fromDate);
+    if (params?.toDate) p = p.set('toDate', params.toDate);
+    if (params?.branchId) p = p.set('branchId', params.branchId);
+    if (params?.userId) p = p.set('userId', params.userId);
+    return this.http.get<StaffAttendanceRecord[]>(`${this.api}/staff-attendance`, { params: p });
+  }
+}
+
+export interface StaffAttendanceRecord {
+  id: string; userId: string; employeeProfileId?: string; name?: string; phoneNumber?: string;
+  email?: string; branchId?: string; checkInTime: string; checkOutTime?: string;
+  durationMinutes?: number; method: number; isOpen: boolean;
 }

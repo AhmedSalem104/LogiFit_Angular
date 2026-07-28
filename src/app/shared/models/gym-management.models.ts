@@ -773,6 +773,10 @@ export interface Employee {
   branchIds?: string[];
   branchNames?: string[];
   isActive: boolean;
+  qrCode?: string | null;
+  qrGeneratedAt?: string | null;
+  qrRevokedAt?: string | null;
+  hasActiveQr?: boolean;
 }
 
 export interface CreateEmployeeRequest {

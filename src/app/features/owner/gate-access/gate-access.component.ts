@@ -11,7 +11,7 @@ import { CalendarModule } from 'primeng/calendar';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { NotificationService } from '../../../core/services/notification.service';
-import { AccessControlService } from '../services/access-control.service';
+import { AccessControlService, StaffAttendanceRecord } from '../services/access-control.service';
 import { OwnerService, Client, ClientSubscription } from '../services/owner.service';
 import { FinanceService } from '../services/finance.service';
 import { BranchesService } from '../services/branches.service';
@@ -74,6 +74,10 @@ import { AttendanceComponent } from '../attendance/attendance.component';
             <div><span class="detail-label">نهاية الاشتراك</span><strong>{{ member.subscriptionEndDate ? (member.subscriptionEndDate | date:'yyyy-MM-dd') : '—' }}</strong></div>
             <div><span class="detail-label">المبلغ المتبقي</span><strong>{{ member.remainingAmount != null ? (member.remainingAmount | number:'1.2-2') : '—' }}</strong></div>
           </div>
+        </div>
+        <div class="member-lookup" *ngIf="staffLookup() as staff">
+          <div class="member-summary"><i class="pi pi-user" style="font-size:2rem"></i><div class="member-main"><strong>{{ staff.name || staff.email }}</strong><span>{{ staff.phoneNumber || staff.email }}</span></div><span class="badge green">موظف / مدرب</span></div>
+          <div class="member-details"><div><span class="detail-label">وقت الدخول</span><strong>{{ staff.checkInTime | date:'yyyy-MM-dd HH:mm' }}</strong></div><div><span class="detail-label">وقت الخروج</span><strong>{{ staff.checkOutTime ? (staff.checkOutTime | date:'yyyy-MM-dd HH:mm') : 'داخل الجيم' }}</strong></div><div><span class="detail-label">الطريقة</span><strong>QR</strong></div></div>
         </div>
 
         <div *ngIf="lastResult()" class="result-banner" [class.granted]="lastResult()!.granted" [class.denied]="!lastResult()!.granted">
@@ -158,6 +162,12 @@ import { AttendanceComponent } from '../attendance/attendance.component';
           </ng-template>
         </p-table>
       </div>
+      <h3 class="section-title" style="margin-top:2rem"><i class="pi pi-users"></i> سجل حضور الموظفين والمدربين</h3>
+      <div class="data-card"><p-table [value]="staffRows()" [paginator]="true" [rows]="15">
+        <ng-template pTemplate="header"><tr><th>الموظف</th><th>الفرع</th><th>الدخول</th><th>الخروج</th><th>المدة</th><th>الطريقة</th></tr></ng-template>
+        <ng-template pTemplate="body" let-s><tr><td>{{ s.name || s.email || '-' }}</td><td>{{ branchName(s.branchId) }}</td><td>{{ s.checkInTime | date:'yyyy-MM-dd HH:mm' }}</td><td>{{ s.checkOutTime ? (s.checkOutTime | date:'yyyy-MM-dd HH:mm') : 'داخل الجيم' }}</td><td>{{ s.durationMinutes != null ? (s.durationMinutes | number:'1.0-0') + ' دقيقة' : '-' }}</td><td>QR</td></tr></ng-template>
+        <ng-template pTemplate="emptymessage"><tr><td colspan="6"><div class="empty-state"><i class="pi pi-clock"></i><p>لا يوجد حضور موظفين</p></div></td></tr></ng-template>
+      </p-table></div>
       <div class="attendance-embed-toggle"><button class="btn btn-outline" type="button" (click)="showAttendance = !showAttendance"><i class="pi pi-clock"></i> {{ showAttendance ? 'إخفاء سجل الحضور' : 'فتح سجل الحضور داخل نفس الشاشة' }}</button></div>
       <app-attendance *ngIf="showAttendance"></app-attendance>
     </div>
@@ -211,11 +221,13 @@ export class GateAccessComponent implements OnInit {
 
   @ViewChild('scannerVideo') scannerVideo?: ElementRef<HTMLVideoElement>;
   logs = signal<GateAccessLog[]>([]);
+  staffRows = signal<StaffAttendanceRecord[]>([]);
   branches = signal<Branch[]>([]);
   loading = signal(false);
   checking = signal(false);
   scanning = signal(false);
   lookup = signal<QrMemberLookup | null>(null);
+  staffLookup = signal<StaffAttendanceRecord | null>(null);
   detailsDialogVisible = false;
   showAttendance = false;
   detailsLoading = false;
@@ -243,6 +255,13 @@ export class GateAccessComponent implements OnInit {
   checkIn() {
     if (!this.qrCode.trim()) { this.toast.error('أدخل كود QR'); return; }
     this.checking.set(true);
+    if (this.qrCode.trim().startsWith('staff:')) {
+      this.svc.toggleStaffQr({ qrCode: this.qrCode.trim(), branchId: this.selectedBranchId }).subscribe({
+        next: staff => { this.checking.set(false); this.staffLookup.set(staff); this.lookup.set(null); this.toast.success(staff.isOpen ? `تم تسجيل دخول ${staff.name || ''}` : `تم تسجيل خروج ${staff.name || ''}`); this.qrCode = ''; },
+        error: e => { this.checking.set(false); this.toast.error(e?.error?.detail || 'فشل تسجيل حضور الموظف'); }
+      });
+      return;
+    }
     this.svc.checkInQr({ qrCode: this.qrCode, branchId: this.selectedBranchId }).subscribe({
       next: res => {
         this.checking.set(false);
@@ -278,6 +297,7 @@ export class GateAccessComponent implements OnInit {
   }
 
   lookupMember(code: string): void {
+    if (code.trim().startsWith('staff:')) { this.staffLookup.set(null); return; }
     this.svc.scanQr(code).subscribe({ next: member => this.lookup.set(member), error: () => this.lookup.set(null) });
   }
 
@@ -309,6 +329,7 @@ export class GateAccessComponent implements OnInit {
 
   load() {
     this.loading.set(true);
+    this.svc.staffAttendance({ branchId: this.filterBranch ?? undefined, fromDate: this.fromDate || undefined, toDate: this.toDate || undefined }).subscribe({ next: rows => this.staffRows.set(rows || []) });
     this.svc.logs({
       branchId: this.filterBranch ?? undefined,
       result: this.filterResult ?? undefined,
@@ -320,4 +341,6 @@ export class GateAccessComponent implements OnInit {
       error: () => { this.toast.error('فشل التحميل'); this.loading.set(false); }
     });
   }
+
+  branchName(id?: string): string { return this.branches().find(b => b.id === id)?.name || '-'; }
 }

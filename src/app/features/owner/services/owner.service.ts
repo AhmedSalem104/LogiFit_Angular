@@ -62,6 +62,10 @@ export interface Coach {
   traineesCount?: number;
   traineeCount?: number;
   activePrograms?: number;
+  staffQrCode?: string | null;
+  staffQrGeneratedAt?: string | null;
+  staffQrRevokedAt?: string | null;
+  hasActiveQr?: boolean;
 }
 
 export interface CoachProfile {
@@ -422,6 +426,12 @@ export class OwnerService {
 
   createCoach(data: CreateCoachRequest): Observable<string> {
     return this.http.post<string>(`${this.apiUrl}/coaches`, data);
+  }
+  regenerateCoachQr(id: string): Observable<{ id: string; qrCode: string; staffQrGeneratedAt: string }> {
+    return this.http.post<{ id: string; qrCode: string; staffQrGeneratedAt: string }>(`${this.api}/Coaches/${id}/qr/regenerate`, {});
+  }
+  revokeCoachQr(id: string): Observable<void> {
+    return this.http.post<void>(`${this.api}/Coaches/${id}/qr/revoke`, {});
   }
 
   updateCoach(id: string, data: UpdateCoachRequest): Observable<void> {
