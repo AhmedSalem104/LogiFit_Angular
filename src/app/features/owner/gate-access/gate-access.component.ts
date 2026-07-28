@@ -32,8 +32,8 @@ import { AttendanceComponent } from '../attendance/attendance.component';
   ],
   template: `
     <div class="gym-page">
-      <app-page-header title="البوابة الإلكترونية" subtitle="تسجيل الدخول بالـ QR ومراجعة السجل"
-        [breadcrumbs]="[{label:'لوحة التحكم', route:'/owner/dashboard'},{label:'البوابة'}]"></app-page-header>
+      <app-page-header title="الدخول والحضور" subtitle="تسجيل الدخول والخروج ومراجعة الحضور من مكان واحد"
+        [breadcrumbs]="[{label:'لوحة التحكم', route:'/owner/dashboard'},{label:'الدخول والحضور'}]"></app-page-header>
 
       <div class="checkin-card">
         <h3 class="section-title"><i class="pi pi-sign-in"></i> تسجيل دخول برمز QR</h3>

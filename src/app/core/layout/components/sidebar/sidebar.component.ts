@@ -898,7 +898,7 @@ export class SidebarComponent {
         { label: 'العملاء', icon: 'pi-users', route: '/owner/clients', roles: [UserRole.Owner], permission: 'ViewMembers' },
         { label: 'المدربين', icon: 'pi-id-card', route: '/owner/coaches', roles: [UserRole.Owner], permission: 'ManageCoaches' },
         { label: 'بطاقات العضوية', icon: 'pi-qrcode', route: '/owner/membership-cards', roles: [UserRole.Owner], permission: 'ManageMembers' },
-        { label: 'البوابة الإلكترونية', icon: 'pi-sign-in', route: '/owner/gate-access', roles: [UserRole.Owner], permission: 'ManageAttendance' },
+        { label: 'الدخول والحضور', icon: 'pi-sign-in', route: '/owner/gate-access', roles: [UserRole.Owner], permission: 'ManageAttendance' },
       ]
     },
     {
