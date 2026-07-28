@@ -15,6 +15,7 @@ import { AccessControlService } from '../services/access-control.service';
 import { OwnerService, Client } from '../services/owner.service';
 import { MembershipCard } from '../../../shared/models/gym-management.models';
 import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
+import QRCode from 'qrcode';
 
 @Component({
   selector: 'app-membership-cards',
@@ -110,9 +111,10 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
     <p-dialog [(visible)]="qrDialogVisible" [modal]="true" [style]="{width:'420px'}"
               header="بطاقة العضوية" [dismissableMask]="true">
       <div class="qr-card" *ngIf="selectedCard">
-        <div class="qr-placeholder">
-          <i class="pi pi-qrcode"></i>
+        <div class="qr-image-wrap" *ngIf="selectedQrImage(); else qrLoading">
+          <img [src]="selectedQrImage()" [alt]="'QR ' + selectedCard.cardNumber" class="qr-image" />
         </div>
+        <ng-template #qrLoading><div class="qr-placeholder"><i class="pi pi-spin pi-spinner"></i></div></ng-template>
         <div class="qr-info">
           <div class="qr-row"><span class="label">رقم البطاقة:</span> <code>{{ selectedCard.cardNumber }}</code></div>
           <div class="qr-row"><span class="label">العميل:</span> <span>{{ selectedCard.clientName }}</span></div>
@@ -123,6 +125,7 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
         </div>
       </div>
       <div class="dialog-actions">
+        <button class="btn btn-primary" *ngIf="selectedQrImage()" (click)="downloadQr()"><i class="pi pi-download"></i> تنزيل QR</button>
         <button class="btn btn-ghost" (click)="qrDialogVisible=false">إغلاق</button>
       </div>
     </p-dialog>
@@ -150,6 +153,8 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
       color: #60a5fa; display:flex; align-items:center; justify-content:center;
       font-size: 5rem;
     }
+    .qr-image-wrap { width: 220px; height: 220px; padding: 12px; background: #fff; border-radius: 16px; box-shadow: 0 8px 24px rgba(15,23,42,.14); }
+    .qr-image { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
     .qr-info { width: 100%; display: flex; flex-direction: column; gap: .5rem; }
     .qr-row { display:flex; justify-content:space-between; gap:.5rem; padding: .35rem 0; border-bottom:1px dashed var(--border-color); }
     .qr-row .label { color: var(--text-secondary); font-size:.85rem; }
@@ -174,6 +179,7 @@ export class MembershipCardsComponent implements OnInit {
   qrDialogVisible = false;
   revokeDialogVisible = false;
   selectedCard: MembershipCard | null = null;
+  selectedQrImage = signal<string | null>(null);
   issueForm: { clientId: string; expiresAt?: string; cardNumber?: string } = { clientId: '' };
   revokeReason = '';
 
@@ -219,7 +225,27 @@ export class MembershipCardsComponent implements OnInit {
     });
   }
 
-  showQr(c: MembershipCard) { this.selectedCard = c; this.qrDialogVisible = true; }
+  async showQr(c: MembershipCard) {
+    this.selectedCard = c;
+    this.selectedQrImage.set(null);
+    this.qrDialogVisible = true;
+    if (!c.qrCode?.trim()) { this.toast.error('لا توجد قيمة QR لهذه البطاقة'); return; }
+    try {
+      this.selectedQrImage.set(await QRCode.toDataURL(c.qrCode, {
+        errorCorrectionLevel: 'M', margin: 2, width: 420,
+        color: { dark: '#0f172a', light: '#ffffff' }
+      }));
+    } catch { this.toast.error('تعذر توليد QR للبطاقة'); }
+  }
+
+  downloadQr() {
+    const image = this.selectedQrImage();
+    if (!image || !this.selectedCard) return;
+    const link = document.createElement('a');
+    link.href = image;
+    link.download = `logicfit-${this.selectedCard.cardNumber}-qr.png`;
+    link.click();
+  }
 
   revoke(c: MembershipCard) {
     this.selectedCard = c; this.revokeReason = '';
