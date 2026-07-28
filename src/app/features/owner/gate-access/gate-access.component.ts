@@ -91,7 +91,7 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
       <app-loading-skeleton *ngIf="loading()" type="table"></app-loading-skeleton>
 
       <div class="data-card" *ngIf="!loading()">
-        <p-table [value]="logs()" [paginator]="true" [rows]="15">
+        <p-table class="gate-log-table" dir="ltr" [value]="logs()" [paginator]="true" [rows]="15">
           <ng-template pTemplate="header">
             <tr>
               <th>التاريخ</th><th>العميل</th><th>الفرع</th><th>الطريقة</th>
@@ -146,6 +146,7 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
     .detail-label { font-size:.78rem; }
     .member-details strong,.member-details code { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .member-avatar { width:48px; height:48px; border-radius:50%; object-fit:cover; }
+    .gate-log-table th, .gate-log-table td { direction: rtl; text-align: right; }
   `]
 })
 export class GateAccessComponent implements OnInit {
