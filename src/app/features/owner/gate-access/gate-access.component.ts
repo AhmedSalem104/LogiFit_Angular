@@ -21,13 +21,14 @@ import {
   , QrMemberLookup
 } from '../../../shared/models/gym-management.models';
 import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
+import { AttendanceComponent } from '../attendance/attendance.component';
 
 @Component({
   selector: 'app-gate-access',
   standalone: true,
   imports: [
     CommonModule, FormsModule, TableModule, DialogModule, DropdownModule, ButtonModule, InputTextModule, CalendarModule,
-    PageHeaderComponent, LoadingSkeletonComponent
+    PageHeaderComponent, LoadingSkeletonComponent, AttendanceComponent
   ],
   template: `
     <div class="gym-page">
@@ -157,6 +158,8 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
           </ng-template>
         </p-table>
       </div>
+      <div class="attendance-embed-toggle"><button class="btn btn-outline" type="button" (click)="showAttendance = !showAttendance"><i class="pi pi-clock"></i> {{ showAttendance ? 'إخفاء سجل الحضور' : 'فتح سجل الحضور داخل نفس الشاشة' }}</button></div>
+      <app-attendance *ngIf="showAttendance"></app-attendance>
     </div>
   `,
   styles: [GYM_PAGE_STYLES + `
@@ -214,6 +217,7 @@ export class GateAccessComponent implements OnInit {
   scanning = signal(false);
   lookup = signal<QrMemberLookup | null>(null);
   detailsDialogVisible = false;
+  showAttendance = false;
   detailsLoading = false;
   memberDetails: { client: Client; subscriptions: ClientSubscription[]; payments: import('../../../shared/models/gym-management.models').Payment[] } | null = null;
   lastResult = signal<GateAccessResponse | null>(null);
