@@ -100,7 +100,7 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
           </ng-template>
           <ng-template pTemplate="body" let-l>
             <tr>
-              <td>{{ l.occurredAt | date:'yyyy-MM-dd HH:mm' }}</td>
+              <td>{{ l.accessTime | date:'yyyy-MM-dd HH:mm' }}</td>
               <td>{{ l.clientName || '-' }}</td>
               <td>{{ l.branchName || '-' }}</td>
               <td>{{ l.methodName || '-' }}</td>

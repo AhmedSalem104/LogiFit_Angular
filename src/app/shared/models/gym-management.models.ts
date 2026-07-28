@@ -151,7 +151,7 @@ export interface GateAccessLog {
   methodName?: string;
   denyReason?: GateDenyReason;
   denyReasonName?: string;
-  occurredAt: string;
+  accessTime: string;
   notes?: string | null;
 }
 
