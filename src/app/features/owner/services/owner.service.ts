@@ -325,7 +325,7 @@ export interface UpdateGymProfileRequest {
 }
 
 export interface OnboardClientRequest extends CreateClientRequest {
-  membership?: { planId: string; startDate: string; paymentMethod?: string; amountPaid?: number; issueCard?: boolean } | null;
+  membership?: { planId: string; startDate: string; paymentMethod?: any; amountPaid?: number; discount?: number; notes?: string; issueCard?: boolean } | null;
 }
 
 // ==================== Enums ====================
