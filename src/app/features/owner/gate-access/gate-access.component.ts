@@ -289,7 +289,6 @@ export class GateAccessComponent implements OnInit {
       error: () => { this.detailsLoading = false; this.toast.error('تعذر تحميل الملف الكامل للعميل'); }
     });
   }
-
   getSelectedBranchName(): string {
     return this.branches().find(branch => branch.id === this.selectedBranchId)?.name || 'الفرع الافتراضي';
   }
