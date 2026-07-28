@@ -48,12 +48,24 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
         <div class="scanner" *ngIf="scanning()"><video #scannerVideo autoplay muted playsinline></video><small>وجّه الكاميرا إلى QR البطاقة</small></div>
 
         <div class="member-lookup" *ngIf="lookup() as member">
-          <img *ngIf="member.profilePictureUrl" [src]="member.profilePictureUrl" alt="" class="member-avatar" />
-          <div><strong>{{ member.clientName }}</strong><span>{{ member.phoneNumber || member.email || '' }}</span></div>
-          <span class="badge" [class.green]="member.subscriptionActive" [class.red]="!member.subscriptionActive">
-            {{ member.subscriptionActive ? 'اشتراك فعال' : 'لا يوجد اشتراك فعال' }}
-          </span>
-          <small *ngIf="member.planName">{{ member.planName }} · ينتهي {{ member.subscriptionEndDate | date:'yyyy-MM-dd' }}</small>
+          <div class="member-summary">
+            <img *ngIf="member.profilePictureUrl" [src]="member.profilePictureUrl" [alt]="member.clientName" class="member-avatar" />
+            <div class="member-main"><strong>{{ member.clientName }}</strong><span>{{ member.phoneNumber || member.email || '—' }}</span></div>
+            <span class="badge" [class.green]="member.subscriptionActive" [class.red]="!member.subscriptionActive">
+              {{ member.subscriptionActive ? 'اشتراك فعال' : 'لا يوجد اشتراك فعال' }}
+            </span>
+          </div>
+          <div class="member-details">
+            <div><span class="detail-label">العميل</span><strong>{{ member.clientName }}</strong></div>
+            <div><span class="detail-label">الطريقة</span><strong>QR Code</strong></div>
+            <div><span class="detail-label">الفرع</span><strong>{{ getSelectedBranchName() }}</strong></div>
+            <div><span class="detail-label">رقم البطاقة</span><code>{{ member.cardNumber }}</code></div>
+            <div><span class="detail-label">حالة البطاقة</span><strong>{{ member.cardActive ? 'نشطة' : 'غير نشطة' }}</strong></div>
+            <div><span class="detail-label">الخطة</span><strong>{{ member.planName || '—' }}</strong></div>
+            <div><span class="detail-label">بداية الاشتراك</span><strong>{{ member.subscriptionStartDate ? (member.subscriptionStartDate | date:'yyyy-MM-dd') : '—' }}</strong></div>
+            <div><span class="detail-label">نهاية الاشتراك</span><strong>{{ member.subscriptionEndDate ? (member.subscriptionEndDate | date:'yyyy-MM-dd') : '—' }}</strong></div>
+            <div><span class="detail-label">المبلغ المتبقي</span><strong>{{ member.remainingAmount != null ? (member.remainingAmount | number:'1.2-2') : '—' }}</strong></div>
+          </div>
         </div>
 
         <div *ngIf="lastResult()" class="result-banner" [class.granted]="lastResult()!.granted" [class.denied]="!lastResult()!.granted">
@@ -125,9 +137,14 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
     .result-text small { color: var(--text-secondary); }
     .scanner { margin-top:1rem; display:flex; flex-direction:column; align-items:center; gap:.5rem; color:var(--text-secondary); }
     .scanner video { width:min(100%,360px); aspect-ratio:4/3; object-fit:cover; border-radius:14px; background:#0f172a; }
-    .member-lookup { margin-top:1rem; display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; padding:1rem; border:1px solid var(--card-border); border-radius:12px; background:var(--bg-secondary); }
-    .member-lookup > div { display:flex; flex-direction:column; gap:.15rem; min-width:180px; }
-    .member-lookup > div span,.member-lookup small { color:var(--text-secondary); }
+    .member-lookup { margin-top:1rem; display:flex; flex-direction:column; gap:1rem; padding:1rem; border:1px solid var(--card-border); border-radius:12px; background:var(--bg-secondary); }
+    .member-summary { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
+    .member-main { display:flex; flex-direction:column; gap:.15rem; min-width:180px; }
+    .member-main span,.detail-label { color:var(--text-secondary); }
+    .member-details { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.75rem; padding-top:.75rem; border-top:1px solid var(--card-border); }
+    .member-details > div { display:flex; flex-direction:column; gap:.2rem; min-width:0; }
+    .detail-label { font-size:.78rem; }
+    .member-details strong,.member-details code { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .member-avatar { width:48px; height:48px; border-radius:50%; object-fit:cover; }
   `]
 })
@@ -202,6 +219,10 @@ export class GateAccessComponent implements OnInit {
 
   lookupMember(code: string): void {
     this.svc.scanQr(code).subscribe({ next: member => this.lookup.set(member), error: () => this.lookup.set(null) });
+  }
+
+  getSelectedBranchName(): string {
+    return this.branches().find(branch => branch.id === this.selectedBranchId)?.name || 'الفرع الافتراضي';
   }
 
   stopScanner(): void {
