@@ -428,10 +428,10 @@ export class OwnerService {
     return this.http.post<string>(`${this.apiUrl}/coaches`, data);
   }
   regenerateCoachQr(id: string): Observable<{ id: string; qrCode: string; staffQrGeneratedAt: string }> {
-    return this.http.post<{ id: string; qrCode: string; staffQrGeneratedAt: string }>(`${this.api}/Coaches/${id}/qr/regenerate`, {});
+    return this.http.post<{ id: string; qrCode: string; staffQrGeneratedAt: string }>(`${this.apiUrl}/coaches/${id}/qr/regenerate`, {});
   }
   revokeCoachQr(id: string): Observable<void> {
-    return this.http.post<void>(`${this.api}/Coaches/${id}/qr/revoke`, {});
+    return this.http.post<void>(`${this.apiUrl}/coaches/${id}/qr/revoke`, {});
   }
 
   updateCoach(id: string, data: UpdateCoachRequest): Observable<void> {

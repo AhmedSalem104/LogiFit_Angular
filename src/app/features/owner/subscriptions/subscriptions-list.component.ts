@@ -12,6 +12,7 @@ import { InputSwitchModule } from 'primeng/inputswitch';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { Observable } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -1358,6 +1359,7 @@ import Swal from 'sweetalert2';
 export class SubscriptionsListComponent implements OnInit {
   private ownerService = inject(OwnerService);
   private notificationService = inject(NotificationService);
+  private route = inject(ActivatedRoute);
 
   loading = signal(true);
   saving = signal(false);
@@ -1382,6 +1384,7 @@ export class SubscriptionsListComponent implements OnInit {
   selectedSubscription: ClientSubscription | null = null;
   detailSubscription: ClientSubscription | null = null;
   newClientMode = false;
+  createOnly = false;
   newClient = { fullName: '', phoneNumber: '', email: '', password: '' };
   showNewClientPassword = false;
 
@@ -1442,7 +1445,10 @@ export class SubscriptionsListComponent implements OnInit {
   ).length);
 
   ngOnInit(): void {
+    this.createOnly = this.route.snapshot.queryParamMap.get('create') === '1';
+    if (this.createOnly) this.newClientMode = true;
     this.loadData();
+    if (this.createOnly) queueMicrotask(() => this.openSubscriptionDialog());
   }
 
   loadData(): void {
@@ -1553,7 +1559,7 @@ export class SubscriptionsListComponent implements OnInit {
 
   // ==================== Subscription Dialog ====================
   openSubscriptionDialog(): void {
-    this.newClientMode = false;
+    this.newClientMode = this.createOnly;
     this.showNewClientPassword = false;
     this.newClient = { fullName: '', phoneNumber: '', email: '', password: '' };
     this.subscriptionForm = {

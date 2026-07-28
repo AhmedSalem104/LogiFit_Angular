@@ -525,10 +525,7 @@ export class ClientsListComponent implements OnInit {
   }
 
   openAddDialog(): void {
-    this.editingId = null;
-    this.dialogInitial.set(null);
-    this.dialogMode.set('add');
-    this.dialogOpen.set(true);
+    this.router.navigate(['/owner/subscriptions'], { queryParams: { create: 1 } });
   }
 
   viewClient(client: ClientDisplay): void {

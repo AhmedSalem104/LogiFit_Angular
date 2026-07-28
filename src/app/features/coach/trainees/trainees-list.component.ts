@@ -1364,20 +1364,7 @@ export class TraineesListComponent implements OnInit {
   }
 
   openAddDialog(): void {
-    this.editingTrainee = null;
-    this.traineeForm.reset({
-      fullName: '',
-      phoneNumber: '',
-      email: '',
-      gender: 0,
-      birthDate: null,
-      heightCm: null,
-      weightKg: null,
-      activityLevel: 'Moderate',
-      fitnessGoal: '',
-      medicalHistory: ''
-    });
-    this.showAddDialog = true;
+    this.router.navigate(['/coach/subscriptions'], { queryParams: { create: 1 } });
   }
 
   openEditDialog(trainee: Trainee): void {
