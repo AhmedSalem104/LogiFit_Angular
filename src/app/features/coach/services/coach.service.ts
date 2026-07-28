@@ -628,6 +628,10 @@ export class CoachService {
     return this.http.post<CreateTraineeResult>(`${this.apiUrl}/coach-clients`, trainee);
   }
 
+  onboardTrainee(data: { fullName: string; phoneNumber: string; email?: string; password: string; gender?: number; birthDate?: string; membership?: { planId: string; startDate: string; issueCard?: boolean } | null }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/clients/onboard`, data);
+  }
+
   // PUT /api/coach-clients/{id} - تحديث العلاقة (نقل لكوتش آخر أو تفعيل/تعطيل)
   updateTrainee(id: string, data: {
     newCoachId?: string;
