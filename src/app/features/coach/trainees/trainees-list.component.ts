@@ -16,7 +16,10 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
-import { CoachService, Trainee } from '../services/coach.service';
+import { PasswordFieldComponent } from '../../../shared/components/password-field/password-field.component';
+import { CoachService, Trainee, CreateTraineeResult } from '../services/coach.service';
+import { OwnerService } from '../../owner/services/owner.service';
+import Swal from 'sweetalert2';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,7 +42,8 @@ import { CoachService, Trainee } from '../services/coach.service';
     ToastModule,
     ConfirmDialogModule,
     PageHeaderComponent,
-    LoadingSkeletonComponent
+    LoadingSkeletonComponent,
+    PasswordFieldComponent
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -535,6 +539,16 @@ import { CoachService, Trainee } from '../services/coach.service';
           </button>
         </div>
       </ng-template>
+    </p-dialog>
+
+    <p-dialog [(visible)]="showCredentialsDialog" [modal]="true" [closable]="false" [draggable]="false" [style]="{width: '480px'}" styleClass="credentials-dialog">
+      <ng-template pTemplate="header"><span class="header-title">بيانات الدخول المؤقتة</span></ng-template>
+      <div class="credentials-content" *ngIf="createdCredentials as credentials">
+        <p class="credentials-warning"><i class="pi pi-exclamation-triangle"></i> احفظ هذه البيانات وأرسلها للعميل. ستظهر مرة واحدة فقط، ويجب تغيير كلمة المرور عند أول دخول.</p>
+        <div class="credential-row"><span>رقم الهاتف</span><strong dir="ltr">{{ credentials.clientPhone }}</strong></div>
+        <div class="credential-row"><span>كلمة المرور المؤقتة</span><app-password-field [ngModel]="credentials.temporaryPassword"></app-password-field></div>
+      </div>
+      <ng-template pTemplate="footer"><button pButton type="button" label="تم الحفظ" icon="pi pi-check" (click)="closeCredentialsDialog()"></button></ng-template>
     </p-dialog>
   `,
   styles: [`
@@ -1172,6 +1186,7 @@ import { CoachService, Trainee } from '../services/coach.service';
 })
 export class TraineesListComponent implements OnInit {
   private coachService = inject(CoachService);
+  private ownerService = inject(OwnerService);
   private fb = inject(FormBuilder);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
@@ -1186,6 +1201,8 @@ export class TraineesListComponent implements OnInit {
   selectedStatus: string | null = null;
   showAddDialog = false;
   editingTrainee: Trainee | null = null;
+  showCredentialsDialog = false;
+  createdCredentials: CreateTraineeResult | null = null;
 
   statusOptions = [
     { label: 'مشترك', value: 'subscribed' },
@@ -1466,13 +1483,19 @@ export class TraineesListComponent implements OnInit {
         medicalHistory: formValue.medicalHistory || undefined
       };
 
+      const generatedPassword = `Lf${Math.random().toString(36).slice(2, 10)}!`;
+      const selectedPlanId = window.prompt('Optional membership plan ID (leave empty to create without membership):', '');
+      const membership = selectedPlanId ? { planId: selectedPlanId, startDate: new Date().toISOString().slice(0, 10), issueCard: true } : null;
+
       console.log('Creating trainee with data:', JSON.stringify(traineeData, null, 2));
 
-      this.coachService.createTrainee(traineeData).subscribe({
-        next: (clientId: string) => {
+      this.coachService.onboardTrainee({ fullName: traineeData.clientName, phoneNumber: traineeData.clientPhone, email: traineeData.clientEmail, gender: traineeData.gender, birthDate: traineeData.birthDate, password: generatedPassword, membership }).subscribe({
+        next: (result: CreateTraineeResult) => {
           this.saving.set(false);
           this.showAddDialog = false;
           this.traineeForm.reset();
+          this.createdCredentials = result;
+          this.showCredentialsDialog = true;
           this.messageService.add({
             severity: 'success',
             summary: 'تم بنجاح',
@@ -1494,6 +1517,11 @@ export class TraineesListComponent implements OnInit {
         }
       });
     }
+  }
+
+  closeCredentialsDialog(): void {
+    this.showCredentialsDialog = false;
+    this.createdCredentials = null;
   }
 
   confirmDelete(trainee: Trainee): void {

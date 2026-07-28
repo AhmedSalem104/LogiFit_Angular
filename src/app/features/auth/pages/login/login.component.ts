@@ -6,11 +6,12 @@ import { AuthService } from '../../../../core/auth/services/auth.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { BrandingService } from '../../../../core/services/branding.service';
 import { TenantStatusService } from '../../../../core/tenant/tenant-status.service';
+import { PasswordFieldComponent } from '../../../../shared/components/password-field/password-field.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, PasswordFieldComponent],
   template: `
     <div class="login-page">
       <h2>مرحباً بعودتك</h2>
@@ -99,12 +100,7 @@ import { TenantStatusService } from '../../../../core/tenant/tenant-status.servi
           <div class="form-group">
             <label class="form-label">كلمة المرور</label>
             <div class="input-wrapper">
-              <i class="pi pi-lock"></i>
-              <input [type]="showPassword ? 'text' : 'password'" class="form-input" formControlName="password"
-                placeholder="أدخل كلمة المرور" [class.error]="isFieldInvalid('password')" />
-              <button type="button" class="toggle-password" (click)="showPassword = !showPassword">
-                <i [class]="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
-              </button>
+              <app-password-field formControlName="password"></app-password-field>
             </div>
             <span class="error-message" *ngIf="isFieldInvalid('password')">كلمة المرور مطلوبة</span>
           </div>
@@ -312,7 +308,9 @@ export class LoginComponent implements OnInit {
       next: (response) => {
         this.loading = false;
         this.notification.success('تم تسجيل الدخول بنجاح');
-        const redirectUrl = this.authService.getRedirectUrlForRole(response.role);
+        const redirectUrl = response.mustChangePassword
+          ? '/client/profile'
+          : this.authService.getRedirectUrlForRole(response.role);
         setTimeout(() => this.router.navigateByUrl(redirectUrl), 100);
       },
       error: (error) => {

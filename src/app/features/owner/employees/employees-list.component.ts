@@ -21,6 +21,7 @@ import {
 } from '../../../shared/models/gym-management.models';
 import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
 import Swal from 'sweetalert2';
+import QRCode from 'qrcode';
 
 @Component({
   selector: 'app-employees-list',
@@ -60,7 +61,7 @@ import Swal from 'sweetalert2';
         <p-table [value]="items()" [paginator]="true" [rows]="10">
           <ng-template pTemplate="header">
             <tr><th>الكود</th><th>الاسم</th><th>الدور</th><th>المسمى</th><th>القسم</th>
-                <th>تاريخ الالتحاق</th><th>الراتب الأساسي</th><th>الحالة</th>
+                <th>تاريخ الالتحاق</th><th>الراتب الأساسي</th><th>الحالة</th><th>QR</th>
                 <th style="width:120px">إجراءات</th></tr>
           </ng-template>
           <ng-template pTemplate="body" let-e>
@@ -73,6 +74,7 @@ import Swal from 'sweetalert2';
               <td>{{ e.joinDate | date:'yyyy-MM-dd' }}</td>
               <td>{{ e.baseSalary | number }} ({{ salaryLabels[e.salaryType] }})</td>
               <td><span class="badge" [class.green]="e.isActive" [class.gray]="!e.isActive">{{ e.isActive ? 'نشط':'منتهي' }}</span></td>
+              <td><button class="action-btn" (click)="showQr(e)" [disabled]="!e.hasActiveQr" pTooltip="عرض QR"><i class="pi pi-qrcode"></i></button></td>
               <td>
                 <button class="action-btn" (click)="openEdit(e)" pTooltip="تعديل"><i class="pi pi-pencil"></i></button>
                 <button class="action-btn danger" *ngIf="e.isActive" (click)="terminate(e)" pTooltip="إنهاء"><i class="pi pi-times"></i></button>
@@ -80,7 +82,7 @@ import Swal from 'sweetalert2';
             </tr>
           </ng-template>
           <ng-template pTemplate="emptymessage">
-            <tr><td colspan="9"><div class="empty-state"><i class="pi pi-users"></i><p>لا يوجد موظفين</p></div></td></tr>
+            <tr><td colspan="10"><div class="empty-state"><i class="pi pi-users"></i><p>لا يوجد موظفين</p></div></td></tr>
           </ng-template>
         </p-table>
       </div>
@@ -117,6 +119,14 @@ import Swal from 'sweetalert2';
         <button class="btn btn-primary" (click)="save()" [disabled]="saving()">حفظ</button>
       </div>
     </p-dialog>
+    <p-dialog [(visible)]="qrDialog" [modal]="true" header="QR الموظف" [style]="{width:'360px'}">
+      <div class="qr-preview" *ngIf="selectedQr">
+        <canvas class="employee-qr-canvas"></canvas>
+        <code>{{ selectedQr.qrCode }}</code>
+        <button class="btn btn-primary" (click)="regenerateQr(selectedQr)"><i class="pi pi-refresh"></i> إعادة إنشاء</button>
+        <button class="btn btn-ghost" (click)="revokeQr(selectedQr)"><i class="pi pi-ban"></i> إلغاء QR</button>
+      </div>
+    </p-dialog>
   `,
   styles: [GYM_PAGE_STYLES]
 })
@@ -132,6 +142,8 @@ export class EmployeesListComponent implements OnInit {
   branchFilter: string | null = null;
   dialog = false; isEdit = false; editingId: string | null = null;
   form: CreateEmployeeRequest = this.emptyForm();
+  qrDialog = false;
+  selectedQr: Employee | null = null;
   roleLabels = EmployeeRoleLabels;
   salaryLabels = SalaryTypeLabels;
   salaryOptions = Object.entries(SalaryTypeLabels).map(([v,l]) => ({ label: l, value: Number(v) as SalaryType }));
@@ -190,5 +202,29 @@ export class EmployeesListComponent implements OnInit {
         next: () => { this.toast.success('تم الإنهاء'); this.load(); },
         error: (err) => this.toast.error(err?.error?.detail || 'فشل')
       }); });
+  }
+
+  showQr(e: Employee): void {
+    if (!e.qrCode || !e.hasActiveQr) return;
+    this.selectedQr = e;
+    this.qrDialog = true;
+    setTimeout(() => {
+      const canvas = document.querySelector('.employee-qr-canvas') as HTMLCanvasElement | null;
+      if (canvas) QRCode.toCanvas(canvas, e.qrCode!, { width: 220, margin: 2 });
+    });
+  }
+
+  regenerateQr(e: Employee): void {
+    this.svc.regenerateEmployeeQr(e.id).subscribe({
+      next: result => { e.qrCode = result.qrCode; e.hasActiveQr = true; this.toast.success('تم إنشاء QR جديد'); this.showQr(e); },
+      error: () => this.toast.error('فشل إنشاء QR')
+    });
+  }
+
+  revokeQr(e: Employee): void {
+    this.svc.revokeEmployeeQr(e.id).subscribe({
+      next: () => { e.hasActiveQr = false; this.qrDialog = false; this.toast.success('تم إلغاء QR'); },
+      error: () => this.toast.error('فشل إلغاء QR')
+    });
   }
 }

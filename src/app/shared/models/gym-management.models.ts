@@ -121,6 +121,24 @@ export interface CheckInQrRequest {
   branchId?: string | null;
 }
 
+export interface QrMemberLookup {
+  clientId: string;
+  clientName: string;
+  email?: string;
+  phoneNumber?: string;
+  profilePictureUrl?: string;
+  membershipCardId: string;
+  cardNumber: string;
+  cardActive: boolean;
+  cardExpiresAt?: string;
+  subscriptionActive: boolean;
+  subscriptionStatus?: string;
+  planName?: string;
+  subscriptionStartDate?: string;
+  subscriptionEndDate?: string;
+  remainingAmount?: number;
+}
+
 export interface GateAccessLog {
   id: string;
   clientId?: string | null;
@@ -133,7 +151,7 @@ export interface GateAccessLog {
   methodName?: string;
   denyReason?: GateDenyReason;
   denyReasonName?: string;
-  occurredAt: string;
+  accessTime: string;
   notes?: string | null;
 }
 
@@ -755,6 +773,10 @@ export interface Employee {
   branchIds?: string[];
   branchNames?: string[];
   isActive: boolean;
+  qrCode?: string | null;
+  qrGeneratedAt?: string | null;
+  qrRevokedAt?: string | null;
+  hasActiveQr?: boolean;
 }
 
 export interface CreateEmployeeRequest {

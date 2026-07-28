@@ -5,11 +5,12 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { NotificationService } from '../../../core/services/notification.service';
 import { ProfileService, SelfProfile } from '../../../core/services/profile.service';
 import { AuthService } from '../../../core/auth/services/auth.service';
+import { PasswordFieldComponent } from '../../../shared/components/password-field/password-field.component';
 
 @Component({
   selector: 'app-owner-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, PageHeaderComponent],
+  imports: [CommonModule, ReactiveFormsModule, PageHeaderComponent, PasswordFieldComponent],
   template: `
     <div class="profile-page">
       <app-page-header
@@ -83,17 +84,17 @@ import { AuthService } from '../../../core/auth/services/auth.service';
           <div class="grid2">
             <div class="field">
               <label>كلمة المرور الحالية <span class="req">*</span></label>
-              <input type="password" formControlName="currentPassword" [class.invalid]="invalidPw('currentPassword')" />
+              <app-password-field formControlName="currentPassword"></app-password-field>
               <span class="err" *ngIf="invalidPw('currentPassword')">مطلوبة</span>
             </div>
             <div class="field">
               <label>كلمة المرور الجديدة <span class="req">*</span></label>
-              <input type="password" formControlName="newPassword" [class.invalid]="invalidPw('newPassword')" />
+              <app-password-field formControlName="newPassword"></app-password-field>
               <span class="err" *ngIf="invalidPw('newPassword')">8 أحرف على الأقل، حرف كبير وصغير ورقم</span>
             </div>
             <div class="field">
               <label>تأكيد كلمة المرور <span class="req">*</span></label>
-              <input type="password" formControlName="confirmPassword" [class.invalid]="invalidPw('confirmPassword')" />
+              <app-password-field formControlName="confirmPassword"></app-password-field>
               <span class="err" *ngIf="invalidPw('confirmPassword')">مطلوب</span>
             </div>
           </div>
