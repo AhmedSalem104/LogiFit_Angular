@@ -149,6 +149,7 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
                 </span>
               </td>
               <td>{{ l.result===2 ? (denyLabels[l.denyReason || 0] || '-') : '-' }}</td>
+              <td><button *ngIf="l.clientId" class="btn btn-outline btn-sm" type="button" (click)="openMemberHistory(l.clientId)"><i class="pi pi-user"></i> Details</button><span *ngIf="!l.clientId" class="muted">-</span></td>
             </tr>
           </ng-template>
           <ng-template pTemplate="emptymessage">
