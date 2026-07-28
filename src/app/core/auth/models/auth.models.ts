@@ -143,6 +143,7 @@ export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   expiresAt: string;
+  mustChangePassword?: boolean;
 }
 
 // User info stored locally
@@ -154,6 +155,7 @@ export interface UserInfo {
   roles?: UserRole[];
   tenantId: string;
   fullName?: string;
+  mustChangePassword?: boolean;
 }
 
 // Decoded JWT token

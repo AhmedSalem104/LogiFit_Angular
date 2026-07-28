@@ -121,6 +121,24 @@ export interface CheckInQrRequest {
   branchId?: string | null;
 }
 
+export interface QrMemberLookup {
+  clientId: string;
+  clientName: string;
+  email?: string;
+  phoneNumber?: string;
+  profilePictureUrl?: string;
+  membershipCardId: string;
+  cardNumber: string;
+  cardActive: boolean;
+  cardExpiresAt?: string;
+  subscriptionActive: boolean;
+  subscriptionStatus?: string;
+  planName?: string;
+  subscriptionStartDate?: string;
+  subscriptionEndDate?: string;
+  remainingAmount?: number;
+}
+
 export interface GateAccessLog {
   id: string;
   clientId?: string | null;

@@ -312,7 +312,9 @@ export class LoginComponent implements OnInit {
       next: (response) => {
         this.loading = false;
         this.notification.success('تم تسجيل الدخول بنجاح');
-        const redirectUrl = this.authService.getRedirectUrlForRole(response.role);
+        const redirectUrl = response.mustChangePassword
+          ? '/client/profile'
+          : this.authService.getRedirectUrlForRole(response.role);
         setTimeout(() => this.router.navigateByUrl(redirectUrl), 100);
       },
       error: (error) => {

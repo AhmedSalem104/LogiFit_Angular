@@ -469,6 +469,13 @@ export interface CoachClient {
   lastSessionDate?: string;
 }
 
+export interface CreateTraineeResult {
+  clientId: string;
+  clientPhone: string;
+  temporaryPassword: string;
+  mustChangePassword: boolean;
+}
+
 // ==================== Workout Sessions Interfaces ====================
 export interface WorkoutSession {
   id: string;
@@ -617,8 +624,8 @@ export class CoachService {
     activityLevel?: string;
     medicalHistory?: string;
     notes?: string;
-  }): Observable<string> {
-    return this.http.post<string>(`${this.apiUrl}/coach-clients`, trainee);
+  }): Observable<CreateTraineeResult> {
+    return this.http.post<CreateTraineeResult>(`${this.apiUrl}/coach-clients`, trainee);
   }
 
   // PUT /api/coach-clients/{id} - تحديث العلاقة (نقل لكوتش آخر أو تفعيل/تعطيل)

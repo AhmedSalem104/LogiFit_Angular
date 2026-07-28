@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -14,6 +14,7 @@ import { BranchesService } from '../services/branches.service';
 import {
   Branch, GateAccessLog, GateAccessResponse, GateAccessResult,
   GateDenyReasonLabels
+  , QrMemberLookup
 } from '../../../shared/models/gym-management.models';
 import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
 
@@ -36,9 +37,23 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
             (keyup.enter)="checkIn()" autofocus/>
           <p-dropdown [options]="branchOptions()" [(ngModel)]="selectedBranchId"
             placeholder="الفرع (افتراضي)" [showClear]="true" appendTo="body"></p-dropdown>
+          <button class="btn btn-ghost" (click)="toggleScanner()" [disabled]="scanning()">
+            <i class="pi" [class.pi-camera]="!scanning()" [class.pi-stop]="scanning()"></i><span>{{ scanning() ? 'إيقاف الكاميرا' : 'مسح بالكاميرا' }}</span>
+          </button>
           <button class="btn btn-primary" (click)="checkIn()" [disabled]="checking()">
             <i class="pi pi-check"></i><span>{{ checking() ? 'جارٍ...' : 'تسجيل دخول' }}</span>
           </button>
+        </div>
+
+        <div class="scanner" *ngIf="scanning()"><video #scannerVideo autoplay muted playsinline></video><small>وجّه الكاميرا إلى QR البطاقة</small></div>
+
+        <div class="member-lookup" *ngIf="lookup() as member">
+          <img *ngIf="member.profilePictureUrl" [src]="member.profilePictureUrl" alt="" class="member-avatar" />
+          <div><strong>{{ member.clientName }}</strong><span>{{ member.phoneNumber || member.email || '' }}</span></div>
+          <span class="badge" [class.green]="member.subscriptionActive" [class.red]="!member.subscriptionActive">
+            {{ member.subscriptionActive ? 'اشتراك فعال' : 'لا يوجد اشتراك فعال' }}
+          </span>
+          <small *ngIf="member.planName">{{ member.planName }} · ينتهي {{ member.subscriptionEndDate | date:'yyyy-MM-dd' }}</small>
         </div>
 
         <div *ngIf="lastResult()" class="result-banner" [class.granted]="lastResult()!.granted" [class.denied]="!lastResult()!.granted">
@@ -108,6 +123,12 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
     .result-banner i { font-size: 1.75rem; }
     .result-text { display:flex; flex-direction: column; gap: .15rem; }
     .result-text small { color: var(--text-secondary); }
+    .scanner { margin-top:1rem; display:flex; flex-direction:column; align-items:center; gap:.5rem; color:var(--text-secondary); }
+    .scanner video { width:min(100%,360px); aspect-ratio:4/3; object-fit:cover; border-radius:14px; background:#0f172a; }
+    .member-lookup { margin-top:1rem; display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; padding:1rem; border:1px solid var(--card-border); border-radius:12px; background:var(--bg-secondary); }
+    .member-lookup > div { display:flex; flex-direction:column; gap:.15rem; min-width:180px; }
+    .member-lookup > div span,.member-lookup small { color:var(--text-secondary); }
+    .member-avatar { width:48px; height:48px; border-radius:50%; object-fit:cover; }
   `]
 })
 export class GateAccessComponent implements OnInit {
@@ -115,10 +136,13 @@ export class GateAccessComponent implements OnInit {
   private branchesSvc = inject(BranchesService);
   private toast = inject(NotificationService);
 
+  @ViewChild('scannerVideo') scannerVideo?: ElementRef<HTMLVideoElement>;
   logs = signal<GateAccessLog[]>([]);
   branches = signal<Branch[]>([]);
   loading = signal(false);
   checking = signal(false);
+  scanning = signal(false);
+  lookup = signal<QrMemberLookup | null>(null);
   lastResult = signal<GateAccessResponse | null>(null);
 
   qrCode = '';
@@ -127,6 +151,8 @@ export class GateAccessComponent implements OnInit {
   filterResult: GateAccessResult | null = null;
   fromDate = '';
   toDate = '';
+  private cameraStream?: MediaStream;
+  private scanTimer?: number;
 
   denyLabels = GateDenyReasonLabels;
   resultOptions = [{ label: 'مسموح', value: 1 }, { label: 'مرفوض', value: 2 }];
@@ -152,6 +178,40 @@ export class GateAccessComponent implements OnInit {
       error: (e) => { this.checking.set(false); this.toast.error(e?.error?.detail || 'فشل التسجيل'); }
     });
   }
+
+  async toggleScanner(): Promise<void> {
+    if (this.scanning()) { this.stopScanner(); return; }
+    const Detector = (window as any).BarcodeDetector;
+    if (!Detector) { this.toast.error('المتصفح لا يدعم قراءة QR بالكاميرا؛ استخدم الإدخال اليدوي.'); return; }
+    try {
+      this.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+      this.scanning.set(true);
+      setTimeout(() => { if (this.scannerVideo) { this.scannerVideo.nativeElement.srcObject = this.cameraStream!; this.scanFrame(new Detector({ formats: ['qr_code'] })); } }, 0);
+    } catch { this.toast.error('تعذر الوصول إلى الكاميرا. تحقق من إذن المتصفح.'); this.stopScanner(); }
+  }
+
+  private async scanFrame(detector: any): Promise<void> {
+    if (!this.scanning() || !this.scannerVideo) return;
+    try {
+      const codes = await detector.detect(this.scannerVideo.nativeElement);
+      const value = codes?.[0]?.rawValue;
+      if (value) { this.qrCode = value; this.lookupMember(value); this.stopScanner(); return; }
+    } catch { /* camera frame may not be ready */ }
+    this.scanTimer = window.setTimeout(() => this.scanFrame(detector), 250);
+  }
+
+  lookupMember(code: string): void {
+    this.svc.scanQr(code).subscribe({ next: member => this.lookup.set(member), error: () => this.lookup.set(null) });
+  }
+
+  stopScanner(): void {
+    this.scanning.set(false);
+    if (this.scanTimer) window.clearTimeout(this.scanTimer);
+    this.cameraStream?.getTracks().forEach(track => track.stop());
+    this.cameraStream = undefined;
+  }
+
+  ngOnDestroy(): void { this.stopScanner(); }
 
   load() {
     this.loading.set(true);
