@@ -17,6 +17,8 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { CoachService, Trainee, CreateTraineeResult } from '../services/coach.service';
+import { OwnerService } from '../../owner/services/owner.service';
+import Swal from 'sweetalert2';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -1182,6 +1184,7 @@ import { CoachService, Trainee, CreateTraineeResult } from '../services/coach.se
 })
 export class TraineesListComponent implements OnInit {
   private coachService = inject(CoachService);
+  private ownerService = inject(OwnerService);
   private fb = inject(FormBuilder);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
@@ -1478,9 +1481,13 @@ export class TraineesListComponent implements OnInit {
         medicalHistory: formValue.medicalHistory || undefined
       };
 
+      const generatedPassword = `Lf${Math.random().toString(36).slice(2, 10)}!`;
+      const selectedPlanId = window.prompt('Optional membership plan ID (leave empty to create without membership):', '');
+      const membership = selectedPlanId ? { planId: selectedPlanId, startDate: new Date().toISOString().slice(0, 10), issueCard: true } : null;
+
       console.log('Creating trainee with data:', JSON.stringify(traineeData, null, 2));
 
-      this.coachService.createTrainee(traineeData).subscribe({
+      this.coachService.onboardTrainee({ fullName: traineeData.clientName, phoneNumber: traineeData.clientPhone, email: traineeData.clientEmail, gender: traineeData.gender, birthDate: traineeData.birthDate, password: generatedPassword, membership }).subscribe({
         next: (result: CreateTraineeResult) => {
           this.saving.set(false);
           this.showAddDialog = false;
