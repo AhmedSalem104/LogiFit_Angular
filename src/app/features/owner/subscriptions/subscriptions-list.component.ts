@@ -15,6 +15,7 @@ import { Observable } from 'rxjs';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { NotificationService } from '../../../core/services/notification.service';
+import { PasswordFieldComponent } from '../../../shared/components/password-field/password-field.component';
 import {
   OwnerService,
   ClientSubscription,
@@ -35,6 +36,7 @@ import Swal from 'sweetalert2';
     FormsModule,
     TableModule,
     InputTextModule,
+    PasswordFieldComponent,
     ButtonModule,
     DialogModule,
     DropdownModule,
@@ -294,7 +296,7 @@ import Swal from 'sweetalert2';
           <div *ngIf="newClientMode" class="new-client-fields">
             <div class="form-group"><label>اسم العميل *</label><input type="text" pInputText [(ngModel)]="newClient.fullName" /></div>
             <div class="form-row"><div class="form-group"><label>الهاتف *</label><input type="text" pInputText [(ngModel)]="newClient.phoneNumber" /></div><div class="form-group"><label>البريد</label><input type="email" pInputText [(ngModel)]="newClient.email" /></div></div>
-            <div class="form-group"><label>كلمة المرور *</label><input type="password" pInputText [(ngModel)]="newClient.password" /></div>
+            <div class="form-group"><label>كلمة المرور *</label><div class="password-field"><input [type]="showNewClientPassword ? 'text' : 'password'" pInputText [(ngModel)]="newClient.password" /><button type="button" class="input-action" (click)="showNewClientPassword = !showNewClientPassword" [attr.aria-label]="showNewClientPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'"><i class="pi" [class.pi-eye-slash]="showNewClientPassword" [class.pi-eye]="!showNewClientPassword"></i></button><button type="button" class="input-action" (click)="copyNewClientPassword()" aria-label="نسخ كلمة المرور"><i class="pi pi-copy"></i></button></div></div>
           </div>
           <div class="form-group">
             <label>العميل <span class="required">*</span></label>
@@ -1381,6 +1383,7 @@ export class SubscriptionsListComponent implements OnInit {
   detailSubscription: ClientSubscription | null = null;
   newClientMode = false;
   newClient = { fullName: '', phoneNumber: '', email: '', password: '' };
+  showNewClientPassword = false;
 
   subscriptionForm = {
     clientId: '',
@@ -1551,6 +1554,7 @@ export class SubscriptionsListComponent implements OnInit {
   // ==================== Subscription Dialog ====================
   openSubscriptionDialog(): void {
     this.newClientMode = false;
+    this.showNewClientPassword = false;
     this.newClient = { fullName: '', phoneNumber: '', email: '', password: '' };
     this.subscriptionForm = {
       clientId: '',
@@ -1563,6 +1567,14 @@ export class SubscriptionsListComponent implements OnInit {
     };
     this.selectedPlanPrice = 0;
     this.subscriptionDialogVisible = true;
+  }
+
+  copyNewClientPassword(): void {
+    if (!this.newClient.password) {
+      this.notificationService.warn('أدخل كلمة المرور أولاً');
+      return;
+    }
+    navigator.clipboard.writeText(this.newClient.password).then(() => this.notificationService.success('تم نسخ كلمة المرور'));
   }
 
   saveSubscription(): void {
