@@ -12,6 +12,7 @@ import { ClientService, ClientProfile } from '../services/client.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { AuthService } from '../../../core/auth/services/auth.service';
 import { environment } from '../../../../environments/environment';
+import { PasswordFieldComponent } from '../../../shared/components/password-field/password-field.component';
 
 @Component({
   selector: 'app-my-profile',
@@ -20,6 +21,7 @@ import { environment } from '../../../../environments/environment';
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    PasswordFieldComponent,
     InputTextModule,
     ButtonModule,
     CalendarModule,
@@ -154,32 +156,17 @@ import { environment } from '../../../../environments/environment';
             <div class="form-grid">
               <div class="form-group">
                 <label for="currentPassword">كلمة المرور الحالية</label>
-                <input
-                  id="currentPassword"
-                  type="password"
-                  pInputText
-                  formControlName="currentPassword"
-                />
+                <app-password-field formControlName="currentPassword"></app-password-field>
               </div>
 
               <div class="form-group">
                 <label for="newPassword">كلمة المرور الجديدة</label>
-                <input
-                  id="newPassword"
-                  type="password"
-                  pInputText
-                  formControlName="newPassword"
-                />
+                <app-password-field formControlName="newPassword"></app-password-field>
               </div>
 
               <div class="form-group">
                 <label for="confirmPassword">تأكيد كلمة المرور</label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  pInputText
-                  formControlName="confirmPassword"
-                />
+                <app-password-field formControlName="confirmPassword"></app-password-field>
               </div>
             </div>
 

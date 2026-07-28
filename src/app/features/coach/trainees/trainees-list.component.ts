@@ -16,6 +16,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
+import { PasswordFieldComponent } from '../../../shared/components/password-field/password-field.component';
 import { CoachService, Trainee, CreateTraineeResult } from '../services/coach.service';
 import { OwnerService } from '../../owner/services/owner.service';
 import Swal from 'sweetalert2';
@@ -41,7 +42,8 @@ import Swal from 'sweetalert2';
     ToastModule,
     ConfirmDialogModule,
     PageHeaderComponent,
-    LoadingSkeletonComponent
+    LoadingSkeletonComponent,
+    PasswordFieldComponent
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -544,7 +546,7 @@ import Swal from 'sweetalert2';
       <div class="credentials-content" *ngIf="createdCredentials as credentials">
         <p class="credentials-warning"><i class="pi pi-exclamation-triangle"></i> احفظ هذه البيانات وأرسلها للعميل. ستظهر مرة واحدة فقط، ويجب تغيير كلمة المرور عند أول دخول.</p>
         <div class="credential-row"><span>رقم الهاتف</span><strong dir="ltr">{{ credentials.clientPhone }}</strong></div>
-        <div class="credential-row"><span>كلمة المرور المؤقتة</span><strong dir="ltr">{{ credentials.temporaryPassword }}</strong></div>
+        <div class="credential-row"><span>كلمة المرور المؤقتة</span><app-password-field [ngModel]="credentials.temporaryPassword"></app-password-field></div>
       </div>
       <ng-template pTemplate="footer"><button pButton type="button" label="تم الحفظ" icon="pi pi-check" (click)="closeCredentialsDialog()"></button></ng-template>
     </p-dialog>

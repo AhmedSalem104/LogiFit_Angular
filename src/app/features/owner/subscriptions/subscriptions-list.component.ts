@@ -296,7 +296,7 @@ import Swal from 'sweetalert2';
           <div *ngIf="newClientMode" class="new-client-fields">
             <div class="form-group"><label>اسم العميل *</label><input type="text" pInputText [(ngModel)]="newClient.fullName" /></div>
             <div class="form-row"><div class="form-group"><label>الهاتف *</label><input type="text" pInputText [(ngModel)]="newClient.phoneNumber" /></div><div class="form-group"><label>البريد</label><input type="email" pInputText [(ngModel)]="newClient.email" /></div></div>
-            <div class="form-group"><label>كلمة المرور *</label><div class="password-field"><input [type]="showNewClientPassword ? 'text' : 'password'" pInputText [(ngModel)]="newClient.password" /><button type="button" class="input-action" (click)="showNewClientPassword = !showNewClientPassword" [attr.aria-label]="showNewClientPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'"><i class="pi" [class.pi-eye-slash]="showNewClientPassword" [class.pi-eye]="!showNewClientPassword"></i></button><button type="button" class="input-action" (click)="copyNewClientPassword()" aria-label="نسخ كلمة المرور"><i class="pi pi-copy"></i></button></div></div>
+            <div class="form-group"><label>كلمة المرور *</label><app-password-field [(ngModel)]="newClient.password" placeholder="أدخل كلمة المرور"></app-password-field></div>
           </div>
           <div class="form-group">
             <label>العميل <span class="required">*</span></label>
