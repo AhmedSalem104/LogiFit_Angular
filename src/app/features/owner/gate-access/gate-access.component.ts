@@ -1,7 +1,9 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { TableModule } from 'primeng/table';
+import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -10,6 +12,8 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { NotificationService } from '../../../core/services/notification.service';
 import { AccessControlService } from '../services/access-control.service';
+import { OwnerService, Client, ClientSubscription } from '../services/owner.service';
+import { FinanceService } from '../services/finance.service';
 import { BranchesService } from '../services/branches.service';
 import {
   Branch, GateAccessLog, GateAccessResponse, GateAccessResult,
@@ -22,7 +26,7 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
   selector: 'app-gate-access',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, TableModule, DropdownModule, ButtonModule, InputTextModule, CalendarModule,
+    CommonModule, FormsModule, TableModule, DialogModule, DropdownModule, ButtonModule, InputTextModule, CalendarModule,
     PageHeaderComponent, LoadingSkeletonComponent
   ],
   template: `
@@ -54,6 +58,9 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
             <span class="badge" [class.green]="member.subscriptionActive" [class.red]="!member.subscriptionActive">
               {{ member.subscriptionActive ? 'اشتراك فعال' : 'لا يوجد اشتراك فعال' }}
             </span>
+            <button class="btn btn-outline btn-sm" type="button" (click)="openMemberHistory(member.clientId)">
+              <i class="pi pi-user"></i> الملف الكامل والمدفوعات
+            </button>
           </div>
           <div class="member-details">
             <div><span class="detail-label">العميل</span><strong>{{ member.clientName }}</strong></div>
@@ -77,6 +84,38 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
           </div>
         </div>
       </div>
+
+      <p-dialog [(visible)]="detailsDialogVisible" [modal]="true" [style]="{width:'760px', maxWidth:'96vw'}"
+                header="الملف الكامل للعميل" [dismissableMask]="true">
+        <app-loading-skeleton *ngIf="detailsLoading" type="card"></app-loading-skeleton>
+        <ng-container *ngIf="!detailsLoading && memberDetails as details">
+          <div class="details-hero">
+            <div><h3>{{ details.client.profile?.fullName || details.client.fullName || details.client.email }}</h3>
+              <span>{{ details.client.phoneNumber || details.client.email || '—' }}</span></div>
+          </div>
+          <div class="history-section"><h4>بيانات العميل</h4>
+            <div class="history-grid"><span>الاسم: <strong>{{ details.client.profile?.fullName || details.client.fullName || '—' }}</strong></span>
+              <span>الهاتف: <strong>{{ details.client.phoneNumber || '—' }}</strong></span>
+              <span>البريد: <strong>{{ details.client.email || '—' }}</strong></span>
+              <span>تاريخ الميلاد: <strong>{{ details.client.profile?.birthDate ? (details.client.profile?.birthDate | date:'yyyy-MM-dd') : '—' }}</strong></span>
+            </div>
+          </div>
+          <div class="history-section"><h4>الاشتراكات</h4>
+            <div class="history-list" *ngIf="details.subscriptions.length; else noSubscriptions">
+              <div class="history-row" *ngFor="let sub of details.subscriptions"><strong>{{ sub.planName || 'خطة' }}</strong>
+                <span>{{ sub.startDate | date:'yyyy-MM-dd' }} - {{ sub.endDate | date:'yyyy-MM-dd' }}</span>
+                <span>{{ sub.statusName || sub.status }}</span><span>{{ sub.amountPaid || 0 | number:'1.2-2' }}</span></div>
+            </div><ng-template #noSubscriptions><span class="muted">لا توجد اشتراكات</span></ng-template>
+          </div>
+          <div class="history-section"><h4>المدفوعات</h4>
+            <div class="history-list" *ngIf="details.payments.length; else noPayments">
+              <div class="history-row" *ngFor="let payment of details.payments"><strong>{{ payment.amount | number:'1.2-2' }}</strong>
+                <span>{{ payment.receivedAt | date:'yyyy-MM-dd HH:mm' }}</span><span>{{ payment.methodName || payment.method }}</span>
+                <span>{{ payment.receiptNumber || '—' }}</span></div>
+            </div><ng-template #noPayments><span class="muted">لا توجد مدفوعات</span></ng-template>
+          </div>
+        </ng-container>
+      </p-dialog>
 
       <h3 class="section-title" style="margin-top:2rem"><i class="pi pi-list"></i> سجل البوابة</h3>
       <div class="toolbar">
@@ -147,10 +186,22 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
     .member-details strong,.member-details code { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .member-avatar { width:48px; height:48px; border-radius:50%; object-fit:cover; }
     .gate-log-table th, .gate-log-table td { direction: rtl; text-align: right; }
+    .btn-sm { padding:.45rem .7rem; font-size:.8rem; }
+    .details-hero { display:flex; align-items:center; gap:1rem; padding:1rem; background:var(--bg-secondary); border-radius:12px; }
+    .details-hero h3 { margin:0 0 .25rem; }
+    .details-hero span,.muted { color:var(--text-secondary); }
+    .history-section { margin-top:1.25rem; }
+    .history-section h4 { margin:0 0 .65rem; }
+    .history-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:.6rem; }
+    .history-list { display:flex; flex-direction:column; gap:.4rem; }
+    .history-row { display:grid; grid-template-columns:1.1fr 1.2fr .8fr .8fr; gap:.6rem; padding:.65rem; border:1px solid var(--card-border); border-radius:8px; }
+    @media (max-width:640px) { .history-row { grid-template-columns:1fr 1fr; } }
   `]
 })
 export class GateAccessComponent implements OnInit {
   private svc = inject(AccessControlService);
+  private ownerSvc = inject(OwnerService);
+  private financeSvc = inject(FinanceService);
   private branchesSvc = inject(BranchesService);
   private toast = inject(NotificationService);
 
@@ -161,6 +212,9 @@ export class GateAccessComponent implements OnInit {
   checking = signal(false);
   scanning = signal(false);
   lookup = signal<QrMemberLookup | null>(null);
+  detailsDialogVisible = false;
+  detailsLoading = false;
+  memberDetails: { client: Client; subscriptions: ClientSubscription[]; payments: import('../../../shared/models/gym-management.models').Payment[] } | null = null;
   lastResult = signal<GateAccessResponse | null>(null);
 
   qrCode = '';
@@ -222,6 +276,19 @@ export class GateAccessComponent implements OnInit {
     this.svc.scanQr(code).subscribe({ next: member => this.lookup.set(member), error: () => this.lookup.set(null) });
   }
 
+  openMemberHistory(clientId: string): void {
+    this.detailsDialogVisible = true;
+    this.detailsLoading = true;
+    this.memberDetails = null;
+    forkJoin({
+      client: this.ownerSvc.getClientById(clientId),
+      subscriptions: this.ownerSvc.getSubscriptions({ clientId }),
+      payments: this.financeSvc.listPayments({ clientId })
+    }).subscribe({
+      next: details => { this.memberDetails = details; this.detailsLoading = false; },
+      error: () => { this.detailsLoading = false; this.toast.error('تعذر تحميل الملف الكامل للعميل'); }
+    });
+  }
   getSelectedBranchName(): string {
     return this.branches().find(branch => branch.id === this.selectedBranchId)?.name || 'الفرع الافتراضي';
   }
