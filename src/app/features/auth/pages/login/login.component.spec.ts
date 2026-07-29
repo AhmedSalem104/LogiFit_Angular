@@ -14,13 +14,14 @@ describe('LoginComponent onboarding flow', () => {
     branding: signal(null),
     clearResolvedTenant: jasmine.createSpy('clearResolvedTenant')
   };
+  const router = jasmine.createSpyObj<Router>('Router', ['navigate']);
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [ReactiveFormsModule],
       providers: [
         { provide: AuthService, useValue: {} },
-        { provide: Router, useValue: {} },
+        { provide: Router, useValue: router },
         { provide: NotificationService, useValue: {} },
         { provide: BrandingService, useValue: branding },
         { provide: TenantStatusService, useValue: {} }
@@ -33,6 +34,31 @@ describe('LoginComponent onboarding flow', () => {
   it('starts at the workspace selection step', () => {
     expect(component.onboardingStep).toBe(1);
     expect(component.stepProgress).toBe(50);
+  });
+
+  it('shows the access cards before a visitor chooses a login path', () => {
+    component.ngOnInit();
+
+    expect(component.isChoosingAccess()).toBeTrue();
+  });
+
+  it('opens the existing gym flow only after choosing the gym card', () => {
+    component.chooseGymLogin();
+
+    expect(component.isChoosingAccess()).toBeFalse();
+    expect(component.tenantResolved()).toBeFalse();
+  });
+
+  it('uses button actions to navigate to the identity and registration paths', () => {
+    component.goToIdentityLogin();
+    component.goToFreelanceRegistration();
+    component.goToGymRegistration();
+    component.goToClientRegistration();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/identity/login']);
+    expect(router.navigate).toHaveBeenCalledWith(['/auth/register-freelance']);
+    expect(router.navigate).toHaveBeenCalledWith(['/auth/register-gym']);
+    expect(router.navigate).toHaveBeenCalledWith(['/auth/register']);
   });
 
   it('moves to the credentials step after the workspace is resolved', () => {

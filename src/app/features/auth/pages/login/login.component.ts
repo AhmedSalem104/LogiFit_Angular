@@ -13,7 +13,44 @@ import { PasswordFieldComponent } from '../../../../shared/components/password-f
   standalone: true,
   imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, PasswordFieldComponent],
   template: `
-    <section class="login-page" [attr.data-step]="onboardingStep">
+    <section class="login-page" [attr.data-step]="onboardingStep" [class.access-choice-page]="isChoosingAccess()">
+      @if (isChoosingAccess()) {
+        <section class="access-choice" aria-labelledby="access-choice-title">
+          <div class="choice-heading">
+            <span class="choice-eyebrow"><i class="pi pi-compass" aria-hidden="true"></i> LogicFit</span>
+            <h2 id="access-choice-title">كيف تريد المتابعة؟</h2>
+            <p>اختر المسار المناسب لك. ستنتقل بعدها إلى خطوات قصيرة وواضحة، مع حفظ كل مسار بشكل مستقل.</p>
+          </div>
+
+          <div class="access-card-grid" role="list">
+            <button type="button" class="access-card gym" role="listitem" (click)="chooseGymLogin()">
+              <span class="access-card-icon"><i class="pi pi-building" aria-hidden="true"></i></span>
+              <strong>الدخول إلى جيم</strong>
+              <small>للأعضاء والموظفين والمدربين التابعين لصالة محددة.</small>
+            </button>
+            <button type="button" class="access-card identity" role="listitem" (click)="goToIdentityLogin()">
+              <span class="access-card-icon"><i class="pi pi-id-card" aria-hidden="true"></i></span>
+              <strong>الدخول بالهوية</strong>
+              <small>للمدرب الحر وفريقه أو لمتابعة طلب قائم بأمان.</small>
+            </button>
+            <button type="button" class="access-card freelance" role="listitem" (click)="goToFreelanceRegistration()">
+              <span class="access-card-icon"><i class="pi pi-briefcase" aria-hidden="true"></i></span>
+              <strong>مساحة مدرب حر</strong>
+              <small>أنشئ مساحة مستقلة لعملائك وبرامجك وفريقك.</small>
+            </button>
+            <button type="button" class="access-card owner" role="listitem" (click)="goToGymRegistration()">
+              <span class="access-card-icon"><i class="pi pi-building-columns" aria-hidden="true"></i></span>
+              <strong>تسجيل جيم جديد</strong>
+              <small>قدّم طلب إنشاء وإدارة مساحة جيم على المنصة.</small>
+            </button>
+            <button type="button" class="access-card client" role="listitem" (click)="goToClientRegistration()">
+              <span class="access-card-icon"><i class="pi pi-user-plus" aria-hidden="true"></i></span>
+              <strong>حساب عميل جديد</strong>
+              <small>أنشئ حسابك إذا تلقيت دعوة أو رابطًا من الجيم.</small>
+            </button>
+          </div>
+        </section>
+      } @else {
       <header class="flow-header">
         <div class="flow-meta">
           <span class="step-pill">الخطوة {{ onboardingStep }} من 2</span>
@@ -62,6 +99,12 @@ import { PasswordFieldComponent } from '../../../../shared/components/password-f
             </button>
           </form>
 
+          @if (canReturnToAccessChoice()) {
+            <button type="button" class="back-to-options" (click)="returnToAccessChoice()">
+              <i class="pi pi-arrow-right" aria-hidden="true"></i>
+              اختيار طريقة دخول أخرى
+            </button>
+          }
           <button type="button" class="testing-link" (click)="manualMode.set(true)">
             <i class="pi pi-wrench" aria-hidden="true"></i>
             وضع الاختبار: إدخال TenantId يدوياً
@@ -136,7 +179,7 @@ import { PasswordFieldComponent } from '../../../../shared/components/password-f
               <input type="checkbox" formControlName="rememberMe" />
               <span>تذكرني</span>
             </label>
-            <a routerLink="/auth/forgot-password" class="forgot-link">نسيت كلمة المرور؟</a>
+            <button type="button" class="forgot-link" (click)="goToForgotPassword()">نسيت كلمة المرور؟</button>
           </div>
 
           <button type="submit" class="btn btn-primary w-full" [disabled]="loading">
@@ -150,24 +193,12 @@ import { PasswordFieldComponent } from '../../../../shared/components/password-f
           </div>
         </form>
       }
-
-      <section class="access-options" aria-label="مسارات دخول أخرى">
-        <p class="access-options-title">تحتاج مساراً مختلفاً؟</p>
-        <a class="access-option identity-option" routerLink="/identity/login">
-          <span class="option-icon"><i class="pi pi-id-card"></i></span>
-          <span><strong>الدخول بالهوية</strong><small>لأكثر من مساحة عمل أو لطلب قيد المراجعة.</small></span>
-          <i class="pi pi-arrow-left option-arrow" aria-hidden="true"></i>
-        </a>
-        <div class="access-links">
-          <span>حساب جديد؟ <a routerLink="/auth/register">أنشئ حساب عميل</a></span>
-          <span>مدرب حر؟ <a routerLink="/auth/register-freelance">أنشئ مساحتك المستقلة</a></span>
-          <span>تريد تسجيل صالة؟ <a routerLink="/auth/register-gym">سجّل صالتك</a></span>
-        </div>
-      </section>
+      }
     </section>
   `,
   styles: [`
     .login-page { color: var(--text-primary); }
+    .access-choice { display:grid; gap:1.25rem; }.choice-heading { text-align:center; }.choice-eyebrow { align-items:center; color:var(--primary-700); display:inline-flex; font-size:.78rem; font-weight:800; gap:.4rem; margin-bottom:.7rem; }.choice-heading h2 { margin:0 0 .55rem; }.choice-heading p { color:var(--text-secondary); font-size:.9rem; line-height:1.65; margin:0 auto; max-width:34rem; }.access-card-grid { display:grid; gap:.7rem; grid-template-columns:repeat(2, minmax(0, 1fr)); }.access-card { align-items:flex-start; background:var(--bg-primary); border:1px solid var(--border-color); border-radius:14px; color:var(--text-primary); cursor:pointer; display:grid; gap:.38rem; min-height:142px; padding:.9rem; text-align:start; transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease; }.access-card:hover,.access-card:focus-visible { border-color:var(--primary-400); box-shadow:0 10px 22px color-mix(in srgb, var(--primary-500) 14%, transparent); outline:none; transform:translateY(-2px); }.access-card-icon { align-items:center; background:var(--primary-100); border-radius:10px; color:var(--primary-600); display:flex; font-size:1rem; height:34px; justify-content:center; margin-bottom:.15rem; width:34px; }.access-card strong { font-size:.84rem; }.access-card small { color:var(--text-secondary); font-size:.71rem; line-height:1.45; }.access-card.freelance .access-card-icon { background:#f3e8ff; color:#7e22ce; }.access-card.owner .access-card-icon { background:#ecfdf5; color:#047857; }.access-card.client .access-card-icon { background:#fff7ed; color:#c2410c; }.access-card.client { grid-column:1 / -1; min-height:auto; }
     .flow-header { margin-bottom: 1.8rem; }
     .flow-meta { align-items: center; display: flex; gap: .7rem; justify-content: space-between; margin-bottom: .7rem; }
     .step-pill { background: color-mix(in srgb, var(--primary-100) 65%, transparent); border-radius: 999px; color: var(--primary-700); font-size: .76rem; font-weight: 800; padding: .38rem .72rem; }
@@ -206,7 +237,7 @@ import { PasswordFieldComponent } from '../../../../shared/components/password-f
     .form-options { align-items: center; display: flex; justify-content: space-between; margin: .15rem 0 1.35rem; }
     .checkbox-label { align-items: center; color: var(--text-secondary); cursor: pointer; display: flex; font-size: .84rem; gap: .45rem; }
     .checkbox-label input { accent-color: var(--primary-600); height: 1rem; width: 1rem; }
-    .forgot-link { color: var(--primary-600); font-size: .84rem; font-weight: 700; text-decoration: none; }
+    .forgot-link { background:transparent; border:0; color:var(--primary-600); cursor:pointer; font:inherit; font-size:.84rem; font-weight:700; padding:0; }
     .forgot-link:hover { text-decoration: underline; }
     .btn { align-items: center; border-radius: 12px; display: flex; font-size: .95rem; font-weight: 800; gap: .5rem; height: 50px; justify-content: center; transition: transform .2s ease, box-shadow .2s ease; }
     .btn:not(:disabled):hover { box-shadow: 0 10px 22px color-mix(in srgb, var(--primary-500) 25%, transparent); transform: translateY(-1px); }
@@ -214,24 +245,10 @@ import { PasswordFieldComponent } from '../../../../shared/components/password-f
     .w-full { width: 100%; }
     .error-box { align-items: center; background: var(--danger-50); border: 1px solid var(--danger-100); border-radius: 11px; color: var(--danger-600); display: flex; font-size: .84rem; gap: .55rem; line-height: 1.5; margin-top: 1rem; padding: .8rem .9rem; }
 
-    .testing-link { align-items: center; background: transparent; border: 0; color: var(--text-muted); cursor: pointer; display: flex; font-size: .76rem; gap: .4rem; justify-content: center; margin: 1rem auto 0; padding: .25rem; }
+    .back-to-options,.testing-link { align-items: center; background: transparent; border: 0; color: var(--text-muted); cursor: pointer; display: flex; font-size: .76rem; gap: .4rem; justify-content: center; margin: 1rem auto 0; padding: .25rem; }
+    .back-to-options { color:var(--primary-600); font-weight:700; }
     .testing-link:hover { color: var(--primary-600); }
     .testing-banner { align-items: center; background: var(--warning-50); border: 1px solid var(--warning-100); border-radius: 10px; color: var(--warning-600); display: flex; font-size: .8rem; gap: .45rem; margin-bottom: 1rem; padding: .7rem .75rem; }
-
-    .access-options { border-top: 1px solid var(--border-color); margin-top: 1.7rem; padding-top: 1.25rem; }
-    .access-options-title { color: var(--text-muted); font-size: .75rem; font-weight: 800; letter-spacing: .03em; margin: 0 0 .7rem; }
-    .access-option { align-items: center; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 13px; color: inherit; display: flex; gap: .7rem; padding: .75rem; text-decoration: none; transition: .2s ease; }
-    .access-option:hover { border-color: var(--primary-300); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
-    .option-icon { align-items: center; background: var(--primary-100); border-radius: 10px; color: var(--primary-600); display: flex; flex: 0 0 auto; height: 35px; justify-content: center; width: 35px; }
-    .access-option > span:nth-child(2) { display: grid; gap: .12rem; min-width: 0; }
-    .access-option strong { font-size: .82rem; }
-    .access-option small { color: var(--text-secondary); font-size: .72rem; line-height: 1.35; }
-    .option-arrow { color: var(--text-muted); font-size: .76rem; margin-inline-start: auto; }
-    :host-context([dir="ltr"]) .option-arrow { transform: rotate(180deg); }
-    .access-links { display: flex; flex-direction: column; gap: .45rem; margin-top: .95rem; text-align: center; }
-    .access-links span { color: var(--text-secondary); font-size: .76rem; }
-    .access-links a { color: var(--primary-600); font-weight: 800; text-decoration: none; }
-    .access-links a:hover { text-decoration: underline; }
 
     @media (max-width: 560px) {
       .flow-header { margin-bottom: 1.35rem; }
@@ -244,7 +261,7 @@ import { PasswordFieldComponent } from '../../../../shared/components/password-f
       .form-options { align-items: flex-start; flex-direction: column; gap: .7rem; }
       .btn { font-size: .88rem; }
       .gym-banner { align-items: flex-start; }
-      .access-option small { font-size: .68rem; }
+      .access-card-grid { grid-template-columns:1fr; }.access-card { min-height:auto; }.access-card.client { grid-column:auto; }
     }
   `]
 })
@@ -261,6 +278,7 @@ export class LoginComponent implements OnInit {
   errorMessage = '';
 
   readonly tenantResolved = signal(false);
+  readonly entryMode = signal<'choice' | 'gym'>('choice');
   readonly resolvedGymName = signal<string | null>(null);
   gymSubdomain = '';
   readonly resolving = signal(false);
@@ -295,11 +313,30 @@ export class LoginComponent implements OnInit {
       this.subdomain = currentBranding.subdomain || this.branding.resolveIdentifier() || '';
       this.applyTenant(currentBranding.tenantId, currentBranding.name);
       this.fromSubdomain = !!this.branding.resolveIdentifier();
+      this.entryMode.set('gym');
       return;
     }
 
     this.branding.clearResolvedTenant();
     this.tenantResolved.set(false);
+    this.entryMode.set('choice');
+  }
+
+  isChoosingAccess(): boolean {
+    return this.entryMode() === 'choice' && !this.fromSubdomain;
+  }
+
+  chooseGymLogin(): void { this.entryMode.set('gym'); }
+  goToIdentityLogin(): void { void this.router.navigate(['/identity/login']); }
+  goToFreelanceRegistration(): void { void this.router.navigate(['/auth/register-freelance']); }
+  goToGymRegistration(): void { void this.router.navigate(['/auth/register-gym']); }
+  goToClientRegistration(): void { void this.router.navigate(['/auth/register']); }
+  goToForgotPassword(): void { void this.router.navigate(['/auth/forgot-password']); }
+  canReturnToAccessChoice(): boolean { return !this.fromSubdomain; }
+
+  returnToAccessChoice(): void {
+    this.changeGym();
+    this.entryMode.set('choice');
   }
 
   canChangeGym(): boolean {
