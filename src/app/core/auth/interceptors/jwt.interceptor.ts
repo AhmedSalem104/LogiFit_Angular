@@ -8,9 +8,13 @@ import { AuthService } from '../services/auth.service';
 export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const token = authService.getToken();
+  const isPublicIdentityRequest = req.url.includes('/auth/')
+    || req.url.includes('/identity/')
+    || req.url.includes('/workspace-applications/');
 
-  // Skip adding token to auth endpoints
-  if (req.url.includes('/auth/')) {
+  // Identity proof and application tracking deliberately use opaque short-lived
+  // tokens, never a tenant JWT.
+  if (isPublicIdentityRequest) {
     return next(req);
   }
 

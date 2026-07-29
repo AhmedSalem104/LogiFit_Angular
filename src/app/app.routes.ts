@@ -4,6 +4,34 @@ import { guestGuard } from './core/auth/guards/guest.guard';
 import { ownerGuard, coachGuard, clientGuard } from './core/auth/guards/role.guard';
 
 export const routes: Routes = [
+  // Identity-first routes stay available even to a user who already has a
+  // tenant session, so a pending request never blocks an active workspace.
+  {
+    path: 'identity',
+    loadComponent: () =>
+      import('./core/layout/auth-layout/auth-layout.component').then(m => m.AuthLayoutComponent),
+    children: [
+      {
+        path: 'login',
+        loadComponent: () =>
+          import('./features/auth/pages/identity-login/identity-login.component').then(m => m.IdentityLoginComponent),
+        title: 'الدخول بالهوية - LogicFit'
+      },
+      {
+        path: 'register',
+        loadComponent: () =>
+          import('./features/auth/pages/identity-register/identity-register.component').then(m => m.IdentityRegisterComponent),
+        title: 'إنشاء هوية - LogicFit'
+      },
+      {
+        path: 'application-status',
+        loadComponent: () =>
+          import('./features/auth/pages/application-status/application-status.component').then(m => m.ApplicationStatusComponent),
+        title: 'متابعة الطلب - LogicFit'
+      }
+    ]
+  },
+
   // Auth Routes (Guest only)
   {
     path: 'auth',

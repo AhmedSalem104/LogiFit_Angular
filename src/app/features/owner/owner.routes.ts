@@ -12,6 +12,7 @@ export const ownerRoutes: Routes = [
   // Members
   { path: 'clients', loadComponent: () => import('./clients/clients-list.component').then(m => m.ClientsListComponent), title: 'العملاء - LogicFit' },
   { path: 'coaches', loadComponent: () => import('./coaches/coaches-list.component').then(m => m.CoachesListComponent), title: 'المدربين - LogicFit' },
+  { path: 'freelance-team', canActivate: [permissionGuard(Permissions.ManageCoaches)], loadComponent: () => import('./freelance-team/freelance-team.component').then(m => m.FreelanceTeamComponent), title: 'فريق المدرب الحر - LogicFit' },
   { path: 'membership-cards', loadComponent: () => import('./membership-cards/membership-cards.component').then(m => m.MembershipCardsComponent), title: 'بطاقات العضوية' },
   { path: 'gate-access', loadComponent: () => import('./gate-access/gate-access.component').then(m => m.GateAccessComponent), title: 'البوابة' },
 

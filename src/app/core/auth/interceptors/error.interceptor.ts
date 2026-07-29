@@ -96,19 +96,22 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
   const tenantStatus = inject(TenantStatusService);
+  const isPublicIdentityRequest = req.url.includes('/auth/')
+    || req.url.includes('/identity/')
+    || req.url.includes('/workspace-applications/');
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       // Typed tenant-access gate on a protected request → handle globally.
       // Skip /auth/ requests: the auth screen surfaces the status itself.
       const tenantCode = error.error?.code;
-      if (isTenantStatusCode(tenantCode) && !req.url.includes('/auth/')) {
+      if (isTenantStatusCode(tenantCode) && !isPublicIdentityRequest) {
         const msg = handleTenantCode(tenantCode, authService, tenantStatus, router);
         return throwError(() => ({ ...error, tenantCode, translatedMessage: msg }));
       }
 
       // 401 on a protected endpoint → attempt silent refresh + retry
-      if (error.status === 401 && !req.url.includes('/auth/')) {
+      if (error.status === 401 && !isPublicIdentityRequest) {
         return handle401(req, next, authService);
       }
 

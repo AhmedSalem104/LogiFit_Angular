@@ -12,6 +12,7 @@ interface NavItem {
   roles?: UserRole[];
   permission?: Permission | Permission[];
   badge?: number;
+  freelanceOnly?: boolean;
 }
 
 interface NavGroup {
@@ -891,6 +892,7 @@ export class SidebarComponent {
       items: [
         { label: 'العملاء', icon: 'pi-users', route: '/owner/clients', roles: [UserRole.Owner], permission: 'ViewMembers' },
         { label: 'المدربين', icon: 'pi-id-card', route: '/owner/coaches', roles: [UserRole.Owner], permission: 'ManageCoaches' },
+        { label: 'فريق المدرب الحر', icon: 'pi-users', route: '/owner/freelance-team', roles: [UserRole.Owner], permission: 'ManageCoaches', freelanceOnly: true },
         { label: 'بطاقات العضوية', icon: 'pi-qrcode', route: '/owner/membership-cards', roles: [UserRole.Owner], permission: 'ManageMembers' },
         { label: 'الدخول والحضور والموظفون', icon: 'pi-sign-in', route: '/owner/gate-access', roles: [UserRole.Owner], permission: 'ManageAttendance' },
       ]
@@ -1106,6 +1108,8 @@ export class SidebarComponent {
   }
 
   canShowItem(item: NavItem): boolean {
-    return this.matchesPanel(item.roles) && this.matchesPermission(item.permission);
+    return this.matchesPanel(item.roles)
+      && this.matchesPermission(item.permission)
+      && (!item.freelanceOnly || this.authService.isFreelanceWorkspace());
   }
 }
