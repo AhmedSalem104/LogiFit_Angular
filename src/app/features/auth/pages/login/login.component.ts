@@ -13,19 +13,34 @@ import { PasswordFieldComponent } from '../../../../shared/components/password-f
   standalone: true,
   imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, PasswordFieldComponent],
   template: `
-    <div class="login-page">
-      <h2>مرحباً بعودتك</h2>
-      <p class="subtitle">سجل دخولك للوصول إلى لوحة التحكم</p>
+    <section class="login-page" [attr.data-step]="onboardingStep">
+      <header class="flow-header">
+        <div class="flow-meta">
+          <span class="step-pill">الخطوة {{ onboardingStep }} من 2</span>
+          <span class="step-caption">{{ tenantResolved() ? 'تحقق من بيانات الدخول' : 'حدد مساحة عملك أولاً' }}</span>
+        </div>
+        <div class="progress-track" aria-label="تقدم تسجيل الدخول" role="progressbar" aria-valuemin="1" aria-valuemax="2" [attr.aria-valuenow]="onboardingStep">
+          <span class="progress-fill" [style.width.%]="stepProgress"></span>
+        </div>
+      </header>
 
-      <!-- STEP 1: resolve the gym (only when not on a branded subdomain) -->
       @if (!tenantResolved()) {
+        <div class="screen-intro">
+          <div class="intro-icon"><i class="pi pi-building"></i></div>
+          <div>
+            <h2>أين تريد الدخول؟</h2>
+            <p>اكتب معرّف الصالة للوصول إلى حسابك ولوحة العمل الصحيحة.</p>
+          </div>
+        </div>
+
         @if (!manualMode()) {
-          <form (ngSubmit)="resolveGym()">
+          <form (ngSubmit)="resolveGym()" novalidate>
             <div class="form-group">
-              <label class="form-label">معرّف صالتك (subdomain)</label>
+              <label class="form-label" for="gym-subdomain">معرّف الصالة</label>
               <div class="input-wrapper">
-                <i class="pi pi-building"></i>
+                <i class="pi pi-building" aria-hidden="true"></i>
                 <input
+                  id="gym-subdomain"
                   type="text"
                   class="form-input"
                   [(ngModel)]="gymSubdomain"
@@ -33,29 +48,33 @@ import { PasswordFieldComponent } from '../../../../shared/components/password-f
                   placeholder="مثال: goldgym"
                   [class.error]="!!resolveError()"
                   autocapitalize="off"
-                  autocomplete="off"
+                  autocomplete="organization"
+                  autofocus
                 />
               </div>
-              <span class="hint">اكتب المعرّف الذي حصلت عليه عند تسجيل صالتك</span>
+              <span class="hint">ستجده في رابط الصالة أو الرسالة التي وصلت إليك عند التسجيل.</span>
               <span class="error-message" *ngIf="resolveError()">{{ resolveError() }}</span>
             </div>
 
             <button type="submit" class="btn btn-primary w-full" [disabled]="resolving() || !gymSubdomain.trim()">
               <i class="pi pi-spin pi-spinner" *ngIf="resolving()"></i>
-              <span *ngIf="!resolving()">متابعة</span>
+              <span *ngIf="!resolving()">متابعة إلى بيانات الدخول</span>
             </button>
           </form>
-          <button type="button" class="link-btn" (click)="manualMode.set(true)">
-            <i class="pi pi-wrench"></i> إدخال معرّف الصالة (GUID) — وضع الاختبار
+
+          <button type="button" class="testing-link" (click)="manualMode.set(true)">
+            <i class="pi pi-wrench" aria-hidden="true"></i>
+            وضع الاختبار: إدخال TenantId يدوياً
           </button>
         } @else {
-          <!-- Testing mode: enter the TenantId GUID directly (bypasses branding) -->
-          <form (ngSubmit)="useManualTenant()">
+          <form (ngSubmit)="useManualTenant()" novalidate>
+            <div class="testing-banner"><i class="pi pi-info-circle"></i> هذا المسار مخصص للاختبار فقط.</div>
             <div class="form-group">
-              <label class="form-label">معرّف الصالة (TenantId — GUID)</label>
+              <label class="form-label" for="manual-tenant-id">معرّف الصالة (TenantId)</label>
               <div class="input-wrapper">
-                <i class="pi pi-key"></i>
+                <i class="pi pi-key" aria-hidden="true"></i>
                 <input
+                  id="manual-tenant-id"
                   type="text"
                   class="form-input"
                   [(ngModel)]="manualTenantId"
@@ -66,40 +85,47 @@ import { PasswordFieldComponent } from '../../../../shared/components/password-f
                   autocomplete="off"
                 />
               </div>
-              <span class="hint">للاختبار فقط — يتجاوز تحديد الصالة عبر الـ subdomain</span>
               <span class="error-message" *ngIf="manualError()">{{ manualError() }}</span>
             </div>
-            <button type="submit" class="btn btn-primary w-full" [disabled]="!manualTenantId.trim()">متابعة</button>
+            <button type="submit" class="btn btn-primary w-full" [disabled]="!manualTenantId.trim()">متابعة إلى بيانات الدخول</button>
           </form>
-          <button type="button" class="link-btn" (click)="manualMode.set(false)">
-            <i class="pi pi-arrow-right"></i> رجوع لإدخال معرّف الصالة (subdomain)
+          <button type="button" class="testing-link" (click)="manualMode.set(false)">
+            <i class="pi pi-arrow-right" aria-hidden="true"></i>
+            العودة إلى معرّف الصالة
           </button>
         }
       } @else {
-        <!-- STEP 2: credentials -->
-        <div class="gym-banner">
-          <i class="pi pi-building"></i>
+        <div class="screen-intro compact">
+          <div class="intro-icon success"><i class="pi pi-check"></i></div>
           <div>
-            <span class="gym-banner-label">الصالة</span>
+            <h2>أهلاً بعودتك</h2>
+            <p>أدخل بياناتك لإكمال الدخول إلى مساحة العمل.</p>
+          </div>
+        </div>
+
+        <div class="gym-banner">
+          <i class="pi pi-building" aria-hidden="true"></i>
+          <div>
+            <span class="gym-banner-label">مساحة العمل المحددة</span>
             <b>{{ resolvedGymName() }}</b>
           </div>
           <button type="button" class="change-gym" (click)="changeGym()" *ngIf="canChangeGym()">تغيير</button>
         </div>
 
-        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
           <div class="form-group">
-            <label class="form-label">رقم الهاتف</label>
+            <label class="form-label" for="phone-number">رقم الهاتف</label>
             <div class="input-wrapper">
-              <i class="pi pi-phone"></i>
-              <input type="tel" class="form-input" formControlName="phoneNumber" placeholder="01xxxxxxxxx"
-                [class.error]="isFieldInvalid('phoneNumber')" />
+              <i class="pi pi-phone" aria-hidden="true"></i>
+              <input id="phone-number" type="tel" class="form-input" formControlName="phoneNumber" placeholder="01xxxxxxxxx"
+                autocomplete="tel" [class.error]="isFieldInvalid('phoneNumber')" />
             </div>
             <span class="error-message" *ngIf="isFieldInvalid('phoneNumber')">رقم الهاتف مطلوب</span>
           </div>
 
           <div class="form-group">
             <label class="form-label">كلمة المرور</label>
-            <div class="input-wrapper">
+            <div class="input-wrapper password-wrapper">
               <app-password-field formControlName="password"></app-password-field>
             </div>
             <span class="error-message" *ngIf="isFieldInvalid('password')">كلمة المرور مطلوبة</span>
@@ -115,106 +141,136 @@ import { PasswordFieldComponent } from '../../../../shared/components/password-f
 
           <button type="submit" class="btn btn-primary w-full" [disabled]="loading">
             <i class="pi pi-spin pi-spinner" *ngIf="loading"></i>
-            <span *ngIf="!loading">تسجيل الدخول</span>
+            <span *ngIf="!loading">دخول آمن إلى مساحة العمل</span>
           </button>
 
-          <div class="error-box" *ngIf="errorMessage">
+          <div class="error-box" *ngIf="errorMessage" role="alert">
             <i class="pi pi-exclamation-circle"></i>
             <span>{{ errorMessage }}</span>
           </div>
         </form>
       }
 
-      <div class="auth-links">
-        <div class="register-link">
-          <span>ليس لديك حساب؟</span>
-          <a routerLink="/auth/register">إنشاء حساب</a>
+      <section class="access-options" aria-label="مسارات دخول أخرى">
+        <p class="access-options-title">تحتاج مساراً مختلفاً؟</p>
+        <a class="access-option identity-option" routerLink="/identity/login">
+          <span class="option-icon"><i class="pi pi-id-card"></i></span>
+          <span><strong>الدخول بالهوية</strong><small>لأكثر من مساحة عمل أو لطلب قيد المراجعة.</small></span>
+          <i class="pi pi-arrow-left option-arrow" aria-hidden="true"></i>
+        </a>
+        <div class="access-links">
+          <span>حساب جديد؟ <a routerLink="/auth/register">أنشئ حساب عميل</a></span>
+          <span>مدرب حر؟ <a routerLink="/auth/register-freelance">أنشئ مساحتك المستقلة</a></span>
+          <span>تريد تسجيل صالة؟ <a routerLink="/auth/register-gym">سجّل صالتك</a></span>
         </div>
-        <div class="freelance-link">
-          <a routerLink="/identity/login">لديك أكثر من مساحة عمل أو طلب قيد المراجعة؟ ادخل بالهوية</a>
-        </div>
-        <div class="freelance-link">
-          <a routerLink="/auth/register-freelance">مدرب حر؟ أنشئ مساحة عملك المستقلة</a>
-        </div>
-        <div class="gym-link">
-          <span>تريد تسجيل صالة جديدة؟</span>
-          <a routerLink="/auth/register-gym">سجل صالتك</a>
-        </div>
-      </div>
-    </div>
+      </section>
+    </section>
   `,
   styles: [`
-    .login-page {
-      h2 { font-size: 1.75rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem; }
-      .subtitle { color: var(--text-secondary); margin-bottom: 2rem; }
-    }
-    .form-group { margin-bottom: 1.25rem; }
-    .gym-banner {
-      display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1rem;
-      background: var(--bg-secondary); border: 1px solid var(--border-color);
-      border-radius: 10px; margin-bottom: 1.25rem;
-    }
-    .gym-banner > i { font-size: 1.25rem; color: #3b82f6; }
-    .gym-banner .gym-banner-label { display: block; font-size: 0.75rem; color: var(--text-secondary); }
-    .gym-banner b { color: var(--text-primary); }
-    .gym-banner .change-gym {
-      margin-inline-start: auto; background: none; border: none; color: #3b82f6;
-      cursor: pointer; font-size: 0.85rem; font-weight: 600;
-    }
-    .gym-banner .change-gym:hover { text-decoration: underline; }
-    .input-wrapper { position: relative; display: flex; align-items: center; }
-    .input-wrapper > i:first-child { position: absolute; right: 1rem; color: var(--text-muted); z-index: 1; }
-    .input-wrapper .form-input { padding-right: 2.75rem; padding-left: 2.75rem; }
-    :host-context([dir="ltr"]) .input-wrapper > i:first-child { right: auto; left: 1rem; }
-    .form-input.error { border-color: #ef4444; }
-    .toggle-password { position: absolute; left: 1rem; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.25rem; }
-    .toggle-password:hover { color: var(--text-secondary); }
-    :host-context([dir="ltr"]) .toggle-password { left: auto; right: 1rem; }
-    .error-message { display: block; color: #ef4444; font-size: 0.8rem; margin-top: 0.5rem; }
-    .hint { display: block; color: var(--text-muted); font-size: 0.8rem; margin-top: 0.5rem; }
-    .link-btn { display: inline-flex; align-items: center; gap: 0.4rem; margin: 1rem auto 0; background: none; border: none; color: var(--text-secondary); font-size: 0.82rem; cursor: pointer; width: 100%; justify-content: center; }
-    .link-btn:hover { color: #3b82f6; }
-    .form-options { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    .checkbox-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text-secondary); font-size: 0.9rem; }
-    .checkbox-label input { width: 1rem; height: 1rem; accent-color: #3b82f6; }
-    .forgot-link { color: #3b82f6; text-decoration: none; font-size: 0.9rem; }
+    .login-page { color: var(--text-primary); }
+    .flow-header { margin-bottom: 1.8rem; }
+    .flow-meta { align-items: center; display: flex; gap: .7rem; justify-content: space-between; margin-bottom: .7rem; }
+    .step-pill { background: color-mix(in srgb, var(--primary-100) 65%, transparent); border-radius: 999px; color: var(--primary-700); font-size: .76rem; font-weight: 800; padding: .38rem .72rem; }
+    .step-caption { color: var(--text-muted); font-size: .78rem; }
+    .progress-track { background: var(--bg-tertiary); border-radius: 999px; height: 7px; overflow: hidden; width: 100%; }
+    .progress-fill { background: var(--gradient-primary); border-radius: inherit; display: block; height: 100%; transition: width .35s ease; }
+
+    .screen-intro { align-items: flex-start; display: flex; gap: .9rem; margin-bottom: 1.65rem; }
+    .screen-intro.compact { margin-bottom: 1.25rem; }
+    .intro-icon { align-items: center; background: var(--primary-100); border-radius: 13px; color: var(--primary-600); display: flex; flex: 0 0 auto; font-size: 1.15rem; height: 46px; justify-content: center; width: 46px; }
+    .intro-icon.success { background: var(--success-100); color: var(--success-600); }
+    h2 { font-size: clamp(1.55rem, 3vw, 2rem); letter-spacing: -.03em; line-height: 1.2; margin: .05rem 0 .38rem; }
+    .screen-intro p { color: var(--text-secondary); font-size: .92rem; line-height: 1.6; margin: 0; }
+
+    .form-group { margin-bottom: 1.15rem; }
+    .form-label { color: var(--text-primary); display: block; font-size: .88rem; font-weight: 700; margin-bottom: .55rem; }
+    .input-wrapper { align-items: center; display: flex; position: relative; }
+    .input-wrapper > i:first-child { color: var(--text-muted); position: absolute; right: 1rem; z-index: 1; }
+    :host-context([dir="ltr"]) .input-wrapper > i:first-child { left: 1rem; right: auto; }
+    .input-wrapper .form-input { padding-inline-end: 2.8rem; }
+    .password-wrapper { min-height: 48px; }
+    .password-wrapper app-password-field { width: 100%; }
+    .form-input.error { border-color: var(--danger-500); }
+    .hint, .error-message { display: block; font-size: .78rem; line-height: 1.5; margin-top: .45rem; }
+    .hint { color: var(--text-muted); }
+    .error-message { color: var(--danger-600); }
+
+    .gym-banner { align-items: center; background: color-mix(in srgb, var(--success-50) 72%, var(--bg-primary)); border: 1px solid color-mix(in srgb, var(--success-500) 30%, var(--border-color)); border-radius: 13px; display: flex; gap: .75rem; margin-bottom: 1.2rem; padding: .82rem .9rem; }
+    .gym-banner > i { color: var(--success-600); font-size: 1.05rem; }
+    .gym-banner > div { display: grid; gap: .15rem; }
+    .gym-banner-label { color: var(--text-secondary); font-size: .7rem; }
+    .gym-banner b { font-size: .9rem; }
+    .change-gym { background: transparent; border: 0; color: var(--primary-600); cursor: pointer; font-size: .8rem; font-weight: 800; margin-inline-start: auto; padding: .35rem; }
+    .change-gym:hover { text-decoration: underline; }
+
+    .form-options { align-items: center; display: flex; justify-content: space-between; margin: .15rem 0 1.35rem; }
+    .checkbox-label { align-items: center; color: var(--text-secondary); cursor: pointer; display: flex; font-size: .84rem; gap: .45rem; }
+    .checkbox-label input { accent-color: var(--primary-600); height: 1rem; width: 1rem; }
+    .forgot-link { color: var(--primary-600); font-size: .84rem; font-weight: 700; text-decoration: none; }
     .forgot-link:hover { text-decoration: underline; }
-    .btn { display: flex; align-items: center; justify-content: center; gap: 0.5rem; height: 48px; font-size: 1rem; }
-    .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+    .btn { align-items: center; border-radius: 12px; display: flex; font-size: .95rem; font-weight: 800; gap: .5rem; height: 50px; justify-content: center; transition: transform .2s ease, box-shadow .2s ease; }
+    .btn:not(:disabled):hover { box-shadow: 0 10px 22px color-mix(in srgb, var(--primary-500) 25%, transparent); transform: translateY(-1px); }
+    .btn:disabled { cursor: not-allowed; opacity: .68; }
     .w-full { width: 100%; }
-    .error-box { display: flex; align-items: center; gap: 0.5rem; padding: 1rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #dc2626; margin-top: 1rem; font-size: 0.9rem; }
-    .auth-links { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 0.75rem; text-align: center; }
-    .register-link, .gym-link, .freelance-link { color: var(--text-secondary); }
-    .register-link a, .gym-link a, .freelance-link a { color: #3b82f6; text-decoration: none; font-weight: 500; margin-inline-start: 0.25rem; }
-    .register-link a:hover, .gym-link a:hover, .freelance-link a:hover { text-decoration: underline; }
+    .error-box { align-items: center; background: var(--danger-50); border: 1px solid var(--danger-100); border-radius: 11px; color: var(--danger-600); display: flex; font-size: .84rem; gap: .55rem; line-height: 1.5; margin-top: 1rem; padding: .8rem .9rem; }
+
+    .testing-link { align-items: center; background: transparent; border: 0; color: var(--text-muted); cursor: pointer; display: flex; font-size: .76rem; gap: .4rem; justify-content: center; margin: 1rem auto 0; padding: .25rem; }
+    .testing-link:hover { color: var(--primary-600); }
+    .testing-banner { align-items: center; background: var(--warning-50); border: 1px solid var(--warning-100); border-radius: 10px; color: var(--warning-600); display: flex; font-size: .8rem; gap: .45rem; margin-bottom: 1rem; padding: .7rem .75rem; }
+
+    .access-options { border-top: 1px solid var(--border-color); margin-top: 1.7rem; padding-top: 1.25rem; }
+    .access-options-title { color: var(--text-muted); font-size: .75rem; font-weight: 800; letter-spacing: .03em; margin: 0 0 .7rem; }
+    .access-option { align-items: center; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 13px; color: inherit; display: flex; gap: .7rem; padding: .75rem; text-decoration: none; transition: .2s ease; }
+    .access-option:hover { border-color: var(--primary-300); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+    .option-icon { align-items: center; background: var(--primary-100); border-radius: 10px; color: var(--primary-600); display: flex; flex: 0 0 auto; height: 35px; justify-content: center; width: 35px; }
+    .access-option > span:nth-child(2) { display: grid; gap: .12rem; min-width: 0; }
+    .access-option strong { font-size: .82rem; }
+    .access-option small { color: var(--text-secondary); font-size: .72rem; line-height: 1.35; }
+    .option-arrow { color: var(--text-muted); font-size: .76rem; margin-inline-start: auto; }
+    :host-context([dir="ltr"]) .option-arrow { transform: rotate(180deg); }
+    .access-links { display: flex; flex-direction: column; gap: .45rem; margin-top: .95rem; text-align: center; }
+    .access-links span { color: var(--text-secondary); font-size: .76rem; }
+    .access-links a { color: var(--primary-600); font-weight: 800; text-decoration: none; }
+    .access-links a:hover { text-decoration: underline; }
+
+    @media (max-width: 560px) {
+      .flow-header { margin-bottom: 1.35rem; }
+      .flow-meta { align-items: flex-start; flex-direction: column; gap: .4rem; }
+      .step-caption { font-size: .73rem; }
+      .screen-intro { gap: .7rem; margin-bottom: 1.25rem; }
+      .intro-icon { border-radius: 11px; height: 40px; width: 40px; }
+      h2 { font-size: 1.45rem; }
+      .screen-intro p { font-size: .84rem; }
+      .form-options { align-items: flex-start; flex-direction: column; gap: .7rem; }
+      .btn { font-size: .88rem; }
+      .gym-banner { align-items: flex-start; }
+      .access-option small { font-size: .68rem; }
+    }
   `]
 })
 export class LoginComponent implements OnInit {
-  private fb = inject(FormBuilder);
-  private authService = inject(AuthService);
-  private router = inject(Router);
-  private notification = inject(NotificationService);
-  private branding = inject(BrandingService);
-  private tenantStatus = inject(TenantStatusService);
+  private readonly fb = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly notification = inject(NotificationService);
+  private readonly branding = inject(BrandingService);
+  private readonly tenantStatus = inject(TenantStatusService);
 
-  loginForm: FormGroup;
+  readonly loginForm: FormGroup;
   loading = false;
-  showPassword = false;
   errorMessage = '';
 
-  // Gym resolution state
-  tenantResolved = signal(false);
-  resolvedGymName = signal<string | null>(null);
+  readonly tenantResolved = signal(false);
+  readonly resolvedGymName = signal<string | null>(null);
   gymSubdomain = '';
-  resolving = signal(false);
-  resolveError = signal<string | null>(null);
-  private fromSubdomain = false; // true when tenant came from the URL (can't change)
-  private subdomain = '';        // gym subdomain sent alongside tenantId
+  readonly resolving = signal(false);
+  readonly resolveError = signal<string | null>(null);
+  private fromSubdomain = false;
+  private subdomain = '';
 
-  // Testing mode: enter TenantId GUID directly
-  manualMode = signal(false);
+  readonly manualMode = signal(false);
   manualTenantId = '';
-  manualError = signal<string | null>(null);
+  readonly manualError = signal<string | null>(null);
 
   constructor() {
     this.loginForm = this.fb.group({
@@ -225,19 +281,25 @@ export class LoginComponent implements OnInit {
     });
   }
 
+  get onboardingStep(): number {
+    return this.tenantResolved() ? 2 : 1;
+  }
+
+  get stepProgress(): number {
+    return this.onboardingStep * 50;
+  }
+
   ngOnInit(): void {
-    // Only trust a tenant that came from ACTUAL branding (subdomain), never a stale
-    // value left in storage by a previous backend/session.
-    const b = this.branding.branding();
-    if (b?.tenantId) {
-      this.subdomain = b.subdomain || this.branding.resolveIdentifier() || '';
-      this.applyTenant(b.tenantId, b.name);
+    const currentBranding = this.branding.branding();
+    if (currentBranding?.tenantId) {
+      this.subdomain = currentBranding.subdomain || this.branding.resolveIdentifier() || '';
+      this.applyTenant(currentBranding.tenantId, currentBranding.name);
       this.fromSubdomain = !!this.branding.resolveIdentifier();
-    } else {
-      // Non-branded host → ask the user for their gym subdomain.
-      this.branding.clearResolvedTenant();
-      this.tenantResolved.set(false);
+      return;
     }
+
+    this.branding.clearResolvedTenant();
+    this.tenantResolved.set(false);
   }
 
   canChangeGym(): boolean {
@@ -251,37 +313,38 @@ export class LoginComponent implements OnInit {
   }
 
   resolveGym(): void {
-    const sub = this.gymSubdomain.trim();
-    if (!sub) return;
+    const subdomain = this.gymSubdomain.trim();
+    if (!subdomain) return;
+
     this.resolving.set(true);
     this.resolveError.set(null);
 
-    this.branding.resolveBySubdomain(sub).subscribe({
-      next: (b) => {
+    this.branding.resolveBySubdomain(subdomain).subscribe({
+      next: (resolvedBranding) => {
         this.resolving.set(false);
-        this.subdomain = b.subdomain || sub;
-        this.applyTenant(b.tenantId, b.name);
+        this.subdomain = resolvedBranding.subdomain || subdomain;
+        this.applyTenant(resolvedBranding.tenantId, resolvedBranding.name);
       },
-      error: (err) => {
+      error: (error) => {
         this.resolving.set(false);
-        this.resolveError.set(err?.status === 404
+        this.resolveError.set(error?.status === 404
           ? 'لا توجد صالة بهذا المعرّف. تأكد من الكتابة الصحيحة.'
-          : (err?.translatedMessage || 'تعذّر العثور على الصالة'));
+          : (error?.translatedMessage || 'تعذّر العثور على الصالة.'));
       }
     });
   }
 
-  /** Testing: accept a raw TenantId GUID and skip branding resolution. */
   useManualTenant(): void {
-    const id = this.manualTenantId.trim();
+    const tenantId = this.manualTenantId.trim();
     const guid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-    if (!guid.test(id)) {
-      this.manualError.set('صيغة المعرّف غير صحيحة (GUID)');
+    if (!guid.test(tenantId)) {
+      this.manualError.set('صيغة المعرّف غير صحيحة (GUID).');
       return;
     }
+
     this.manualError.set(null);
-    this.subdomain = '';            // only tenantId is sent in this mode
-    this.applyTenant(id, 'صالة (وضع الاختبار)');
+    this.subdomain = '';
+    this.applyTenant(tenantId, 'صالة (وضع الاختبار)');
   }
 
   changeGym(): void {
@@ -307,13 +370,12 @@ export class LoginComponent implements OnInit {
 
     this.loading = true;
     this.errorMessage = '';
-
     const { tenantId, phoneNumber, password } = this.loginForm.value;
 
     this.authService.login({ tenantId, phoneNumber, password, subdomain: this.subdomain }).subscribe({
       next: (response) => {
         this.loading = false;
-        this.notification.success('تم تسجيل الدخول بنجاح');
+        this.notification.success('تم تسجيل الدخول بنجاح.');
         const redirectUrl = response.mustChangePassword
           ? '/client/profile'
           : this.authService.getRedirectUrlForRole(response.role);
@@ -321,22 +383,18 @@ export class LoginComponent implements OnInit {
       },
       error: (error) => {
         this.loading = false;
-
-        // Tenant access gate returned at login → show the status message (per code)
-        // instead of a generic "wrong credentials". A wrong gym code sends the user
-        // back to step 1 to re-enter the subdomain.
-        const info = this.tenantStatus.resolve(error.error?.code);
-        if (info) {
-          if (info.code === 'TENANT_NOT_FOUND') {
+        const tenantStatus = this.tenantStatus.resolve(error.error?.code);
+        if (tenantStatus) {
+          if (tenantStatus.code === 'TENANT_NOT_FOUND') {
             this.changeGym();
-            this.resolveError.set(info.message);
+            this.resolveError.set(tenantStatus.message);
           } else {
-            this.errorMessage = info.message;
+            this.errorMessage = tenantStatus.message;
           }
           return;
         }
 
-        this.errorMessage = error.translatedMessage || error.error?.message || 'خطأ في تسجيل الدخول';
+        this.errorMessage = error.translatedMessage || error.error?.message || 'حدث خطأ أثناء تسجيل الدخول.';
       }
     });
   }

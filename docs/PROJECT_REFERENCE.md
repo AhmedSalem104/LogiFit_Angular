@@ -6,6 +6,7 @@
 - `/identity/login` proves the global identity before issuing a tenant JWT. It returns active workspaces and pending applications together; selecting one workspace exchanges a short-lived selection token for the existing JWT/refresh-token contract.
 - Public requests use opaque, short-lived tracking tokens held in `sessionStorage`. They are not refresh tokens and no normal tenant session is issued before Platform approval.
 - The legacy gym login and client registration routes remain unchanged. New routes are `/auth/register-freelance`, `/identity/login`, and `/identity/application-status`.
+- `/auth/login` now presents the unchanged Gym authentication contract as a guided two-step experience: resolve the Gym workspace first, then verify credentials. The identity route remains a separate path for users with multiple workspaces or pending applications.
 
 > مرجع تقني شامل لمشروع LogicFit. آخر تحديث بناءً على commit `b14aac3` (25 module / 150+ endpoint).
 > **الغرض:** خريطة ذهنية سريعة قبل أي تعديل — الأدوار، المسارات، الخدمات، الـ endpoints، الـ enums، والاصطلاحات.
