@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router } from '@angular/router';
 import { concatMap } from 'rxjs';
 import { FreelanceOnboardingService } from '../../../../core/freelance/services/freelance-onboarding.service';
 import { ApplicationRequestStatus, ApplicationTrackingStatus } from '../../../../core/freelance/models/freelance.models';
@@ -9,7 +9,7 @@ import { ApplicationRequestStatus, ApplicationTrackingStatus } from '../../../..
 @Component({
   selector: 'app-application-status',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="status-page">
@@ -37,10 +37,10 @@ import { ApplicationRequestStatus, ApplicationTrackingStatus } from '../../../..
           </form>
         } @else if (application.status === Status.Rejected) {
           <p class="information-request">الطلب مرفوض. يمكنك إنشاء طلب جديد عند تجهيز البيانات أو تغيير الهوية المطلوبة.</p>
-          <a routerLink="/auth/register-freelance" class="btn btn-primary">إنشاء طلب جديد</a>
+          <button type="button" class="btn btn-primary" (click)="goToFreelanceRegistration()">إنشاء طلب جديد</button>
         } @else { <p class="information-request">سنرسل التحديث عند انتقال الطلب إلى المرحلة التالية. يمكنك العودة لاحقًا عبر تسجيل الدخول بالهوية.</p> }
         } @else {
-        <div class="recovery-card"><span class="recovery-icon"><i class="pi pi-refresh" aria-hidden="true"></i></span><div><h3>استعادة متابعة الطلب</h3><p>جلسة المتابعة مؤقتة لحماية طلبك. سجّل الدخول بالهوية، ثم اختر الطلب لإصدار جلسة متابعة جديدة.</p><ol><li>أثبت هويتك بالبريد أو رقم الهاتف وكلمة المرور.</li><li>اختر الطلب من قائمة طلباتك قيد المتابعة.</li><li>تابع الحالة أو استكمل البيانات المطلوبة.</li></ol><a [routerLink]="['/identity/login']" [queryParams]="{ continue: 'application-status' }" class="btn btn-primary">استمرار إلى الدخول بالهوية</a></div></div>
+        <div class="recovery-card"><span class="recovery-icon"><i class="pi pi-refresh" aria-hidden="true"></i></span><div><h3>استعادة متابعة الطلب</h3><p>جلسة المتابعة مؤقتة لحماية طلبك. سجّل الدخول بالهوية، ثم اختر الطلب لإصدار جلسة متابعة جديدة.</p><ol><li>أثبت هويتك بالبريد أو رقم الهاتف وكلمة المرور.</li><li>اختر الطلب من قائمة طلباتك قيد المتابعة.</li><li>تابع الحالة أو استكمل البيانات المطلوبة.</li></ol><button type="button" class="btn btn-primary" (click)="goToIdentityRecovery()">استمرار إلى الدخول بالهوية</button></div></div>
         }
       }
       @if (error() && !status()) { <p class="error" role="alert">{{ error() }}</p> }
@@ -107,4 +107,7 @@ export class ApplicationStatusComponent implements OnInit {
     this.onboarding.clearTrackingToken();
     void this.router.navigate(['/identity/login'], { queryParams: { continue: 'application-status' }, replaceUrl: true });
   }
+
+  goToIdentityRecovery(): void { this.redirectToIdentityRecovery(); }
+  goToFreelanceRegistration(): void { void this.router.navigate(['/auth/register-freelance']); }
 }

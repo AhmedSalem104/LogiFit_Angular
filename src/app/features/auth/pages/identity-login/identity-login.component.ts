@@ -39,7 +39,7 @@ import {
             {{ loading() ? 'جارٍ التحقق...' : 'متابعة' }}
           </button>
         </form>
-        <p class="secondary-link">تريد الدخول إلى جيم محدد؟ <a routerLink="/auth/login">دخول الجيم</a></p>
+        <p class="secondary-link">تريد الدخول إلى جيم محدد؟ <button type="button" (click)="goToGymLogin()">دخول الجيم</button></p>
       } @else {
         @if (trackingRecovery) {
           <div class="recovery-banner success"><i class="pi pi-check-circle" aria-hidden="true"></i><div><b>تم التحقق من هويتك</b><p>اختر طلبك من القائمة لإصدار جلسة متابعة جديدة وآمنة.</p></div></div>
@@ -91,7 +91,7 @@ import {
     .choice-card { width:100%; display:flex; align-items:center; gap:.8rem; padding:.9rem; text-align:start; border:1px solid var(--border-color); border-radius:10px; background:var(--bg-primary); color:var(--text-primary); cursor:pointer; }
     .choice-card:hover:not(:disabled) { border-color:#3b82f6; background:rgba(59,130,246,.04); }.choice-card:disabled { opacity:.6; cursor:wait; }
     .choice-card > span:nth-child(2) { display:grid; gap:.15rem; flex:1; }.choice-card small { color:var(--text-secondary); }.card-icon { display:grid; place-items:center; width:2.25rem; height:2.25rem; border-radius:50%; color:#2563eb; background:rgba(37,99,235,.1); }.pending .card-icon { color:#b45309; background:#fff7ed; }
-    .recovery-banner { align-items:flex-start; background:var(--primary-50); border:1px solid var(--primary-200); border-radius:12px; color:var(--primary-800); display:flex; gap:.7rem; line-height:1.55; margin:0 0 1.25rem; padding:.8rem .9rem; }.recovery-banner.success { background:var(--success-50); border-color:var(--success-100); color:var(--success-600); }.recovery-banner i { font-size:1.1rem; margin-top:.15rem; }.recovery-banner div { display:grid; gap:.15rem; }.recovery-banner p { font-size:.82rem; margin:0; }.secondary-link { margin-top:1.5rem; text-align:center; color:var(--text-secondary); }.secondary-link a,.text-button { color:#2563eb; text-decoration:none; }.text-button { border:0; background:transparent; cursor:pointer; padding:1rem 0 0; font:inherit; }
+    .recovery-banner { align-items:flex-start; background:var(--primary-50); border:1px solid var(--primary-200); border-radius:12px; color:var(--primary-800); display:flex; gap:.7rem; line-height:1.55; margin:0 0 1.25rem; padding:.8rem .9rem; }.recovery-banner.success { background:var(--success-50); border-color:var(--success-100); color:var(--success-600); }.recovery-banner i { font-size:1.1rem; margin-top:.15rem; }.recovery-banner div { display:grid; gap:.15rem; }.recovery-banner p { font-size:.82rem; margin:0; }.secondary-link { margin-top:1.5rem; text-align:center; color:var(--text-secondary); }.secondary-link button,.text-button { color:#2563eb; text-decoration:none; }.secondary-link button { background:transparent; border:0; cursor:pointer; font:inherit; font-weight:700; padding:0; }.text-button { border:0; background:transparent; cursor:pointer; padding:1rem 0 0; font:inherit; }
     .error { margin:.75rem 0 0; color:#b91c1c; font-size:.9rem; }.empty { padding:1rem; border-radius:8px; color:var(--text-secondary); background:var(--bg-secondary); }
   `],
 })
@@ -153,6 +153,7 @@ export class IdentityLoginComponent {
   }
 
   reset(): void { this.result.set(null); this.error.set(''); this.form.reset(); }
+  goToGymLogin(): void { void this.router.navigate(['/auth/login']); }
   workspaceLabel(workspace: IdentityWorkspace): string { return workspace.workspaceType === WorkspaceType.FreelanceCoach ? 'مساحة مدرب حر' : 'مساحة جيم'; }
   applicationLabel(application: PendingApplication): string { return application.applicationType === 2 ? 'طلب إنشاء مساحة مدرب حر' : 'طلب انضمام'; }
   applicationStatus(status: number): string { return ({ 2: 'مُقدّم', 3: 'قيد المراجعة', 4: 'مطلوب استكمال بيانات', 5: 'مقبول', 6: 'مرفوض', 7: 'ملغى', 8: 'منتهي' } as Record<number, string>)[status] || 'مسودة'; }
