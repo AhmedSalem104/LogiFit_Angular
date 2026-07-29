@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { FreelanceOnboardingService } from '../../../../core/freelance/services/freelance-onboarding.service';
 import {
@@ -18,10 +18,17 @@ import {
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="identity-page">
+    <section class="identity-page" [class.recovery-mode]="trackingRecovery">
+      <div class="identity-steps" aria-label="خطوات الدخول بالهوية">
+        <span class="identity-step" [class.active]="!result()" [class.complete]="!!result()"><b>1</b> إثبات الهوية</span>
+        <span class="identity-step" [class.active]="!!result()"><b>2</b> اختيار الوجهة</span>
+      </div>
       @if (!result()) {
-        <h2>الدخول إلى حسابك</h2>
-        <p class="subtitle">استخدم بريدك الإلكتروني أو رقم هاتفك، ثم اختر مساحة العمل التي تريد إدارتها.</p>
+        @if (trackingRecovery) {
+          <div class="recovery-banner"><i class="pi pi-refresh" aria-hidden="true"></i><div><b>استعادة متابعة الطلب</b><p>انتهت جلسة المتابعة المؤقتة. أثبت هويتك لإصدار جلسة جديدة دون فقدان طلبك.</p></div></div>
+        }
+        <h2>{{ trackingRecovery ? 'أثبت هويتك للمتابعة' : 'الدخول إلى حسابك' }}</h2>
+        <p class="subtitle">استخدم بريدك الإلكتروني أو رقم هاتفك، ثم اختر مساحة العمل أو الطلب الذي تريد متابعته.</p>
         <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
           <label>البريد الإلكتروني أو رقم الهاتف</label>
           <input class="form-input" formControlName="identifier" autocomplete="username" />
@@ -34,6 +41,9 @@ import {
         </form>
         <p class="secondary-link">تريد الدخول إلى جيم محدد؟ <a routerLink="/auth/login">دخول الجيم</a></p>
       } @else {
+        @if (trackingRecovery) {
+          <div class="recovery-banner success"><i class="pi pi-check-circle" aria-hidden="true"></i><div><b>تم التحقق من هويتك</b><p>اختر طلبك من القائمة لإصدار جلسة متابعة جديدة وآمنة.</p></div></div>
+        }
         <h2>اختر وجهتك</h2>
         <p class="subtitle">يمكنك الدخول إلى مساحة نشطة أو متابعة أي طلب قائم دون أن يؤثر أحدهما في الآخر.</p>
 
@@ -51,7 +61,7 @@ import {
         }
 
         @if (result()!.pendingApplications.length) {
-          <h3>طلباتك قيد المتابعة</h3>
+          <h3>{{ trackingRecovery ? 'اختر الطلب الذي تريد متابعته' : 'طلباتك قيد المتابعة' }}</h3>
           <div class="cards">
             @for (application of result()!.pendingApplications; track application.applicationId) {
               <button class="choice-card pending" type="button" (click)="trackApplication(application)" [disabled]="tracking()">
@@ -72,7 +82,7 @@ import {
     </section>
   `,
   styles: [`
-    .identity-page h2 { margin:0 0 .45rem; color:var(--text-primary); font-size:1.75rem; }
+    .identity-steps { align-items:center; display:flex; gap:.6rem; margin:0 0 1.5rem; }.identity-step { align-items:center; color:var(--text-muted); display:flex; font-size:.78rem; font-weight:700; gap:.4rem; }.identity-step:not(:last-child)::after { background:var(--border-color); content:''; height:1px; margin-inline-start:.2rem; width:1.75rem; }.identity-step b { align-items:center; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:50%; display:flex; height:1.45rem; justify-content:center; width:1.45rem; }.identity-step.active { color:var(--primary-700); }.identity-step.active b,.identity-step.complete b { background:var(--primary-600); border-color:var(--primary-600); color:#fff; }.identity-page h2 { margin:0 0 .45rem; color:var(--text-primary); font-size:1.75rem; }
     .subtitle { margin:0 0 1.5rem; color:var(--text-secondary); line-height:1.7; }
     form { display:grid; gap:.55rem; } label { color:var(--text-primary); font-size:.9rem; font-weight:600; margin-top:.35rem; }
     .form-input { width:100%; min-height:46px; padding:.7rem .85rem; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-primary); color:var(--text-primary); }
@@ -81,7 +91,7 @@ import {
     .choice-card { width:100%; display:flex; align-items:center; gap:.8rem; padding:.9rem; text-align:start; border:1px solid var(--border-color); border-radius:10px; background:var(--bg-primary); color:var(--text-primary); cursor:pointer; }
     .choice-card:hover:not(:disabled) { border-color:#3b82f6; background:rgba(59,130,246,.04); }.choice-card:disabled { opacity:.6; cursor:wait; }
     .choice-card > span:nth-child(2) { display:grid; gap:.15rem; flex:1; }.choice-card small { color:var(--text-secondary); }.card-icon { display:grid; place-items:center; width:2.25rem; height:2.25rem; border-radius:50%; color:#2563eb; background:rgba(37,99,235,.1); }.pending .card-icon { color:#b45309; background:#fff7ed; }
-    .secondary-link { margin-top:1.5rem; text-align:center; color:var(--text-secondary); }.secondary-link a,.text-button { color:#2563eb; text-decoration:none; }.text-button { border:0; background:transparent; cursor:pointer; padding:1rem 0 0; font:inherit; }
+    .recovery-banner { align-items:flex-start; background:var(--primary-50); border:1px solid var(--primary-200); border-radius:12px; color:var(--primary-800); display:flex; gap:.7rem; line-height:1.55; margin:0 0 1.25rem; padding:.8rem .9rem; }.recovery-banner.success { background:var(--success-50); border-color:var(--success-100); color:var(--success-600); }.recovery-banner i { font-size:1.1rem; margin-top:.15rem; }.recovery-banner div { display:grid; gap:.15rem; }.recovery-banner p { font-size:.82rem; margin:0; }.secondary-link { margin-top:1.5rem; text-align:center; color:var(--text-secondary); }.secondary-link a,.text-button { color:#2563eb; text-decoration:none; }.text-button { border:0; background:transparent; cursor:pointer; padding:1rem 0 0; font:inherit; }
     .error { margin:.75rem 0 0; color:#b91c1c; font-size:.9rem; }.empty { padding:1rem; border-radius:8px; color:var(--text-secondary); background:var(--bg-secondary); }
   `],
 })
@@ -90,8 +100,10 @@ export class IdentityLoginComponent {
   private readonly onboarding = inject(FreelanceOnboardingService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly WorkspaceType = WorkspaceType;
+  readonly trackingRecovery = this.route.snapshot.queryParamMap.get('continue') === 'application-status';
   readonly form = this.fb.nonNullable.group({
     identifier: ['', Validators.required],
     password: ['', Validators.required],

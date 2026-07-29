@@ -4,7 +4,7 @@
 
 - `WorkspaceType.FreelanceCoach` remains tenant-isolated but has an independent public identity and branding profile.
 - `/identity/login` proves the global identity before issuing a tenant JWT. It returns active workspaces and pending applications together; selecting one workspace exchanges a short-lived selection token for the existing JWT/refresh-token contract.
-- Public requests use opaque, short-lived tracking tokens held in `sessionStorage`. They are not refresh tokens and no normal tenant session is issued before Platform approval.
+- Public requests use opaque, short-lived tracking tokens held in `sessionStorage`. They are not refresh tokens and no normal tenant session is issued before Platform approval. When one is absent or expires, `/identity/application-status` redirects to identity-first recovery, which reissues a new tracking token only after the user selects the pending request.
 - The legacy gym login and client registration routes remain unchanged. New routes are `/auth/register-freelance`, `/identity/login`, and `/identity/application-status`.
 - `/auth/login` now presents the unchanged Gym authentication contract as a guided two-step experience: resolve the Gym workspace first, then verify credentials. The identity route remains a separate path for users with multiple workspaces or pending applications.
 
