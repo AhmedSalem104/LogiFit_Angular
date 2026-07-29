@@ -40,14 +40,14 @@ import { ApplicationRequestStatus, ApplicationTrackingStatus } from '../../../..
           <a routerLink="/auth/register-freelance" class="btn btn-primary">إنشاء طلب جديد</a>
         } @else { <p class="information-request">سنرسل التحديث عند انتقال الطلب إلى المرحلة التالية. يمكنك العودة لاحقًا عبر تسجيل الدخول بالهوية.</p> }
         } @else {
-        <div class="information-request"><p>انتهت جلسة المتابعة أو لم تُفتح من هذا المتصفح.</p><a routerLink="/identity/login">سجّل الدخول بالهوية للمتابعة</a></div>
+        <div class="recovery-card"><span class="recovery-icon"><i class="pi pi-refresh" aria-hidden="true"></i></span><div><h3>استعادة متابعة الطلب</h3><p>جلسة المتابعة مؤقتة لحماية طلبك. سجّل الدخول بالهوية، ثم اختر الطلب لإصدار جلسة متابعة جديدة.</p><ol><li>أثبت هويتك بالبريد أو رقم الهاتف وكلمة المرور.</li><li>اختر الطلب من قائمة طلباتك قيد المتابعة.</li><li>تابع الحالة أو استكمل البيانات المطلوبة.</li></ol><a [routerLink]="['/identity/login']" [queryParams]="{ continue: 'application-status' }" class="btn btn-primary">استمرار إلى الدخول بالهوية</a></div></div>
         }
       }
       @if (error() && !status()) { <p class="error" role="alert">{{ error() }}</p> }
     </section>
   `,
   styles: [`
-    .status-page h2 { margin:0 0 1rem; color:var(--text-primary); font-size:1.7rem; }.status-card,.information-request { padding:1rem; border:1px solid var(--border-color); border-radius:10px; background:var(--bg-primary); }.status-card.needs-info { border-color:#f59e0b; }.status-card h3 { margin:.55rem 0 .25rem; color:var(--text-primary); }.badge { display:inline-block; padding:.25rem .55rem; border-radius:999px; background:rgba(37,99,235,.1); color:#1d4ed8; font-size:.8rem; font-weight:700; }.muted { color:var(--text-secondary); }.information-request { margin-top:1rem; color:var(--text-primary); line-height:1.7; }.information-request p { margin:.25rem 0 0; } form { display:grid; gap:.85rem; margin-top:1rem; } label { display:grid; gap:.35rem; color:var(--text-primary); font-size:.9rem; font-weight:600; }.form-input { width:100%; box-sizing:border-box; min-height:42px; padding:.65rem .75rem; border:1px solid var(--border-color); border-radius:8px; color:var(--text-primary); background:var(--bg-primary); font:inherit; }.btn { display:inline-flex; align-items:center; justify-content:center; min-height:46px; border:0; border-radius:8px; text-decoration:none; }.w-full { width:100%; }.btn:disabled { opacity:.65; }.error { color:#b91c1c; margin:0; }.status-page > .btn { margin-top:1rem; padding:0 1rem; }
+    .status-page h2 { margin:0 0 1rem; color:var(--text-primary); font-size:1.7rem; }.status-card,.information-request { padding:1rem; border:1px solid var(--border-color); border-radius:10px; background:var(--bg-primary); }.status-card.needs-info { border-color:#f59e0b; }.status-card h3 { margin:.55rem 0 .25rem; color:var(--text-primary); }.badge { display:inline-block; padding:.25rem .55rem; border-radius:999px; background:rgba(37,99,235,.1); color:#1d4ed8; font-size:.8rem; font-weight:700; }.muted { color:var(--text-secondary); }.information-request { margin-top:1rem; color:var(--text-primary); line-height:1.7; }.information-request p { margin:.25rem 0 0; } form { display:grid; gap:.85rem; margin-top:1rem; } label { display:grid; gap:.35rem; color:var(--text-primary); font-size:.9rem; font-weight:600; }.form-input { width:100%; box-sizing:border-box; min-height:42px; padding:.65rem .75rem; border:1px solid var(--border-color); border-radius:8px; color:var(--text-primary); background:var(--bg-primary); font:inherit; }.btn { display:inline-flex; align-items:center; justify-content:center; min-height:46px; border:0; border-radius:8px; text-decoration:none; }.w-full { width:100%; }.btn:disabled { opacity:.65; }.error { color:#b91c1c; margin:0; }.status-page > .btn { margin-top:1rem; padding:0 1rem; }.recovery-card { align-items:flex-start; background:var(--primary-50); border:1px solid var(--primary-200); border-radius:14px; color:var(--primary-900); display:flex; gap:1rem; line-height:1.7; padding:1.15rem; }.recovery-icon { align-items:center; background:#fff; border-radius:50%; color:var(--primary-600); display:flex; flex:0 0 auto; height:2.5rem; justify-content:center; width:2.5rem; }.recovery-card h3 { margin:0 0 .2rem; }.recovery-card p { margin:.2rem 0 .55rem; }.recovery-card ol { color:var(--text-secondary); font-size:.88rem; margin:0 0 1rem; padding-inline-start:1.2rem; } @media (max-width:480px) { .recovery-card { gap:.7rem; padding:.9rem; }.recovery-icon { height:2rem; width:2rem; } }
   `],
 })
 export class ApplicationStatusComponent implements OnInit {
@@ -66,11 +66,11 @@ export class ApplicationStatusComponent implements OnInit {
   ngOnInit(): void { this.load(); }
 
   load(): void {
-    if (!this.onboarding.getTrackingToken()) { this.loading.set(false); return; }
+    if (!this.onboarding.getTrackingToken()) { this.redirectToIdentityRecovery(); return; }
     this.loading.set(true); this.error.set('');
     this.onboarding.getTrackingStatus().subscribe({
       next: status => { this.status.set(status); this.patchEditableValues(status); this.loading.set(false); },
-      error: err => { this.error.set(err?.translatedMessage || err?.error?.message || 'تعذر تحميل حالة الطلب.'); this.loading.set(false); },
+      error: err => { if (err?.status === 401) { this.redirectToIdentityRecovery(); return; } this.error.set(err?.translatedMessage || err?.error?.message || 'تعذر تحميل حالة الطلب.'); this.loading.set(false); },
     });
   }
 
@@ -101,5 +101,10 @@ export class ApplicationStatusComponent implements OnInit {
     if (['Specialties', 'Certifications'].includes(field)) return text.split(',').map(item => item.trim()).filter(Boolean);
     if (['SocialLinks', 'BookingSettings'].includes(field)) { try { return text ? JSON.parse(text) : {}; } catch { return text; } }
     return text;
+  }
+
+  private redirectToIdentityRecovery(): void {
+    this.onboarding.clearTrackingToken();
+    void this.router.navigate(['/identity/login'], { queryParams: { continue: 'application-status' }, replaceUrl: true });
   }
 }

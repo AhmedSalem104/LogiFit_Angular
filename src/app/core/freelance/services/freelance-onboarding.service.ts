@@ -36,9 +36,7 @@ export class FreelanceOnboardingService {
   reissueTrackingSessions(workspaceSelectionToken: string): Observable<ApplicationTrackingSession[]> {
     return this.http.post<ApplicationTrackingSession[]>(`${this.identityBase}/application-tracking-sessions`, {
       workspaceSelectionToken,
-    }).pipe(tap(sessions => {
-      if (sessions.length) this.saveTrackingToken(sessions[0].trackingToken);
-    }));
+    });
   }
 
   submitFreelanceWorkspace(data: SubmitFreelanceWorkspaceApplication): Observable<ApplicationTrackingSession> {
