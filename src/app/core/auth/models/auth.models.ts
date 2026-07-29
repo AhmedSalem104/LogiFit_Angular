@@ -156,6 +156,8 @@ export interface UserInfo {
   tenantId: string;
   fullName?: string;
   mustChangePassword?: boolean;
+  /** Present after identity-first workspace selection; absent for legacy sessions. */
+  workspaceType?: number;
 }
 
 // Decoded JWT token

@@ -20,6 +20,12 @@ export const authRoutes: Routes = [
     title: 'تسجيل صالة جديدة - LogicFit'
   },
   {
+    path: 'register-freelance',
+    loadComponent: () =>
+      import('./pages/register-freelance/register-freelance.component').then(m => m.RegisterFreelanceComponent),
+    title: 'Freelance workspace application - LogicFit'
+  },
+  {
     path: 'forgot-password',
     loadComponent: () =>
       import('./pages/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent),

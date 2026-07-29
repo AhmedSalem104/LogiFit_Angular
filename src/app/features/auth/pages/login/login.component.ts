@@ -130,6 +130,12 @@ import { PasswordFieldComponent } from '../../../../shared/components/password-f
           <span>ليس لديك حساب؟</span>
           <a routerLink="/auth/register">إنشاء حساب</a>
         </div>
+        <div class="freelance-link">
+          <a routerLink="/identity/login">لديك أكثر من مساحة عمل أو طلب قيد المراجعة؟ ادخل بالهوية</a>
+        </div>
+        <div class="freelance-link">
+          <a routerLink="/auth/register-freelance">مدرب حر؟ أنشئ مساحة عملك المستقلة</a>
+        </div>
         <div class="gym-link">
           <span>تريد تسجيل صالة جديدة؟</span>
           <a routerLink="/auth/register-gym">سجل صالتك</a>
@@ -178,9 +184,9 @@ import { PasswordFieldComponent } from '../../../../shared/components/password-f
     .w-full { width: 100%; }
     .error-box { display: flex; align-items: center; gap: 0.5rem; padding: 1rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #dc2626; margin-top: 1rem; font-size: 0.9rem; }
     .auth-links { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 0.75rem; text-align: center; }
-    .register-link, .gym-link { color: var(--text-secondary); }
-    .register-link a, .gym-link a { color: #3b82f6; text-decoration: none; font-weight: 500; margin-inline-start: 0.25rem; }
-    .register-link a:hover, .gym-link a:hover { text-decoration: underline; }
+    .register-link, .gym-link, .freelance-link { color: var(--text-secondary); }
+    .register-link a, .gym-link a, .freelance-link a { color: #3b82f6; text-decoration: none; font-weight: 500; margin-inline-start: 0.25rem; }
+    .register-link a:hover, .gym-link a:hover, .freelance-link a:hover { text-decoration: underline; }
   `]
 })
 export class LoginComponent implements OnInit {

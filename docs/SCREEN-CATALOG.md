@@ -93,6 +93,17 @@ sequenceDiagram
 - Unauthorized: تنظيف الجلسة وإعادة الدخول.
 - Responsive: RTL على العربية، LTR للحقول التقنية والروابط والأكواد.
 
+## شاشات الهوية ومساحة المدرب الحر
+
+- `/identity/register`: إنشاء هوية عامة بلا مساحة أو JWT، لاستخدامها في دعوات الفريق.
+- `/owner/freelance-team`: دعوة مدرب/مساعد/عميل عبر طلب يخضع لموافقة Platform Admin وحدود الباقة.
+
+| Route | المستخدم | مصدر البيانات | الحاجز التشغيلي |
+|---|---|---|---|
+| `/auth/register-freelance` | مدرب حر جديد | `POST /api/workspace-applications/freelance` | طلب فقط؛ الاعتماد النهائي للمنصة. |
+| `/identity/login` | أي هوية عامة | `POST /api/identity/login` ثم اختيار مساحة أو إعادة إصدار Tracking Token | لا يصدر JWT قبل اختيار مساحة نشطة. |
+| `/identity/application-status` | مقدم طلب | جلسة Tracking قصيرة العمر | يحرر الحقول المطلوبة فقط؛ لا تظهر بيانات صحية أو تدريبية. |
+
 ## عقود الهوية والصور
 
 - `GET /api/branding/{identifier}`: الهوية العامة قبل تسجيل الدخول.

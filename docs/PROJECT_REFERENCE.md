@@ -1,5 +1,12 @@
 # LogicFit — Project Reference (مرجع المشروع)
 
+## Freelance workspace and identity-first authentication (2026-07-29)
+
+- `WorkspaceType.FreelanceCoach` remains tenant-isolated but has an independent public identity and branding profile.
+- `/identity/login` proves the global identity before issuing a tenant JWT. It returns active workspaces and pending applications together; selecting one workspace exchanges a short-lived selection token for the existing JWT/refresh-token contract.
+- Public requests use opaque, short-lived tracking tokens held in `sessionStorage`. They are not refresh tokens and no normal tenant session is issued before Platform approval.
+- The legacy gym login and client registration routes remain unchanged. New routes are `/auth/register-freelance`, `/identity/login`, and `/identity/application-status`.
+
 > مرجع تقني شامل لمشروع LogicFit. آخر تحديث بناءً على commit `b14aac3` (25 module / 150+ endpoint).
 > **الغرض:** خريطة ذهنية سريعة قبل أي تعديل — الأدوار، المسارات، الخدمات، الـ endpoints، الـ enums، والاصطلاحات.
 
