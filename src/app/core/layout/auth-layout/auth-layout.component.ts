@@ -227,6 +227,6 @@ export class AuthLayoutComponent {
   readonly year = 2026;
 
   isUnifiedEntry(): boolean {
-    return this.router.url.startsWith('/identity/login');
+    return this.router.url.startsWith('/identity/');
   }
 }

@@ -24,6 +24,18 @@ export const routes: Routes = [
         title: 'إنشاء هوية - LogicFit'
       },
       {
+        path: 'verify-email',
+        loadComponent: () =>
+          import('./features/auth/pages/identity-email-verification/identity-email-verification.component').then(m => m.IdentityEmailVerificationComponent),
+        title: 'Email verification - LogicFit'
+      },
+      {
+        path: 'reset-password',
+        loadComponent: () =>
+          import('./features/auth/pages/identity-password-reset/identity-password-reset.component').then(m => m.IdentityPasswordResetComponent),
+        title: 'Password reset - LogicFit'
+      },
+      {
         path: 'application-status',
         loadComponent: () =>
           import('./features/auth/pages/application-status/application-status.component').then(m => m.ApplicationStatusComponent),

@@ -4,10 +4,17 @@
 
 ### Unified entry update (2026-07-30)
 
-- `/` now opens `/identity/login`, the public identity-first entry. Its explicit steps are identifier, password verification, and then one destination view for active workspaces and pending applications.
+- `/` now opens `/identity/login`, the public identity-first entry. Its explicit steps are verified email, password verification, and then one destination view for active workspaces and pending applications.
 - A single active workspace with no pending application is entered directly. Otherwise the user sees a workspace card and/or an application-tracking card; a pending request never hides an active workspace.
 - When no workspace or request exists, the screen presents only Gym, Freelance Workspace, and Join Workspace cards. Join is guidance for an invitation or QR until its backend contract is delivered; it does not invent a role or membership in the browser.
 - `/auth/login` stays as an explicit legacy-gym compatibility route, but is no longer the public default. Raw Tenant GUID input is hidden in Production.
+
+### Email identity contract (Issue #113, pending backend PR #115)
+
+- `/identity/register` collects full name, email, password, and optional contact phone, then displays a check-email state. It does not sign the user in.
+- `/identity/verify-email#token=...` reads the one-use token from the URL fragment and posts it once to `POST /api/identity/verify-email`; the token is not persisted in browser storage.
+- `/identity/reset-password` requests `POST /api/identity/password-reset`; the reset link opens the same route with a fragment token and submits `POST /api/identity/password-reset/confirm`.
+- `/identity/login` calls `POST /api/identity/login { email, password }`. Phone is not an identity login field.
 
 - `WorkspaceType.FreelanceCoach` remains tenant-isolated but has an independent public identity and branding profile.
 - `/identity/login` proves the global identity before issuing a tenant JWT. It returns active workspaces and pending applications together; selecting one workspace exchanges a short-lived selection token for the existing JWT/refresh-token contract.

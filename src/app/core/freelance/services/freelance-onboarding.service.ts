@@ -18,12 +18,24 @@ export class FreelanceOnboardingService {
   private readonly applicationsBase = `${environment.apiUrl}/workspace-applications`;
   private readonly trackingKey = 'logicfit_application_tracking_token';
 
-  identityLogin(identifier: string, password: string): Observable<IdentitySignInResponse> {
-    return this.http.post<IdentitySignInResponse>(`${this.identityBase}/login`, { identifier, password });
+  identityLogin(email: string, password: string): Observable<IdentitySignInResponse> {
+    return this.http.post<IdentitySignInResponse>(`${this.identityBase}/login`, { email, password });
   }
 
-  registerIdentity(email: string, phoneNumber: string | undefined, password: string): Observable<void> {
-    return this.http.post<void>(`${this.identityBase}/register`, { email, phoneNumber, password });
+  registerIdentity(fullName: string, email: string, password: string, phoneNumber?: string): Observable<void> {
+    return this.http.post<void>(`${this.identityBase}/register`, { fullName, email, password, phoneNumber });
+  }
+
+  verifyIdentityEmail(token: string): Observable<void> {
+    return this.http.post<void>(`${this.identityBase}/verify-email`, { token });
+  }
+
+  requestIdentityPasswordReset(email: string): Observable<void> {
+    return this.http.post<void>(`${this.identityBase}/password-reset`, { email });
+  }
+
+  resetIdentityPassword(token: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${this.identityBase}/password-reset/confirm`, { token, newPassword });
   }
 
   selectWorkspace(workspaceSelectionToken: string, workspaceId: string): Observable<WorkspaceAuthResponse> {

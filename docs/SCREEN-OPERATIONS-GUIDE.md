@@ -2,13 +2,14 @@
 
 ## شاشات المدرب الحر والهوية
 
-- `/identity/register`: ينشئ المدعو هوية عامة فقط عبر `POST /api/identity/register` ولا يمنحه JWT أو عضوية أو وصولًا إلى مساحة عمل.
+- `/identity/register`: ينشئ المدعو هوية عامة فقط عبر `POST /api/identity/register`، ثم يعرض حالة انتظار تأكيد البريد؛ لا يمنحه JWT أو عضوية أو وصولًا إلى مساحة عمل.
+- `/identity/verify-email` و`/identity/reset-password`: شاشتا رابط بريد آمن. تقرآن token من URL fragment فقط، لا تخزنانه محليًا ولا تطبعانه في الواجهة أو السجل.
 - `/owner/freelance-team`: متاح فقط لمالك مساحة المدرب الحر الحاصل على `ManageCoaches`. يرسل طلب انضمام لمدرب أو مساعد أو عميل موجود بهوية عامة؛ لا يفعّل العضوية مباشرة ويعرض أخطاء الهوية وحدود الباقة من الخادم.
 
 | الشاشة | الغرض والصلاحية | البيانات والإجراءات | حالات التشغيل |
 |---|---|---|---|
 | `/auth/register-freelance` | زائر غير مسجل | يرسل طلب مساحة مدرب حر فقط. يجمع الاسم والبريد وكلمة المرور ومعرّف المساحة والهوية الاختيارية. | تحقق الحقول، إرسال، خطأ API. لا يمنح صلاحية أو ينشئ جلسة عمل. |
-| `/identity/login` and `/` | Any identity, including an identity with an existing tenant JWT | One identity-first card: identifier, password, then active-workspace and pending-application cards together. A single active workspace without a pending request enters directly. The empty state provides Gym, Freelance Workspace, and Join Workspace cards. | Invalid credentials remain non-enumerating. Workspace selection can expire and requires identity sign-in again. The Join card provides invitation/QR guidance only until its backend flow exists. |
+| `/identity/login` and `/` | Any identity, including an identity with an existing tenant JWT | One identity-first card: verified email, password, then active-workspace and pending-application cards together. A single active workspace without a pending request enters directly. The empty state provides Gym, Freelance Workspace, and Join Workspace cards. | Invalid credentials remain non-enumerating. Workspace selection can expire and requires identity sign-in again. The Join card provides invitation/QR guidance only until its backend flow exists. |
 | `/identity/application-status` | حامل Tracking Token أو هوية أعادت إصداره | يعرض حالة الطلب وطلب الاستكمال. يرسل الحقول المطلوبة فقط ثم يعيد التقديم. | انتهاء الجلسة يوجّه لتسجيل الدخول بالهوية؛ الرفض لا يعدّل القرار بل يبدأ طلبًا جديدًا. |
 
 > **الغرض من هذا المستند:** مرجع تشغيلي للشاشات التي يراها مالك الصالة وفريقه والمدرب والمتدرب. لا يكتفي بسرد الرابط؛ بل يوضح لماذا توجد الشاشة، من يحق له استخدامها، ما الذي تقرأه أو تغيّره، وما النتيجة المتوقعة من كل إجراء.
