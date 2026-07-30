@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, from, switchMap, tap } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
   ApplicationTrackingSession,
@@ -8,6 +8,10 @@ import {
   IdentitySignInResponse,
   SubmitFreelanceWorkspaceApplication,
   WorkspaceAuthResponse,
+  WorkspaceInvitePreview,
+  WorkspaceClientJoinPreview,
+  ClientJoinResult,
+  PasskeyCeremonyOptions,
 } from '../models/freelance.models';
 
 /** Public identity and application calls. No tenant JWT is attached to these endpoints. */
@@ -18,12 +22,51 @@ export class FreelanceOnboardingService {
   private readonly applicationsBase = `${environment.apiUrl}/workspace-applications`;
   private readonly trackingKey = 'logicfit_application_tracking_token';
 
-  identityLogin(identifier: string, password: string): Observable<IdentitySignInResponse> {
-    return this.http.post<IdentitySignInResponse>(`${this.identityBase}/login`, { identifier, password });
+  identityLogin(email: string, password: string): Observable<IdentitySignInResponse> {
+    return this.http.post<IdentitySignInResponse>(`${this.identityBase}/login`, { email, password });
   }
 
-  registerIdentity(email: string, phoneNumber: string | undefined, password: string): Observable<void> {
-    return this.http.post<void>(`${this.identityBase}/register`, { email, phoneNumber, password });
+  registerIdentity(fullName: string, email: string, password: string, phoneNumber?: string): Observable<void> {
+    return this.http.post<void>(`${this.identityBase}/register`, { fullName, email, password, phoneNumber });
+  }
+
+  verifyIdentityEmail(token: string): Observable<void> {
+    return this.http.post<void>(`${this.identityBase}/verify-email`, { token });
+  }
+
+  requestIdentityPasswordReset(email: string): Observable<void> {
+    return this.http.post<void>(`${this.identityBase}/password-reset`, { email });
+  }
+
+  resetIdentityPassword(token: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${this.identityBase}/password-reset/confirm`, { token, newPassword });
+  }
+
+  previewWorkspaceInvite(token: string): Observable<WorkspaceInvitePreview> {
+    return this.http.post<WorkspaceInvitePreview>(`${environment.apiUrl}/workspace-invites/preview`, { token });
+  }
+
+  acceptWorkspaceInvite(token: string, workspaceSelectionToken: string): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/workspace-invites/accept`, { token, workspaceSelectionToken });
+  }
+
+  previewClientJoin(code: string): Observable<WorkspaceClientJoinPreview> {
+    return this.http.post<WorkspaceClientJoinPreview>(`${environment.apiUrl}/workspace/client-join-codes/preview`, { code });
+  }
+
+  joinWorkspaceAsClient(code: string, workspaceSelectionToken: string): Observable<ClientJoinResult> {
+    return this.http.post<ClientJoinResult>(`${environment.apiUrl}/workspace/client-join-codes/join`, { code, workspaceSelectionToken });
+  }
+
+  signInWithPasskey(email: string): Observable<IdentitySignInResponse> {
+    return this.http.post<PasskeyCeremonyOptions>(`${this.identityBase}/passkeys/sign-in/options`, { email }).pipe(
+      switchMap(ceremony => from(this.getPasskeyAssertion(ceremony.options)).pipe(
+        switchMap(credential => this.http.post<IdentitySignInResponse>(`${this.identityBase}/passkeys/sign-in/verify`, {
+          ceremonyId: ceremony.ceremonyId,
+          credential,
+        }))
+      ))
+    );
   }
 
   selectWorkspace(workspaceSelectionToken: string, workspaceId: string): Observable<WorkspaceAuthResponse> {
@@ -79,5 +122,44 @@ export class FreelanceOnboardingService {
 
   private trackingHeaders(token: string | null): HttpHeaders {
     return token ? new HttpHeaders({ 'X-Application-Tracking-Token': token }) : new HttpHeaders();
+  }
+
+  private async getPasskeyAssertion(options: PasskeyCeremonyOptions['options']): Promise<Record<string, unknown>> {
+    if (!window.PublicKeyCredential || !navigator.credentials) throw new Error('Passkey غير متاح في هذا المتصفح.');
+    const publicKey: PublicKeyCredentialRequestOptions = {
+      ...options,
+      challenge: this.base64UrlToBytes(options.challenge),
+      allowCredentials: options.allowCredentials?.map(item => ({
+        ...item,
+        id: this.base64UrlToBytes(item.id),
+      })),
+    };
+    const value = await navigator.credentials.get({ publicKey }) as PublicKeyCredential | null;
+    if (!value) throw new Error('لم يتم إكمال التحقق بـ Passkey.');
+    const response = value.response as AuthenticatorAssertionResponse;
+    return {
+      id: value.id,
+      rawId: this.bytesToBase64Url(value.rawId),
+      type: value.type,
+      response: {
+        authenticatorData: this.bytesToBase64Url(response.authenticatorData),
+        clientDataJSON: this.bytesToBase64Url(response.clientDataJSON),
+        signature: this.bytesToBase64Url(response.signature),
+        userHandle: response.userHandle ? this.bytesToBase64Url(response.userHandle) : null,
+      },
+      clientExtensionResults: value.getClientExtensionResults(),
+    };
+  }
+
+  private base64UrlToBytes(value: string): Uint8Array {
+    const padded = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4);
+    return Uint8Array.from(atob(padded), char => char.charCodeAt(0));
+  }
+
+  private bytesToBase64Url(value: ArrayBuffer): string {
+    const bytes = new Uint8Array(value);
+    let binary = '';
+    bytes.forEach(byte => binary += String.fromCharCode(byte));
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
   }
 }

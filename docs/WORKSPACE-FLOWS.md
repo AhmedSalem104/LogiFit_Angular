@@ -2,6 +2,16 @@
 
 ## مساحة المدرب الحر والهوية المستقلة
 
+### Unified login entry (2026-07-30)
+
+1. The public application root redirects to `/identity/login`, which presents a single RTL card: verified email first, password second, then destination.
+2. `POST /api/identity/login` returns active workspaces and pending applications together. One active workspace with no pending application is selected directly with `POST /api/identity/select-workspace`; all other mixed states remain visible as separate cards.
+3. A user with no workspace sees Gym, Freelance Workspace and Join Workspace cards. Gym and freelance cards use their existing application paths. Join is explicitly invitation/QR guidance until the invite and QR API is implemented, so the frontend never creates a role or membership itself.
+4. `/auth/login` remains an explicit legacy-gym compatibility route, not the public entry.
+5. A new global identity is created at `/identity/register` and remains unavailable until its one-time email link is opened at `/identity/verify-email`. Password recovery uses `/identity/reset-password`; neither flow uses an OTP, stores a raw email-action token, or grants a workspace membership.
+
+### Existing freelance application flow
+
 1. المدرب الحر يفتح `/auth/register-freelance` ويرسل هوية المالك، معرّف المساحة، والهوية البصرية الأساسية. لا يُنشأ JWT ولا مساحة تشغيلية في هذه المرحلة.
 2. ينتقل إلى `/identity/application-status` باستخدام Tracking Token قصير العمر محفوظ في جلسة المتصفح. عند `NeedsMoreInformation` لا يمكنه تعديل سوى الحقول التي طلبتها الإدارة ثم يعيد التقديم.
 3. عند انتهاء جلسة المتابعة يعود إلى `/identity/login`: الاستجابة تعيد المساحات النشطة والطلبات المعلقة معًا. يمكنه دخول مساحة نشطة أو إصدار جلسة متابعة جديدة لطلبه؛ لا يحجب أحدهما الآخر.
