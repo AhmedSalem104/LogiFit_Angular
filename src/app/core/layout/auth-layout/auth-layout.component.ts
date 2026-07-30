@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterOutlet } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 import { ThemeState } from '../../../state/theme.state';
 import { BrandingService } from '../../services/branding.service';
 import { HelpCenterComponent } from '../../help/help-center/help-center.component';
@@ -11,7 +11,7 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
   standalone: true,
   imports: [CommonModule, RouterOutlet, HelpCenterComponent, HelpLocalComponent],
   template: `
-    <div class="auth-layout" [class.unified-entry]="isUnifiedEntry()">
+    <div class="auth-layout">
       <!-- Top actions -->
       <div class="auth-actions">
         <button
@@ -95,24 +95,6 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
     :host { --brand-a: #4f46e5; --brand-b: #3b82f6; --brand-c: #06b6d4; }
 
     .auth-layout { min-height: 100vh; display: flex; position: relative; }
-    .auth-layout.unified-entry {
-      align-items: center; justify-content: center; padding: 2rem;
-      background:
-        radial-gradient(900px 480px at 12% -10%, rgba(59,130,246,.14), transparent 55%),
-        radial-gradient(700px 420px at 100% 100%, rgba(139,92,246,.10), transparent 62%),
-        var(--bg-secondary);
-    }
-    .unified-entry .auth-branding { display: none; }
-    .unified-entry .auth-form-container {
-      width: min(100%, 510px); min-height: 0; padding: 2rem;
-      border: 1px solid var(--border-color); border-radius: 1.5rem;
-      box-shadow: var(--shadow-xl); background: var(--bg-primary);
-    }
-    .unified-entry .auth-form-wrapper { max-width: 100%; }
-    .unified-entry .auth-actions { left: 1.5rem; }
-    :host-context([dir="rtl"]) .unified-entry .auth-actions { left: auto; right: 1.5rem; }
-    .unified-entry .action-btn { border-color: var(--border-color); background: var(--bg-primary); color: var(--text-secondary); box-shadow: var(--shadow-sm); }
-    .unified-entry .action-btn:hover { background: var(--bg-secondary); }
 
     .auth-actions {
       position: fixed; top: 1.5rem; left: 1.5rem;
@@ -213,20 +195,11 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
       .branding-content > p { display: none; }
       .auth-form-container { padding: 1.5rem; }
       .form-footer { display: none; }
-      .auth-layout.unified-entry { display:block; min-height:100dvh; padding:0; }
-      .unified-entry .auth-form-container { width:100%; min-height:100dvh; padding:1.5rem; border:0; border-radius:0; box-shadow:none; justify-content:center; }
-      .unified-entry .auth-actions { top:1rem; left:1rem; }
-      :host-context([dir="rtl"]) .unified-entry .auth-actions { left:auto; right:1rem; }
     }
   `]
 })
 export class AuthLayoutComponent {
   themeState = inject(ThemeState);
   branding = inject(BrandingService);
-  private readonly router = inject(Router);
   readonly year = 2026;
-
-  isUnifiedEntry(): boolean {
-    return this.router.url.startsWith('/identity/');
-  }
 }

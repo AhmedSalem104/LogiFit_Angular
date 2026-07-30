@@ -62,10 +62,6 @@ export interface Coach {
   traineesCount?: number;
   traineeCount?: number;
   activePrograms?: number;
-  staffQrCode?: string | null;
-  staffQrGeneratedAt?: string | null;
-  staffQrRevokedAt?: string | null;
-  hasActiveQr?: boolean;
 }
 
 export interface CoachProfile {
@@ -284,10 +280,10 @@ export interface GymProfile {
   logoUrl?: string;
   coverImageUrl?: string;
   galleryImages?: string[];
-  openingHours?: string;
   facebook?: string;
   instagram?: string;
   website?: string;
+  openingHours?: string;
   brandingSettings?: BrandingSettings;
 }
 
@@ -296,19 +292,18 @@ export interface BrandingSettings {
   backgroundColor?: string | null; surfaceColor?: string | null; sidebarColor?: string | null; headerColor?: string | null;
   appName?: string | null; fontFamily?: string | null; loginBackgroundUrl?: string | null;
   dashboardBannerUrl?: string | null; supportPhone?: string | null; supportEmail?: string | null;
-  facebookUrl?: string | null; instagramUrl?: string | null; websiteUrl?: string | null; openingHours?: string | null;
 }
 
 export interface UpdateGymProfileRequest {
   name?: string;
   description?: string;
   phone?: string;
-  phoneNumber?: string;
   email?: string;
   address?: string;
   facebook?: string;
   instagram?: string;
   website?: string;
+  openingHours?: string;
   appName?: string;
   fontFamily?: string;
   primaryColor?: string;
@@ -322,14 +317,6 @@ export interface UpdateGymProfileRequest {
   dashboardBannerUrl?: string;
   supportPhone?: string;
   supportEmail?: string;
-  facebookUrl?: string;
-  instagramUrl?: string;
-  websiteUrl?: string;
-  openingHours?: string;
-}
-
-export interface OnboardClientRequest extends CreateClientRequest {
-  membership?: { planId: string; startDate: string; paymentMethod?: any; amountPaid?: number; discount?: number; notes?: string; issueCard?: boolean } | null;
 }
 
 // ==================== Enums ====================
@@ -391,10 +378,6 @@ export class OwnerService {
     return this.http.post<string>(`${this.apiUrl}/clients`, data);
   }
 
-  onboardClient(data: OnboardClientRequest): Observable<{ clientId: string; subscriptionId?: string; membershipCardId?: string }> {
-    return this.http.post<{ clientId: string; subscriptionId?: string; membershipCardId?: string }>(`${this.apiUrl}/clients/onboard`, data);
-  }
-
   updateClient(id: string, data: UpdateClientRequest): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/clients/${id}`, data);
   }
@@ -426,12 +409,6 @@ export class OwnerService {
 
   createCoach(data: CreateCoachRequest): Observable<string> {
     return this.http.post<string>(`${this.apiUrl}/coaches`, data);
-  }
-  regenerateCoachQr(id: string): Observable<{ id: string; qrCode: string; staffQrGeneratedAt: string }> {
-    return this.http.post<{ id: string; qrCode: string; staffQrGeneratedAt: string }>(`${this.apiUrl}/coaches/${id}/qr/regenerate`, {});
-  }
-  revokeCoachQr(id: string): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/coaches/${id}/qr/revoke`, {});
   }
 
   updateCoach(id: string, data: UpdateCoachRequest): Observable<void> {
