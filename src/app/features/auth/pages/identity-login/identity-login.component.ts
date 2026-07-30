@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { FreelanceOnboardingService } from '../../../../core/freelance/services/freelance-onboarding.service';
 import {
@@ -11,41 +11,45 @@ import {
   WorkspaceType,
 } from '../../../../core/freelance/models/freelance.models';
 
-/** Identity-first sign-in: it never issues a tenant session until a workspace is selected. */
+/** Email-only global sign-in. A tenant session is issued only after workspace selection. */
 @Component({
   selector: 'app-identity-login',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="identity-page" [class.recovery-mode]="trackingRecovery">
-      <div class="identity-steps" aria-label="خطوات الدخول بالهوية">
-        <span class="identity-step" [class.active]="!result()" [class.complete]="!!result()"><b>1</b> إثبات الهوية</span>
-        <span class="identity-step" [class.active]="!!result()"><b>2</b> اختيار الوجهة</span>
+    <section class="identity-page">
+      <div class="stepper" aria-label="خطوات الدخول">
+        <span class="step active">1</span><span class="line"></span><span class="step" [class.active]="result()">2</span>
       </div>
+
       @if (!result()) {
-        @if (trackingRecovery) {
-          <div class="recovery-banner"><i class="pi pi-refresh" aria-hidden="true"></i><div><b>استعادة متابعة الطلب</b><p>انتهت جلسة المتابعة المؤقتة. أثبت هويتك لإصدار جلسة جديدة دون فقدان طلبك.</p></div></div>
-        }
-        <h2>{{ trackingRecovery ? 'أثبت هويتك للمتابعة' : 'الدخول إلى حسابك' }}</h2>
-        <p class="subtitle">استخدم بريدك الإلكتروني أو رقم هاتفك، ثم اختر مساحة العمل أو الطلب الذي تريد متابعته.</p>
+        <p class="eyebrow">LogicFit Identity</p>
+        <h2>تسجيل الدخول إلى حسابك</h2>
+        <p class="subtitle">استخدم بريدك الإلكتروني المؤكد، ثم اختر مساحة العمل التي تريد إدارتها.</p>
         <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-          <label>البريد الإلكتروني أو رقم الهاتف</label>
-          <input class="form-input" formControlName="identifier" autocomplete="username" />
-          <label>كلمة المرور</label>
-          <input class="form-input" type="password" formControlName="password" autocomplete="current-password" />
+          <label for="identity-email">البريد الإلكتروني</label>
+          <input id="identity-email" class="form-input" type="email" formControlName="email" autocomplete="email" dir="ltr" />
+          @if (form.controls.email.touched && form.controls.email.invalid) { <p class="field-error">أدخل بريدًا إلكترونيًا صحيحًا.</p> }
+          <label for="identity-password">كلمة المرور</label>
+          <input id="identity-password" class="form-input" type="password" formControlName="password" autocomplete="current-password" dir="ltr" />
           @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
           <button class="btn btn-primary w-full" [disabled]="loading() || form.invalid">
             {{ loading() ? 'جارٍ التحقق...' : 'متابعة' }}
           </button>
         </form>
-        <p class="secondary-link">تريد الدخول إلى جيم محدد؟ <button type="button" (click)="goToGymLogin()">دخول الجيم</button></p>
+        <button type="button" class="passkey-button" (click)="signInWithPasskey()" [disabled]="loading() || form.controls.email.invalid">
+          <i class="pi pi-key"></i> المتابعة بـ Passkey
+        </button>
+        <div class="helper-links">
+          <a routerLink="/identity/reset-password">نسيت كلمة المرور؟</a>
+          <a routerLink="/identity/register">إنشاء هوية جديدة</a>
+        </div>
+        <p class="secondary-link">تريد الدخول إلى جيم محدد؟ <a routerLink="/auth/login">دخول الجيم</a></p>
       } @else {
-        @if (trackingRecovery) {
-          <div class="recovery-banner success"><i class="pi pi-check-circle" aria-hidden="true"></i><div><b>تم التحقق من هويتك</b><p>اختر طلبك من القائمة لإصدار جلسة متابعة جديدة وآمنة.</p></div></div>
-        }
+        <p class="eyebrow">الخطوة 2 من 2</p>
         <h2>اختر وجهتك</h2>
-        <p class="subtitle">يمكنك الدخول إلى مساحة نشطة أو متابعة أي طلب قائم دون أن يؤثر أحدهما في الآخر.</p>
+        <p class="subtitle">يمكنك دخول مساحة نشطة أو متابعة طلب قائم دون أن يحجب أحدهما الآخر.</p>
 
         @if (result()!.activeWorkspaces.length) {
           <h3>مساحات العمل النشطة</h3>
@@ -61,7 +65,7 @@ import {
         }
 
         @if (result()!.pendingApplications.length) {
-          <h3>{{ trackingRecovery ? 'اختر الطلب الذي تريد متابعته' : 'طلباتك قيد المتابعة' }}</h3>
+          <h3>طلباتك قيد المتابعة</h3>
           <div class="cards">
             @for (application of result()!.pendingApplications; track application.applicationId) {
               <button class="choice-card pending" type="button" (click)="trackApplication(application)" [disabled]="tracking()">
@@ -74,7 +78,14 @@ import {
         }
 
         @if (!result()!.activeWorkspaces.length && !result()!.pendingApplications.length) {
-          <p class="empty">لا توجد مساحة عمل نشطة أو طلبات قائمة لهذه الهوية.</p>
+          <div class="empty">
+            <b>لا توجد مساحة عمل أو طلب قائم لهذا البريد.</b>
+            <div class="start-cards">
+              <a routerLink="/auth/register-gym"><i class="pi pi-building"></i> إنشاء جيم</a>
+              <a routerLink="/auth/register-freelance"><i class="pi pi-user-plus"></i> مساحة مدرب حر</a>
+              <a routerLink="/identity/register"><i class="pi pi-users"></i> الانضمام بدعوة</a>
+            </div>
+          </div>
         }
         @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
         <button type="button" class="text-button" (click)="reset()">استخدام حساب آخر</button>
@@ -82,17 +93,7 @@ import {
     </section>
   `,
   styles: [`
-    .identity-steps { align-items:center; display:flex; gap:.6rem; margin:0 0 1.5rem; }.identity-step { align-items:center; color:var(--text-muted); display:flex; font-size:.78rem; font-weight:700; gap:.4rem; }.identity-step:not(:last-child)::after { background:var(--border-color); content:''; height:1px; margin-inline-start:.2rem; width:1.75rem; }.identity-step b { align-items:center; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:50%; display:flex; height:1.45rem; justify-content:center; width:1.45rem; }.identity-step.active { color:var(--primary-700); }.identity-step.active b,.identity-step.complete b { background:var(--primary-600); border-color:var(--primary-600); color:#fff; }.identity-page h2 { margin:0 0 .45rem; color:var(--text-primary); font-size:1.75rem; }
-    .subtitle { margin:0 0 1.5rem; color:var(--text-secondary); line-height:1.7; }
-    form { display:grid; gap:.55rem; } label { color:var(--text-primary); font-size:.9rem; font-weight:600; margin-top:.35rem; }
-    .form-input { width:100%; min-height:46px; padding:.7rem .85rem; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-primary); color:var(--text-primary); }
-    .btn { min-height:48px; margin-top:1rem; } .w-full { width:100%; } .btn:disabled { opacity:.65; cursor:not-allowed; }
-    h3 { margin:1.5rem 0 .65rem; color:var(--text-primary); font-size:1rem; }.cards { display:grid; gap:.65rem; }
-    .choice-card { width:100%; display:flex; align-items:center; gap:.8rem; padding:.9rem; text-align:start; border:1px solid var(--border-color); border-radius:10px; background:var(--bg-primary); color:var(--text-primary); cursor:pointer; }
-    .choice-card:hover:not(:disabled) { border-color:#3b82f6; background:rgba(59,130,246,.04); }.choice-card:disabled { opacity:.6; cursor:wait; }
-    .choice-card > span:nth-child(2) { display:grid; gap:.15rem; flex:1; }.choice-card small { color:var(--text-secondary); }.card-icon { display:grid; place-items:center; width:2.25rem; height:2.25rem; border-radius:50%; color:#2563eb; background:rgba(37,99,235,.1); }.pending .card-icon { color:#b45309; background:#fff7ed; }
-    .recovery-banner { align-items:flex-start; background:var(--primary-50); border:1px solid var(--primary-200); border-radius:12px; color:var(--primary-800); display:flex; gap:.7rem; line-height:1.55; margin:0 0 1.25rem; padding:.8rem .9rem; }.recovery-banner.success { background:var(--success-50); border-color:var(--success-100); color:var(--success-600); }.recovery-banner i { font-size:1.1rem; margin-top:.15rem; }.recovery-banner div { display:grid; gap:.15rem; }.recovery-banner p { font-size:.82rem; margin:0; }.secondary-link { margin-top:1.5rem; text-align:center; color:var(--text-secondary); }.secondary-link button,.text-button { color:#2563eb; text-decoration:none; }.secondary-link button { background:transparent; border:0; cursor:pointer; font:inherit; font-weight:700; padding:0; }.text-button { border:0; background:transparent; cursor:pointer; padding:1rem 0 0; font:inherit; }
-    .error { margin:.75rem 0 0; color:#b91c1c; font-size:.9rem; }.empty { padding:1rem; border-radius:8px; color:var(--text-secondary); background:var(--bg-secondary); }
+    .identity-page { width:100%; }.stepper { display:flex; align-items:center; justify-content:center; gap:.45rem; margin:0 0 1.25rem; }.step { display:grid; place-items:center; width:1.75rem; height:1.75rem; border-radius:50%; background:var(--bg-secondary); color:var(--text-muted); font-size:.8rem; font-weight:800; }.step.active { background:#2563eb; color:#fff; }.line { width:3.5rem; height:2px; background:var(--border-color); }.eyebrow { margin:0 0 .35rem; color:#2563eb; font-weight:800; font-size:.75rem; letter-spacing:.08em; text-transform:uppercase; }.identity-page h2 { margin:0 0 .45rem; color:var(--text-primary); font-size:1.75rem; }.subtitle { margin:0 0 1.5rem; color:var(--text-secondary); line-height:1.7; } form { display:grid; gap:.55rem; } label { color:var(--text-primary); font-size:.9rem; font-weight:700; margin-top:.35rem; }.form-input { width:100%; box-sizing:border-box; min-height:46px; padding:.7rem .85rem; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-primary); color:var(--text-primary); }.field-error,.error { margin:.1rem 0 0; color:#b91c1c; font-size:.85rem; }.btn { min-height:48px; margin-top:1rem; }.w-full { width:100%; }.btn:disabled { opacity:.65; cursor:not-allowed; }.passkey-button{width:100%;margin-top:.65rem;min-height:42px;border:1px solid #93c5fd;border-radius:8px;background:transparent;color:#2563eb;font:inherit;font-weight:700;cursor:pointer}.passkey-button:disabled{opacity:.55;cursor:not-allowed}.helper-links { display:flex; justify-content:space-between; gap:1rem; margin-top:1rem; font-size:.88rem; }.helper-links a,.secondary-link a,.text-button { color:#2563eb; text-decoration:none; }.secondary-link { margin-top:1.5rem; text-align:center; color:var(--text-secondary); } h3 { margin:1.5rem 0 .65rem; color:var(--text-primary); font-size:1rem; }.cards { display:grid; gap:.65rem; }.choice-card { width:100%; display:flex; align-items:center; gap:.8rem; padding:.9rem; text-align:start; border:1px solid var(--border-color); border-radius:10px; background:var(--bg-primary); color:var(--text-primary); cursor:pointer; }.choice-card:hover:not(:disabled) { border-color:#3b82f6; background:rgba(59,130,246,.04); }.choice-card:disabled { opacity:.6; cursor:wait; }.choice-card > span:nth-child(2) { display:grid; gap:.15rem; flex:1; }.choice-card small { color:var(--text-secondary); }.card-icon { display:grid; place-items:center; width:2.25rem; height:2.25rem; border-radius:50%; color:#2563eb; background:rgba(37,99,235,.1); }.pending .card-icon { color:#b45309; background:#fff7ed; }.text-button { border:0; background:transparent; cursor:pointer; padding:1rem 0 0; font:inherit; }.empty { padding:1rem; border-radius:10px; color:var(--text-secondary); background:var(--bg-secondary); line-height:1.7; }.start-cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.5rem; margin-top:.85rem; }.start-cards a { display:grid; gap:.35rem; align-content:center; min-height:74px; padding:.7rem; border:1px solid var(--border-color); border-radius:.65rem; color:var(--text-primary); background:var(--bg-primary); text-decoration:none; font-size:.82rem; }.start-cards i { color:#2563eb; }.start-cards a:hover { border-color:#3b82f6; } @media (max-width:480px) { .helper-links { flex-direction:column; gap:.55rem; }.start-cards { grid-template-columns:1fr; } }
   `],
 })
 export class IdentityLoginComponent {
@@ -100,12 +101,10 @@ export class IdentityLoginComponent {
   private readonly onboarding = inject(FreelanceOnboardingService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
 
   readonly WorkspaceType = WorkspaceType;
-  readonly trackingRecovery = this.route.snapshot.queryParamMap.get('continue') === 'application-status';
   readonly form = this.fb.nonNullable.group({
-    identifier: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required],
   });
   readonly result = signal<IdentitySignInResponse | null>(null);
@@ -117,10 +116,29 @@ export class IdentityLoginComponent {
   submit(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.loading.set(true); this.error.set('');
-    const { identifier, password } = this.form.getRawValue();
-    this.onboarding.identityLogin(identifier, password).subscribe({
-      next: result => { this.result.set(result); this.loading.set(false); },
-      error: err => { this.error.set(err?.translatedMessage || err?.error?.message || 'تعذر التحقق من الهوية.'); this.loading.set(false); },
+    const { email, password } = this.form.getRawValue();
+    this.onboarding.identityLogin(email, password).subscribe({
+      next: result => {
+        this.result.set(result);
+        this.loading.set(false);
+        if (!result.requiresWorkspaceSelection && result.activeWorkspaces.length === 1 && result.pendingApplications.length === 0) {
+          this.selectWorkspace(result.activeWorkspaces[0]);
+        }
+      },
+      error: err => { this.error.set(err?.translatedMessage || err?.error?.message || 'تعذر التحقق من بيانات الدخول.'); this.loading.set(false); },
+    });
+  }
+
+  signInWithPasskey(): void {
+    const email = this.form.controls.email.value;
+    if (this.form.controls.email.invalid) { this.form.controls.email.markAsTouched(); return; }
+    this.loading.set(true); this.error.set('');
+    this.onboarding.signInWithPasskey(email).subscribe({
+      next: result => {
+        this.result.set(result); this.loading.set(false);
+        if (!result.requiresWorkspaceSelection && result.activeWorkspaces.length === 1 && result.pendingApplications.length === 0) this.selectWorkspace(result.activeWorkspaces[0]);
+      },
+      error: err => { this.error.set(err?.translatedMessage || err?.error?.message || 'تعذر التحقق بـ Passkey.'); this.loading.set(false); },
     });
   }
 
@@ -153,7 +171,6 @@ export class IdentityLoginComponent {
   }
 
   reset(): void { this.result.set(null); this.error.set(''); this.form.reset(); }
-  goToGymLogin(): void { void this.router.navigate(['/auth/login']); }
   workspaceLabel(workspace: IdentityWorkspace): string { return workspace.workspaceType === WorkspaceType.FreelanceCoach ? 'مساحة مدرب حر' : 'مساحة جيم'; }
   applicationLabel(application: PendingApplication): string { return application.applicationType === 2 ? 'طلب إنشاء مساحة مدرب حر' : 'طلب انضمام'; }
   applicationStatus(status: number): string { return ({ 2: 'مُقدّم', 3: 'قيد المراجعة', 4: 'مطلوب استكمال بيانات', 5: 'مقبول', 6: 'مرفوض', 7: 'ملغى', 8: 'منتهي' } as Record<number, string>)[status] || 'مسودة'; }

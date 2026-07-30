@@ -2,9 +2,19 @@
 
 ## مساحة المدرب الحر والهوية المستقلة
 
+### Unified login entry (2026-07-30)
+
+1. The public application root redirects to `/identity/login`, which presents a single RTL card: verified email first, password second, then destination.
+2. `POST /api/identity/login` returns active workspaces and pending applications together. One active workspace with no pending application is selected directly with `POST /api/identity/select-workspace`; all other mixed states remain visible as separate cards.
+3. A user with no workspace sees Gym, Freelance Workspace and Join Workspace cards. Gym and freelance cards use their existing application paths. Join is explicitly invitation/QR guidance until the invite and QR API is implemented, so the frontend never creates a role or membership itself.
+4. `/auth/login` remains an explicit legacy-gym compatibility route, not the public entry.
+5. A new global identity is created at `/identity/register` and remains unavailable until its one-time email link is opened at `/identity/verify-email`. Password recovery uses `/identity/reset-password`; neither flow uses an OTP, stores a raw email-action token, or grants a workspace membership.
+
+### Existing freelance application flow
+
 1. المدرب الحر يفتح `/auth/register-freelance` ويرسل هوية المالك، معرّف المساحة، والهوية البصرية الأساسية. لا يُنشأ JWT ولا مساحة تشغيلية في هذه المرحلة.
 2. ينتقل إلى `/identity/application-status` باستخدام Tracking Token قصير العمر محفوظ في جلسة المتصفح. عند `NeedsMoreInformation` لا يمكنه تعديل سوى الحقول التي طلبتها الإدارة ثم يعيد التقديم.
-3. عند غياب جلسة المتابعة أو انتهائها يوجّه `/identity/application-status` تلقائيًا إلى `/identity/login?continue=application-status`. بعد إثبات الهوية تعرض الشاشة المساحات النشطة والطلبات المعلقة معًا مع تنبيه استرداد واضح؛ اختيار الطلب فقط يعيد إصدار جلسة متابعة قصيرة العمر، ولا يحجب ذلك الدخول إلى مساحة نشطة.
+3. عند انتهاء جلسة المتابعة يعود إلى `/identity/login`: الاستجابة تعيد المساحات النشطة والطلبات المعلقة معًا. يمكنه دخول مساحة نشطة أو إصدار جلسة متابعة جديدة لطلبه؛ لا يحجب أحدهما الآخر.
 4. بعد اعتماد المنصة يختار المدرب المساحة من `/identity/login`، ويستلم عندها فقط عقد JWT/Refresh Token الحالي ويصل إلى لوحة المالك. دخول الجيم التقليدي ومساره القديم لا يتغيران.
 5. المدرب أو المساعد المدعو ينشئ هوية عامة من `/identity/register` بالبريد الذي سيستخدمه مالك مساحة المدرب الحر. يرسل المالك طلب انضمام من `/owner/freelance-team`، ولا يصبح العضو نشطًا قبل موافقة Platform Admin وفحص حد الباقة مرة أخرى.
 
@@ -32,13 +42,6 @@ flowchart LR
   `TenantId` أو role قادمين من المتصفح.
 
 ## تدفق الدخول
-
-### تجربة تسجيل الدخول الموجهة
-
-- تبدأ `/auth/login` باختيار نوع المتابعة من بطاقات تفاعلية صغيرة ذات أيقونة ووصف. لا تستخدم البطاقات روابط نصية: كل اختيار ينفذ انتقالًا صريحًا إلى دخول الجيم أو الهوية أو تسجيل المدرب الحر أو تسجيل الجيم أو حساب العميل.
-- بعد اختيار «الدخول إلى جيم» تستمر رحلة الجيم البصرية من خطوتين: تحديد مساحة الصالة من النطاق/المعرّف ثم إدخال رقم الهاتف وكلمة المرور.
-- لا تتغير طلبات `AuthService` أو حفظ الجلسة أو انتقال الدور بعد النجاح؛ التغيير تنظيمي ومرئي فقط.
-- يبقى الدخول بالهوية منفصلاً في `/identity/login` للمستخدم ذي المساحات المتعددة أو الطلبات المعلقة، ولا يخلط هويته العامة مع جلسة صالة تقليدية؛ العودة إلى الجيم أو استعادة الطلب تستخدم أزرار إجراءات واضحة.
 
 1. يبدأ المستخدم من `/auth/login` أو `/auth/register`.
 2. يرسل `AuthService` الطلب إلى Tenant API ويخزّن access/refresh token بأسماء

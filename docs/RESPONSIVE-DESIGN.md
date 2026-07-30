@@ -2,6 +2,14 @@
 
 ## نظام التصميم
 
+## Unified login card (2026-07-30)
+
+- `/identity/login` uses one centered card on desktop over a quiet neutral background; gym branding is applied only after a server-issued workspace session.
+- At `480px` and below the card becomes full screen without a border or shadow. Language and theme controls remain available.
+- The step indicator shortens at narrow widths and the three start-action cards change from three columns to one. No horizontal scrolling is introduced.
+- The experience must be reviewed in RTL/LTR and Light/Dark modes before release. Visible cards are navigation only; authorization, role assignment, and membership creation remain backend decisions.
+- Email verification and password-reset views use the same card and the same mobile full-screen behavior. The email-action token stays in the URL fragment and is never rendered, copied to localStorage, or shown in an error message.
+
 - Angular 18 standalone components، Tailwind CSS 3.4، PrimeNG 17، PrimeIcons.
 - الخط الافتراضي: `Cairo` ثم `Tajawal`، مع دعم RTL/LTR من `ThemeState`.
 - الألوان والمقاسات المشتركة موجودة في `src/styles.scss` عبر CSS variables؛ لا

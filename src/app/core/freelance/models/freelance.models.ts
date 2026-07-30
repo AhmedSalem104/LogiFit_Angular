@@ -84,3 +84,42 @@ export interface SubmitFreelanceWorkspaceApplication {
 }
 
 export type WorkspaceAuthResponse = AuthResponse;
+
+export interface WorkspaceInvitePreview {
+  inviteId: string;
+  workspaceId: string;
+  workspaceName: string;
+  workspaceIdentifier: string | null;
+  logoUrl: string | null;
+  role: string | number;
+  emailMasked: string;
+  expiresAt: string;
+}
+
+export interface WorkspaceClientJoinPreview {
+  workspaceId: string;
+  workspaceName: string;
+  workspaceIdentifier: string | null;
+  logoUrl: string | null;
+  expiresAt: string;
+  requiresWorkspaceApproval: boolean;
+}
+
+export interface ClientJoinResult {
+  workspaceId: string;
+  membershipStatus: number;
+}
+
+export interface PasskeyCeremonyOptions {
+  ceremonyId: string;
+  options: PublicKeyCredentialRequestOptionsJSON;
+}
+
+interface PublicKeyCredentialRequestOptionsJSON {
+  challenge: string;
+  timeout?: number;
+  rpId?: string;
+  allowCredentials?: Array<{ id: string; type: PublicKeyCredentialType; transports?: AuthenticatorTransport[] }>;
+  userVerification?: UserVerificationRequirement;
+  extensions?: AuthenticationExtensionsClientInputs;
+}

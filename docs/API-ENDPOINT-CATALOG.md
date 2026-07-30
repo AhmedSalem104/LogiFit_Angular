@@ -2,7 +2,7 @@
 
 > **Source of truth:** this document is generated from the API controllers by `Scripts/Export-ApiEndpointCatalog.ps1`. Do not edit endpoint rows manually; change the controller, rerun the script, and include the refreshed catalog in the same Pull Request.
 
-Generated: `2026-07-29 11:28 UTC`  |  Total endpoints: **349**
+Generated: `2026-07-30 12:31 UTC`  |  Total endpoints: **358**
 
 ## Contract rules
 
@@ -400,6 +400,44 @@ Generated: `2026-07-29 11:28 UTC`  |  Total endpoints: **349**
 - **Access:** JWT + Policy: `Permissions.ManageTenants`
 - **Inputs:** Handler signature: `Guid id`
 - **Declared response:** typeof(PlatformTenantDto), StatusCodes.Status200OK
+
+### PlatformWorkspaceApplications
+
+#### `GET /api/platform/workspace-applications` - `List`
+
+- **Access:** JWT + Policy: `Permissions.ManageTenants`
+- **Inputs:** Query `applicationType`: `ApplicationType?`<br>Query `status`: `ApplicationRequestStatus?`<br>Query `page`: `int`<br>Query `pageSize`: `int`<br>Handler signature: `[FromQuery] ApplicationType? applicationType, [FromQuery] ApplicationRequestStatus? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 20`
+- **Declared response:** typeof(PagedResult<PlatformApplicationDto>), StatusCodes.Status200OK
+
+#### `POST /api/platform/workspace-applications/{id:guid}/approve-freelance` - `ApproveFreelance`
+
+- **Access:** JWT + Policy: `Permissions.ManageTenants`
+- **Inputs:** Body `request`: `ConcurrencyRequest`<br>Handler signature: `Guid id, [FromBody] ConcurrencyRequest request`
+- **Declared response:** Task<ActionResult<PlatformApplicationDto>>
+
+#### `POST /api/platform/workspace-applications/{id:guid}/approve-membership` - `ApproveMembership`
+
+- **Access:** JWT + Policy: `Permissions.ManageTenants`
+- **Inputs:** Body `request`: `ConcurrencyRequest`<br>Handler signature: `Guid id, [FromBody] ConcurrencyRequest request`
+- **Declared response:** Task<ActionResult<PlatformApplicationDto>>
+
+#### `POST /api/platform/workspace-applications/{id:guid}/reject` - `Reject`
+
+- **Access:** JWT + Policy: `Permissions.ManageTenants`
+- **Inputs:** Body `request`: `RejectRequest`<br>Handler signature: `Guid id, [FromBody] RejectRequest request`
+- **Declared response:** Task<ActionResult<PlatformApplicationDto>>
+
+#### `POST /api/platform/workspace-applications/{id:guid}/request-information` - `RequestInformation`
+
+- **Access:** JWT + Policy: `Permissions.ManageTenants`
+- **Inputs:** Body `request`: `RequestInformationRequest`<br>Handler signature: `Guid id, [FromBody] RequestInformationRequest request`
+- **Declared response:** Task<ActionResult<PlatformApplicationDto>>
+
+#### `POST /api/platform/workspace-applications/{id:guid}/start-review` - `StartReview`
+
+- **Access:** JWT + Policy: `Permissions.ManageTenants`
+- **Inputs:** Body `request`: `ConcurrencyRequest`<br>Handler signature: `Guid id, [FromBody] ConcurrencyRequest request`
+- **Declared response:** Task<ActionResult<PlatformApplicationDto>>
 
 ## Tenant API
 
@@ -1294,20 +1332,38 @@ Generated: `2026-07-29 11:28 UTC`  |  Total endpoints: **349**
 #### `POST /api/identity/login` - `Login`
 
 - **Access:** Server default (not declared explicitly)
-- **Inputs:** Body `command`: `IdentitySignInCommand` { `Identifier`: string; `Password`: string }<br>Handler signature: `[FromBody] IdentitySignInCommand command`
+- **Inputs:** Body `command`: `IdentitySignInCommand` { `Email`: string; `Password`: string }<br>Handler signature: `[FromBody] IdentitySignInCommand command`
 - **Declared response:** typeof(IdentitySignInDto), StatusCodes.Status200OK
+
+#### `POST /api/identity/password-reset` - `RequestPasswordReset`
+
+- **Access:** Server default (not declared explicitly)
+- **Inputs:** Body `command`: `RequestIdentityPasswordResetCommand` { `Email`: string }<br>Handler signature: `[FromBody] RequestIdentityPasswordResetCommand command`
+- **Declared response:** StatusCodes.Status202Accepted
+
+#### `POST /api/identity/password-reset/confirm` - `ResetPassword`
+
+- **Access:** Server default (not declared explicitly)
+- **Inputs:** Body `command`: `ResetIdentityPasswordCommand` { `Token`: string; `NewPassword`: string }<br>Handler signature: `[FromBody] ResetIdentityPasswordCommand command`
+- **Declared response:** StatusCodes.Status204NoContent
 
 #### `POST /api/identity/register` - `Register`
 
 - **Access:** Server default (not declared explicitly)
-- **Inputs:** Body `command`: `RegisterIdentityCommand` { `Email`: string; `PhoneNumber`: string?; `Password`: string }<br>Handler signature: `[FromBody] RegisterIdentityCommand command`
-- **Declared response:** StatusCodes.Status204NoContent
+- **Inputs:** Body `command`: `RegisterIdentityCommand` { `FullName`: string; `Email`: string; `Password`: string; `PhoneNumber`: string? }<br>Handler signature: `[FromBody] RegisterIdentityCommand command`
+- **Declared response:** StatusCodes.Status202Accepted
 
 #### `POST /api/identity/select-workspace` - `SelectWorkspace`
 
 - **Access:** Server default (not declared explicitly)
 - **Inputs:** Body `command`: `SelectIdentityWorkspaceCommand` { `WorkspaceSelectionToken`: string; `WorkspaceId`: Guid }<br>Handler signature: `[FromBody] SelectIdentityWorkspaceCommand command`
 - **Declared response:** typeof(AuthResponseDto), StatusCodes.Status200OK
+
+#### `POST /api/identity/verify-email` - `VerifyEmail`
+
+- **Access:** Server default (not declared explicitly)
+- **Inputs:** Body `command`: `VerifyIdentityEmailCommand` { `Token`: string }<br>Handler signature: `[FromBody] VerifyIdentityEmailCommand command`
+- **Declared response:** StatusCodes.Status204NoContent
 
 ### Invoices
 
