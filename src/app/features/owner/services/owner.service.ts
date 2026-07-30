@@ -38,6 +38,10 @@ export interface CreateClientRequest {
   birthDate?: string;
 }
 
+export interface OnboardClientRequest extends CreateClientRequest {
+  membership?: { planId: string; startDate: string; issueCard: boolean } | null;
+}
+
 export interface UpdateClientRequest {
   email?: string;
   phoneNumber?: string;
@@ -376,6 +380,10 @@ export class OwnerService {
 
   createClient(data: CreateClientRequest): Observable<string> {
     return this.http.post<string>(`${this.apiUrl}/clients`, data);
+  }
+
+  onboardClient(data: OnboardClientRequest): Observable<unknown> {
+    return this.http.post<unknown>(`${this.apiUrl}/clients/onboard`, data);
   }
 
   updateClient(id: string, data: UpdateClientRequest): Observable<void> {
