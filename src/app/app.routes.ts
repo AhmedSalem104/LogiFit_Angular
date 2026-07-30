@@ -40,6 +40,20 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/auth/pages/application-status/application-status.component').then(m => m.ApplicationStatusComponent),
         title: 'متابعة الطلب - LogicFit'
+      },
+      {
+        path: 'accept-invite',
+        loadComponent: () =>
+          import('./features/auth/pages/identity-join/identity-join.component').then(m => m.IdentityJoinComponent),
+        data: { mode: 'invite' },
+        title: 'قبول دعوة - LogicFit'
+      },
+      {
+        path: 'join-client',
+        loadComponent: () =>
+          import('./features/auth/pages/identity-join/identity-join.component').then(m => m.IdentityJoinComponent),
+        data: { mode: 'client' },
+        title: 'انضمام عميل - LogicFit'
       }
     ]
   },
