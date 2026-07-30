@@ -7,6 +7,7 @@ import { NotificationService } from '../../../../core/services/notification.serv
 import { BrandingService } from '../../../../core/services/branding.service';
 import { TenantStatusService } from '../../../../core/tenant/tenant-status.service';
 import { PasswordFieldComponent } from '../../../../shared/components/password-field/password-field.component';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -14,8 +15,9 @@ import { PasswordFieldComponent } from '../../../../shared/components/password-f
   imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, PasswordFieldComponent],
   template: `
     <div class="login-page">
-      <h2>مرحباً بعودتك</h2>
-      <p class="subtitle">سجل دخولك للوصول إلى لوحة التحكم</p>
+      <h2>دخول جيم محدد</h2>
+      <p class="subtitle">مسار توافق مؤقت للحسابات القديمة المرتبطة بجيم واحد.</p>
+      <p class="identity-entry"><a routerLink="/identity/login"><i class="pi pi-arrow-right"></i> الدخول الموحد بالهوية</a></p>
 
       <!-- STEP 1: resolve the gym (only when not on a branded subdomain) -->
       @if (!tenantResolved()) {
@@ -45,9 +47,11 @@ import { PasswordFieldComponent } from '../../../../shared/components/password-f
               <span *ngIf="!resolving()">متابعة</span>
             </button>
           </form>
-          <button type="button" class="link-btn" (click)="manualMode.set(true)">
-            <i class="pi pi-wrench"></i> إدخال معرّف الصالة (GUID) — وضع الاختبار
-          </button>
+          @if (allowManualTenantId) {
+            <button type="button" class="link-btn" (click)="manualMode.set(true)">
+              <i class="pi pi-wrench"></i> إدخال معرّف الصالة (GUID) — وضع الاختبار
+            </button>
+          }
         } @else {
           <!-- Testing mode: enter the TenantId GUID directly (bypasses branding) -->
           <form (ngSubmit)="useManualTenant()">
@@ -148,6 +152,7 @@ import { PasswordFieldComponent } from '../../../../shared/components/password-f
       h2 { font-size: 1.75rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem; }
       .subtitle { color: var(--text-secondary); margin-bottom: 2rem; }
     }
+    .identity-entry { margin:0 0 1.5rem; }.identity-entry a { display:inline-flex; align-items:center; gap:.4rem; color:#2563eb; text-decoration:none; font-size:.9rem; font-weight:600; }.identity-entry a:hover { text-decoration:underline; }
     .form-group { margin-bottom: 1.25rem; }
     .gym-banner {
       display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1rem;
@@ -196,6 +201,7 @@ export class LoginComponent implements OnInit {
   private notification = inject(NotificationService);
   private branding = inject(BrandingService);
   private tenantStatus = inject(TenantStatusService);
+  readonly allowManualTenantId = !environment.production;
 
   loginForm: FormGroup;
   loading = false;

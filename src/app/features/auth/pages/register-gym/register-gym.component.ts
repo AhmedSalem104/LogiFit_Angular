@@ -14,9 +14,9 @@ import { environment } from '../../../../../environments/environment';
   imports: [CommonModule, RouterModule],
   template: `
     <div class="register-gym-page">
-      <a routerLink="/auth/login" class="back-link">
+      <a routerLink="/identity/login" class="back-link">
         <i class="pi pi-arrow-right"></i>
-        <span>العودة لتسجيل الدخول</span>
+        <span>العودة إلى الدخول الموحد</span>
       </a>
 
       <div class="hero">
@@ -46,7 +46,7 @@ import { environment } from '../../../../../environments/environment';
 
       <div class="login-link">
         <span>صالتك مُفعّلة بالفعل؟</span>
-        <a routerLink="/auth/login">تسجيل الدخول</a>
+        <a routerLink="/identity/login">الدخول الموحد</a>
       </div>
     </div>
   `,

@@ -2,6 +2,13 @@
 
 ## Freelance workspace and identity-first authentication (2026-07-29)
 
+### Unified entry update (2026-07-30)
+
+- `/` now opens `/identity/login`, the public identity-first entry. Its explicit steps are identifier, password verification, and then one destination view for active workspaces and pending applications.
+- A single active workspace with no pending application is entered directly. Otherwise the user sees a workspace card and/or an application-tracking card; a pending request never hides an active workspace.
+- When no workspace or request exists, the screen presents only Gym, Freelance Workspace, and Join Workspace cards. Join is guidance for an invitation or QR until its backend contract is delivered; it does not invent a role or membership in the browser.
+- `/auth/login` stays as an explicit legacy-gym compatibility route, but is no longer the public default. Raw Tenant GUID input is hidden in Production.
+
 - `WorkspaceType.FreelanceCoach` remains tenant-isolated but has an independent public identity and branding profile.
 - `/identity/login` proves the global identity before issuing a tenant JWT. It returns active workspaces and pending applications together; selecting one workspace exchanges a short-lived selection token for the existing JWT/refresh-token contract.
 - Public requests use opaque, short-lived tracking tokens held in `sessionStorage`. They are not refresh tokens and no normal tenant session is issued before Platform approval.

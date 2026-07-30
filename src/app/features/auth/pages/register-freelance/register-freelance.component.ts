@@ -11,7 +11,7 @@ import { FreelanceOnboardingService } from '../../../../core/freelance/services/
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="freelance-page">
-      <a routerLink="/auth/login" class="back-link">← العودة لتسجيل الدخول</a>
+      <a routerLink="/identity/login" class="back-link">← العودة إلى الدخول الموحد</a>
       <h2>إنشاء مساحة مدرب حر</h2>
       <p class="subtitle">قدّم طلبك بهويتك وعلامتك المستقلة. لن تُفعّل المساحة قبل اعتماد إدارة المنصة.</p>
       <form [formGroup]="form" (ngSubmit)="submit()" novalidate>

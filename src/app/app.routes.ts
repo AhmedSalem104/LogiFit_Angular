@@ -84,13 +84,13 @@ export const routes: Routes = [
   // Default redirect
   {
     path: '',
-    redirectTo: 'auth/login',
+    redirectTo: 'identity/login',
     pathMatch: 'full'
   },
 
   // 404 - Redirect to login
   {
     path: '**',
-    redirectTo: 'auth/login'
+    redirectTo: 'identity/login'
   }
 ];
