@@ -3,6 +3,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { PasswordFieldComponent } from '../password-field/password-field.component';
 
 export interface PersonFormValue {
   fullName: string;
@@ -23,7 +24,7 @@ export interface PersonFormInitial extends Omit<PersonFormValue, 'password'> {}
 @Component({
   selector: 'app-person-form-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, PasswordFieldComponent],
   template: `
     @if (open) {
       <div class="pfd-overlay" (click)="onBackdrop($event)">
@@ -60,8 +61,7 @@ export interface PersonFormInitial extends Omit<PersonFormValue, 'password'> {}
             @if (mode === 'add') {
               <div class="pfd-field" data-tour="pf-password">
                 <label>كلمة المرور <span class="req">*</span></label>
-                <input type="password" formControlName="password" placeholder="8 أحرف على الأقل"
-                  [class.invalid]="invalid('password')" />
+                <app-password-field formControlName="password" placeholder="8 أحرف على الأقل"></app-password-field>
                 <span class="err" *ngIf="invalid('password')">
                   8 أحرف على الأقل، وتحتوي حرف كبير وصغير ورقم
                 </span>

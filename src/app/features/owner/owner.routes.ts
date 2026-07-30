@@ -1,4 +1,7 @@
 import { Routes } from '@angular/router';
+import { featureGuard } from '../../core/auth/guards/feature.guard';
+import { permissionGuard } from '../../core/auth/guards/permission.guard';
+import { Permissions } from '../../core/auth/models/auth.models';
 
 export const ownerRoutes: Routes = [
   // Main
@@ -9,6 +12,7 @@ export const ownerRoutes: Routes = [
   // Members
   { path: 'clients', loadComponent: () => import('./clients/clients-list.component').then(m => m.ClientsListComponent), title: 'العملاء - LogicFit' },
   { path: 'coaches', loadComponent: () => import('./coaches/coaches-list.component').then(m => m.CoachesListComponent), title: 'المدربين - LogicFit' },
+  { path: 'freelance-team', canActivate: [permissionGuard(Permissions.ManageCoaches)], loadComponent: () => import('./freelance-team/freelance-team.component').then(m => m.FreelanceTeamComponent), title: 'فريق المدرب الحر - LogicFit' },
   { path: 'membership-cards', loadComponent: () => import('./membership-cards/membership-cards.component').then(m => m.MembershipCardsComponent), title: 'بطاقات العضوية' },
   { path: 'gate-access', loadComponent: () => import('./gate-access/gate-access.component').then(m => m.GateAccessComponent), title: 'البوابة' },
 
@@ -50,7 +54,7 @@ export const ownerRoutes: Routes = [
   { path: 'payroll', loadComponent: () => import('./payroll/payroll.component').then(m => m.PayrollComponent), title: 'الرواتب' },
 
   // Reports
-  { path: 'reports', loadComponent: () => import('./reports/reports.component').then(m => m.ReportsComponent), title: 'التقارير' },
+  { path: 'reports', canActivate: [permissionGuard(Permissions.ViewReports)], loadComponent: () => import('./reports/reports.component').then(m => m.ReportsComponent), title: 'Reports access' },
   { path: 'operations-reports', loadComponent: () => import('./operations-dashboard/operations-reports.component').then(m => m.OperationsReportsComponent), title: 'التقارير التشغيلية' },
 
   // Platform Subscription & Billing (اشتراك الصالة في المنصة)
@@ -58,7 +62,7 @@ export const ownerRoutes: Routes = [
   { path: 'subscription/invoices', loadComponent: () => import('./subscription/subscription-invoices.component').then(m => m.SubscriptionInvoicesComponent), title: 'فواتير المنصة' },
 
   // Settings
-  { path: 'gym-settings', loadComponent: () => import('./gym-settings/gym-settings.component').then(m => m.GymSettingsComponent), title: 'إعدادات الصالة' },
+  { path: 'gym-settings', canActivate: [featureGuard('settings.branding', Permissions.ManageSettings)], loadComponent: () => import('./gym-settings/gym-settings.component').then(m => m.GymSettingsComponent), title: 'Gym settings access' },
 
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
 ];

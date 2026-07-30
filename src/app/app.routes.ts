@@ -4,6 +4,60 @@ import { guestGuard } from './core/auth/guards/guest.guard';
 import { ownerGuard, coachGuard, clientGuard } from './core/auth/guards/role.guard';
 
 export const routes: Routes = [
+  // Identity-first routes stay available even to a user who already has a
+  // tenant session, so a pending request never blocks an active workspace.
+  {
+    path: 'identity',
+    loadComponent: () =>
+      import('./core/layout/auth-layout/auth-layout.component').then(m => m.AuthLayoutComponent),
+    children: [
+      {
+        path: 'login',
+        loadComponent: () =>
+          import('./features/auth/pages/identity-login/identity-login.component').then(m => m.IdentityLoginComponent),
+        title: 'الدخول بالهوية - LogicFit'
+      },
+      {
+        path: 'register',
+        loadComponent: () =>
+          import('./features/auth/pages/identity-register/identity-register.component').then(m => m.IdentityRegisterComponent),
+        title: 'إنشاء هوية - LogicFit'
+      },
+      {
+        path: 'verify-email',
+        loadComponent: () =>
+          import('./features/auth/pages/identity-email-verification/identity-email-verification.component').then(m => m.IdentityEmailVerificationComponent),
+        title: 'Email verification - LogicFit'
+      },
+      {
+        path: 'reset-password',
+        loadComponent: () =>
+          import('./features/auth/pages/identity-password-reset/identity-password-reset.component').then(m => m.IdentityPasswordResetComponent),
+        title: 'Password reset - LogicFit'
+      },
+      {
+        path: 'application-status',
+        loadComponent: () =>
+          import('./features/auth/pages/application-status/application-status.component').then(m => m.ApplicationStatusComponent),
+        title: 'متابعة الطلب - LogicFit'
+      },
+      {
+        path: 'accept-invite',
+        loadComponent: () =>
+          import('./features/auth/pages/identity-join/identity-join.component').then(m => m.IdentityJoinComponent),
+        data: { mode: 'invite' },
+        title: 'قبول دعوة - LogicFit'
+      },
+      {
+        path: 'join-client',
+        loadComponent: () =>
+          import('./features/auth/pages/identity-join/identity-join.component').then(m => m.IdentityJoinComponent),
+        data: { mode: 'client' },
+        title: 'انضمام عميل - LogicFit'
+      }
+    ]
+  },
+
   // Auth Routes (Guest only)
   {
     path: 'auth',
@@ -56,13 +110,13 @@ export const routes: Routes = [
   // Default redirect
   {
     path: '',
-    redirectTo: 'auth/login',
+    redirectTo: 'identity/login',
     pathMatch: 'full'
   },
 
   // 404 - Redirect to login
   {
     path: '**',
-    redirectTo: 'auth/login'
+    redirectTo: 'identity/login'
   }
 ];

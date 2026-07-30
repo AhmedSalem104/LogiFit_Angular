@@ -6,15 +6,18 @@ import { AuthService } from '../../../../core/auth/services/auth.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { BrandingService } from '../../../../core/services/branding.service';
 import { TenantStatusService } from '../../../../core/tenant/tenant-status.service';
+import { PasswordFieldComponent } from '../../../../shared/components/password-field/password-field.component';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, PasswordFieldComponent],
   template: `
     <div class="login-page">
-      <h2>مرحباً بعودتك</h2>
-      <p class="subtitle">سجل دخولك للوصول إلى لوحة التحكم</p>
+      <h2>دخول جيم محدد</h2>
+      <p class="subtitle">مسار توافق مؤقت للحسابات القديمة المرتبطة بجيم واحد.</p>
+      <p class="identity-entry"><a routerLink="/identity/login"><i class="pi pi-arrow-right"></i> الدخول الموحد بالهوية</a></p>
 
       <!-- STEP 1: resolve the gym (only when not on a branded subdomain) -->
       @if (!tenantResolved()) {
@@ -44,9 +47,11 @@ import { TenantStatusService } from '../../../../core/tenant/tenant-status.servi
               <span *ngIf="!resolving()">متابعة</span>
             </button>
           </form>
-          <button type="button" class="link-btn" (click)="manualMode.set(true)">
-            <i class="pi pi-wrench"></i> إدخال معرّف الصالة (GUID) — وضع الاختبار
-          </button>
+          @if (allowManualTenantId) {
+            <button type="button" class="link-btn" (click)="manualMode.set(true)">
+              <i class="pi pi-wrench"></i> إدخال معرّف الصالة (GUID) — وضع الاختبار
+            </button>
+          }
         } @else {
           <!-- Testing mode: enter the TenantId GUID directly (bypasses branding) -->
           <form (ngSubmit)="useManualTenant()">
@@ -99,12 +104,7 @@ import { TenantStatusService } from '../../../../core/tenant/tenant-status.servi
           <div class="form-group">
             <label class="form-label">كلمة المرور</label>
             <div class="input-wrapper">
-              <i class="pi pi-lock"></i>
-              <input [type]="showPassword ? 'text' : 'password'" class="form-input" formControlName="password"
-                placeholder="أدخل كلمة المرور" [class.error]="isFieldInvalid('password')" />
-              <button type="button" class="toggle-password" (click)="showPassword = !showPassword">
-                <i [class]="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
-              </button>
+              <app-password-field formControlName="password"></app-password-field>
             </div>
             <span class="error-message" *ngIf="isFieldInvalid('password')">كلمة المرور مطلوبة</span>
           </div>
@@ -134,6 +134,12 @@ import { TenantStatusService } from '../../../../core/tenant/tenant-status.servi
           <span>ليس لديك حساب؟</span>
           <a routerLink="/auth/register">إنشاء حساب</a>
         </div>
+        <div class="freelance-link">
+          <a routerLink="/identity/login">لديك أكثر من مساحة عمل أو طلب قيد المراجعة؟ ادخل بالهوية</a>
+        </div>
+        <div class="freelance-link">
+          <a routerLink="/auth/register-freelance">مدرب حر؟ أنشئ مساحة عملك المستقلة</a>
+        </div>
         <div class="gym-link">
           <span>تريد تسجيل صالة جديدة؟</span>
           <a routerLink="/auth/register-gym">سجل صالتك</a>
@@ -146,6 +152,7 @@ import { TenantStatusService } from '../../../../core/tenant/tenant-status.servi
       h2 { font-size: 1.75rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem; }
       .subtitle { color: var(--text-secondary); margin-bottom: 2rem; }
     }
+    .identity-entry { margin:0 0 1.5rem; }.identity-entry a { display:inline-flex; align-items:center; gap:.4rem; color:#2563eb; text-decoration:none; font-size:.9rem; font-weight:600; }.identity-entry a:hover { text-decoration:underline; }
     .form-group { margin-bottom: 1.25rem; }
     .gym-banner {
       display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1rem;
@@ -182,9 +189,9 @@ import { TenantStatusService } from '../../../../core/tenant/tenant-status.servi
     .w-full { width: 100%; }
     .error-box { display: flex; align-items: center; gap: 0.5rem; padding: 1rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #dc2626; margin-top: 1rem; font-size: 0.9rem; }
     .auth-links { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 0.75rem; text-align: center; }
-    .register-link, .gym-link { color: var(--text-secondary); }
-    .register-link a, .gym-link a { color: #3b82f6; text-decoration: none; font-weight: 500; margin-inline-start: 0.25rem; }
-    .register-link a:hover, .gym-link a:hover { text-decoration: underline; }
+    .register-link, .gym-link, .freelance-link { color: var(--text-secondary); }
+    .register-link a, .gym-link a, .freelance-link a { color: #3b82f6; text-decoration: none; font-weight: 500; margin-inline-start: 0.25rem; }
+    .register-link a:hover, .gym-link a:hover, .freelance-link a:hover { text-decoration: underline; }
   `]
 })
 export class LoginComponent implements OnInit {
@@ -194,6 +201,7 @@ export class LoginComponent implements OnInit {
   private notification = inject(NotificationService);
   private branding = inject(BrandingService);
   private tenantStatus = inject(TenantStatusService);
+  readonly allowManualTenantId = !environment.production;
 
   loginForm: FormGroup;
   loading = false;
@@ -312,7 +320,9 @@ export class LoginComponent implements OnInit {
       next: (response) => {
         this.loading = false;
         this.notification.success('تم تسجيل الدخول بنجاح');
-        const redirectUrl = this.authService.getRedirectUrlForRole(response.role);
+        const redirectUrl = response.mustChangePassword
+          ? '/client/profile'
+          : this.authService.getRedirectUrlForRole(response.role);
         setTimeout(() => this.router.navigateByUrl(redirectUrl), 100);
       },
       error: (error) => {

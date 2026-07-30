@@ -11,9 +11,12 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { InputSwitchModule } from 'primeng/inputswitch';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { Observable } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { NotificationService } from '../../../core/services/notification.service';
+import { PasswordFieldComponent } from '../../../shared/components/password-field/password-field.component';
 import {
   OwnerService,
   ClientSubscription,
@@ -34,6 +37,7 @@ import Swal from 'sweetalert2';
     FormsModule,
     TableModule,
     InputTextModule,
+    PasswordFieldComponent,
     ButtonModule,
     DialogModule,
     DropdownModule,
@@ -284,6 +288,17 @@ import Swal from 'sweetalert2';
         [contentStyle]="{'overflow-y': 'auto'}"
       >
         <div class="dialog-content">
+          <div class="form-group client-mode-toggle">
+            <button type="button" class="btn btn-outline btn-sm" (click)="newClientMode = !newClientMode">
+              <i class="pi" [class.pi-user-plus]="!newClientMode" [class.pi-users]="newClientMode"></i>
+              {{ newClientMode ? 'اختيار عميل موجود' : 'إنشاء عميل جديد مع الاشتراك' }}
+            </button>
+          </div>
+          <div *ngIf="newClientMode" class="new-client-fields">
+            <div class="form-group"><label>اسم العميل *</label><input type="text" pInputText [(ngModel)]="newClient.fullName" /></div>
+            <div class="form-row"><div class="form-group"><label>الهاتف *</label><input type="text" pInputText [(ngModel)]="newClient.phoneNumber" /></div><div class="form-group"><label>البريد</label><input type="email" pInputText [(ngModel)]="newClient.email" /></div></div>
+            <div class="form-group"><label>كلمة المرور *</label><app-password-field [(ngModel)]="newClient.password" placeholder="أدخل كلمة المرور"></app-password-field></div>
+          </div>
           <div class="form-group">
             <label>العميل <span class="required">*</span></label>
             <p-dropdown
@@ -1344,6 +1359,7 @@ import Swal from 'sweetalert2';
 export class SubscriptionsListComponent implements OnInit {
   private ownerService = inject(OwnerService);
   private notificationService = inject(NotificationService);
+  private route = inject(ActivatedRoute);
 
   loading = signal(true);
   saving = signal(false);
@@ -1367,6 +1383,10 @@ export class SubscriptionsListComponent implements OnInit {
 
   selectedSubscription: ClientSubscription | null = null;
   detailSubscription: ClientSubscription | null = null;
+  newClientMode = false;
+  createOnly = false;
+  newClient = { fullName: '', phoneNumber: '', email: '', password: '' };
+  showNewClientPassword = false;
 
   subscriptionForm = {
     clientId: '',
@@ -1425,7 +1445,10 @@ export class SubscriptionsListComponent implements OnInit {
   ).length);
 
   ngOnInit(): void {
+    this.createOnly = this.route.snapshot.queryParamMap.get('create') === '1';
+    if (this.createOnly) this.newClientMode = true;
     this.loadData();
+    if (this.createOnly) queueMicrotask(() => this.openSubscriptionDialog());
   }
 
   loadData(): void {
@@ -1536,6 +1559,9 @@ export class SubscriptionsListComponent implements OnInit {
 
   // ==================== Subscription Dialog ====================
   openSubscriptionDialog(): void {
+    this.newClientMode = this.createOnly;
+    this.showNewClientPassword = false;
+    this.newClient = { fullName: '', phoneNumber: '', email: '', password: '' };
     this.subscriptionForm = {
       clientId: '',
       planId: '',
@@ -1549,8 +1575,16 @@ export class SubscriptionsListComponent implements OnInit {
     this.subscriptionDialogVisible = true;
   }
 
+  copyNewClientPassword(): void {
+    if (!this.newClient.password) {
+      this.notificationService.warn('أدخل كلمة المرور أولاً');
+      return;
+    }
+    navigator.clipboard.writeText(this.newClient.password).then(() => this.notificationService.success('تم نسخ كلمة المرور'));
+  }
+
   saveSubscription(): void {
-    if (!this.subscriptionForm.clientId || !this.subscriptionForm.planId) {
+    if ((!this.subscriptionForm.clientId && !this.newClientMode) || (this.newClientMode && (!this.newClient.fullName || !this.newClient.phoneNumber || !this.newClient.password)) || !this.subscriptionForm.planId) {
       this.notificationService.warn('يرجى اختيار العميل والباقة');
       return;
     }
@@ -1560,22 +1594,26 @@ export class SubscriptionsListComponent implements OnInit {
       ? this.subscriptionForm.startDate.toISOString().split('T')[0]
       : this.subscriptionForm.startDate;
 
-    this.ownerService.createSubscription({
-      clientId: this.subscriptionForm.clientId,
+    const request = {
       planId: this.subscriptionForm.planId,
       startDate,
       paymentMethod: this.subscriptionForm.paymentMethod,
       amountPaid: this.subscriptionForm.amountPaid || undefined,
       discount: this.subscriptionForm.discount || undefined,
-      notes: this.subscriptionForm.notes || undefined
-    }).subscribe({
+      notes: this.subscriptionForm.notes || undefined,
+      issueCard: true
+    };
+    const save$: Observable<any> = this.newClientMode
+      ? this.ownerService.onboardClient({ ...this.newClient, membership: request })
+      : this.ownerService.createSubscription({ clientId: this.subscriptionForm.clientId, ...request });
+    save$.subscribe({
       next: () => {
         this.saving.set(false);
         this.subscriptionDialogVisible = false;
         this.notificationService.success('تم إنشاء الاشتراك بنجاح');
         this.loadSubscriptions();
       },
-      error: (err) => {
+      error: (err: any) => {
         this.saving.set(false);
         const msg = err.error?.message || 'حدث خطأ أثناء إنشاء الاشتراك';
         this.notificationService.error(msg);

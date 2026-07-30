@@ -4,11 +4,12 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { NotificationService } from '../../../../core/services/notification.service';
+import { PasswordFieldComponent } from '../../../../shared/components/password-field/password-field.component';
 
 @Component({
   selector: 'app-reset-password',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PasswordFieldComponent],
   template: `
     <div class="reset-password-page">
       <a routerLink="/auth/login" class="back-link">
@@ -34,12 +35,7 @@ import { NotificationService } from '../../../../core/services/notification.serv
           <div class="form-group">
             <label class="form-label">كلمة المرور الجديدة</label>
             <div class="input-wrapper">
-              <i class="pi pi-lock"></i>
-              <input [type]="showPassword ? 'text' : 'password'" class="form-input" formControlName="newPassword"
-                placeholder="كلمة مرور قوية" [class.error]="isFieldInvalid('newPassword')" />
-              <button type="button" class="toggle-password" (click)="showPassword = !showPassword">
-                <i [class]="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
-              </button>
+              <app-password-field formControlName="newPassword"></app-password-field>
             </div>
             <span class="error-message" *ngIf="isFieldInvalid('newPassword')">
               @if (form.get('newPassword')?.errors?.['required']) { كلمة المرور مطلوبة }
@@ -50,9 +46,7 @@ import { NotificationService } from '../../../../core/services/notification.serv
           <div class="form-group">
             <label class="form-label">تأكيد كلمة المرور</label>
             <div class="input-wrapper">
-              <i class="pi pi-lock"></i>
-              <input [type]="showPassword ? 'text' : 'password'" class="form-input" formControlName="confirmPassword"
-                placeholder="أعد كتابة كلمة المرور" [class.error]="mismatch" />
+              <app-password-field formControlName="confirmPassword"></app-password-field>
             </div>
             <span class="error-message" *ngIf="mismatch">كلمات المرور غير متطابقة</span>
           </div>

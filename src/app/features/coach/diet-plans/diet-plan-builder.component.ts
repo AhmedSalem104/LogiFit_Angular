@@ -3150,13 +3150,14 @@ export class DietPlanBuilderComponent implements OnInit {
           this.addMeal('العشاء', '20:00');
         }
       },
-      error: () => {
-        // Fallback - load with mock data
-        this.loadFoods();
-        this.loadTrainees();
-
+      error: (err) => {
+        console.error('Error loading diet builder data:', err);
+        this.foods.set([]);
+        this.foodOptions = [];
+        this.trainees.set([]);
+        this.traineeOptions = [];
         if (this.isEditMode && this.planId) {
-          setTimeout(() => this.loadPlan(this.planId!), 500);
+          this.loadPlan(this.planId!);
         } else {
           this.addMeal('الفطور', '08:00');
           this.addMeal('وجبة خفيفة', '11:00');
@@ -3177,19 +3178,10 @@ export class DietPlanBuilderComponent implements OnInit {
           trainee: t
         }));
       },
-      error: () => {
-        // Fallback mock data for development
-        const mockTrainees: Trainee[] = [
-          { id: '1', fullName: 'محمد أحمد', phoneNumber: '01012345678', email: '', subscriptionStatus: 'active', isActive: true, startDate: '', progressPercentage: 0, sessionsCompleted: 0, totalSessions: 0, workoutProgramsCount: 2, dietPlansCount: 1 } as Trainee,
-          { id: '2', fullName: 'خالد محمود', phoneNumber: '01123456789', email: '', subscriptionStatus: 'active', isActive: true, startDate: '', progressPercentage: 0, sessionsCompleted: 0, totalSessions: 0, workoutProgramsCount: 1, dietPlansCount: 0 } as Trainee,
-          { id: '3', fullName: 'أحمد سمير', phoneNumber: '01234567890', email: '', subscriptionStatus: 'expired', isActive: false, startDate: '', progressPercentage: 0, sessionsCompleted: 0, totalSessions: 0, workoutProgramsCount: 0, dietPlansCount: 1 } as Trainee,
-          { id: '4', fullName: 'يوسف كريم', phoneNumber: '01098765432', email: '', subscriptionStatus: 'pending', isActive: true, startDate: '', progressPercentage: 0, sessionsCompleted: 0, totalSessions: 0, workoutProgramsCount: 0, dietPlansCount: 0 } as Trainee
-        ];
-        this.traineeOptions = mockTrainees.map(t => ({
-          label: t.fullName || '',
-          value: t.id,
-          trainee: t
-        }));
+      error: (err) => {
+        console.error('Error loading trainees:', err);
+        this.trainees.set([]);
+        this.traineeOptions = [];
       }
     });
   }
@@ -3245,26 +3237,10 @@ export class DietPlanBuilderComponent implements OnInit {
           data: f
         }));
       },
-      error: () => {
-        // Fallback mock data
-        const mockFoods: Food[] = [
-          { id: 1, name: 'صدر دجاج مشوي', caloriesPer100g: 165, proteinPer100g: 31, carbsPer100g: 0, fatsPer100g: 3.6, fatPer100g: 3.6, category: 'بروتين', servingSize: 150, servingUnit: 'g', isGlobal: true },
-          { id: 2, name: 'أرز أبيض مطبوخ', caloriesPer100g: 130, proteinPer100g: 2.7, carbsPer100g: 28, fatsPer100g: 0.3, fatPer100g: 0.3, category: 'كربوهيدرات', servingSize: 150, servingUnit: 'g', isGlobal: true },
-          { id: 3, name: 'بيض مسلوق', caloriesPer100g: 155, proteinPer100g: 13, carbsPer100g: 1.1, fatsPer100g: 11, fatPer100g: 11, category: 'بروتين', servingSize: 50, servingUnit: 'g', isGlobal: true },
-          { id: 4, name: 'شوفان', caloriesPer100g: 389, proteinPer100g: 17, carbsPer100g: 66, fatsPer100g: 7, fatPer100g: 7, category: 'كربوهيدرات', servingSize: 40, servingUnit: 'g', isGlobal: true },
-          { id: 5, name: 'موز', caloriesPer100g: 89, proteinPer100g: 1.1, carbsPer100g: 23, fatsPer100g: 0.3, fatPer100g: 0.3, category: 'فواكه', servingSize: 120, servingUnit: 'g', isGlobal: true },
-          { id: 6, name: 'سلمون مشوي', caloriesPer100g: 208, proteinPer100g: 20, carbsPer100g: 0, fatsPer100g: 13, fatPer100g: 13, category: 'بروتين', servingSize: 150, servingUnit: 'g', isGlobal: true },
-          { id: 7, name: 'زبادي يوناني', caloriesPer100g: 59, proteinPer100g: 10, carbsPer100g: 3.6, fatsPer100g: 0.7, fatPer100g: 0.7, category: 'ألبان', servingSize: 170, servingUnit: 'g', isGlobal: true },
-          { id: 8, name: 'لوز', caloriesPer100g: 579, proteinPer100g: 21, carbsPer100g: 22, fatsPer100g: 50, fatPer100g: 50, category: 'مكسرات', servingSize: 30, servingUnit: 'g', isGlobal: true },
-          { id: 9, name: 'بطاطا حلوة', caloriesPer100g: 86, proteinPer100g: 1.6, carbsPer100g: 20, fatsPer100g: 0.1, fatPer100g: 0.1, category: 'كربوهيدرات', servingSize: 150, servingUnit: 'g', isGlobal: true },
-          { id: 10, name: 'بروكلي', caloriesPer100g: 34, proteinPer100g: 2.8, carbsPer100g: 7, fatsPer100g: 0.4, fatPer100g: 0.4, category: 'خضروات', servingSize: 100, servingUnit: 'g', isGlobal: true }
-        ];
-        this.foods.set(mockFoods);
-        this.foodOptions = mockFoods.map(f => ({
-          label: f.name,
-          value: f.id,
-          data: f
-        }));
+      error: (err) => {
+        console.error('Error loading foods:', err);
+        this.foods.set([]);
+        this.foodOptions = [];
       }
     });
   }

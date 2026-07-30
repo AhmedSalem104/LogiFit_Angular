@@ -2586,13 +2586,14 @@ export class ProgramBuilderComponent implements OnInit {
           this.addDay('يوم الأرجل');
         }
       },
-      error: () => {
-        // Fallback - load with mock data
-        this.loadExercises();
-        this.loadTrainees();
-
+      error: (err) => {
+        console.error('Error loading workout builder data:', err);
+        this.exercises.set([]);
+        this.exerciseOptions = [];
+        this.trainees.set([]);
+        this.traineeOptions = [];
         if (this.isEditMode && this.programId) {
-          setTimeout(() => this.loadProgram(this.programId!), 500);
+          this.loadProgram(this.programId!);
         } else {
           this.addDay('يوم الصدر والترايسبس');
           this.addDay('يوم الظهر والبايسبس');
@@ -2615,6 +2616,8 @@ export class ProgramBuilderComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading trainees:', err);
+        this.trainees.set([]);
+        this.traineeOptions = [];
       }
     });
   }
@@ -2635,6 +2638,8 @@ export class ProgramBuilderComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading exercises:', err);
+        this.exercises.set([]);
+        this.exerciseOptions = [];
       }
     });
   }

@@ -45,6 +45,7 @@ export class AuthService {
   readonly isClient = computed(() => this.userRole() === UserRole.Client);
   readonly isBackOffice = computed(() => BACK_OFFICE_ROLES.includes(this.userRole() as UserRole));
   readonly tenantId = computed(() => this.currentUser()?.tenantId ?? null);
+  readonly isFreelanceWorkspace = computed(() => this.currentUser()?.workspaceType === 2);
 
   constructor(
     private http: HttpClient,
@@ -69,6 +70,15 @@ export class AuthService {
       tap(response => this.handleAuthSuccess(response)),
       catchError(error => this.handleAuthError(error))
     );
+  }
+
+  /**
+   * Stores the regular tenant JWT returned only after a proven global identity
+   * selects an approved workspace. Kept public so the identity-first flow
+   * reuses exactly the same session/permissions contract as legacy login.
+   */
+  completeWorkspaceSelection(response: AuthResponse, workspaceType?: number): void {
+    this.handleAuthSuccess(response, workspaceType);
   }
 
   /**
@@ -294,7 +304,10 @@ export class AuthService {
       4: UserRole.Manager,
       5: UserRole.Receptionist,
       6: UserRole.Accountant,
-      7: UserRole.Trainer
+      7: UserRole.Trainer,
+      10: UserRole.Owner,
+      11: UserRole.Coach,
+      12: UserRole.Coach
     };
 
     if (typeof role === 'number') {
@@ -309,6 +322,9 @@ export class AuthService {
       case 'Receptionist': return UserRole.Receptionist;
       case 'Accountant': return UserRole.Accountant;
       case 'Trainer': return UserRole.Trainer;
+      case 'FreelanceOwner': return UserRole.Owner;
+      case 'FreelanceCoach': return UserRole.Coach;
+      case 'FreelanceAssistant': return UserRole.Coach;
       default: return UserRole.Client;
     }
   }
@@ -316,7 +332,7 @@ export class AuthService {
   /**
    * Handle successful authentication (login / register / refresh)
    */
-  private handleAuthSuccess(response: AuthResponse): void {
+  private handleAuthSuccess(response: AuthResponse, workspaceType?: number): void {
     // Store tokens
     this.storage.setString(environment.tokenKey, response.accessToken);
     this.token.set(response.accessToken);
@@ -340,7 +356,9 @@ export class AuthService {
       fullName: response.fullName,
       role: mappedRole,
       roles: mappedRoles.length ? mappedRoles : [mappedRole],
-      tenantId: response.tenantId
+      tenantId: response.tenantId,
+      mustChangePassword: response.mustChangePassword === true,
+      workspaceType
     };
 
     this.storage.setItem(environment.userKey, userInfo);

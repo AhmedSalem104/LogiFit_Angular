@@ -12,6 +12,7 @@ interface NavItem {
   roles?: UserRole[];
   permission?: Permission | Permission[];
   badge?: number;
+  freelanceOnly?: boolean;
 }
 
 interface NavGroup {
@@ -79,10 +80,7 @@ interface NavGroup {
       <nav class="sidebar-nav">
         @for (group of filteredNavGroups; track group.title) {
           <div class="nav-section">
-            <div class="section-title">
-              <span class="title-text">{{ group.title }}</span>
-              <div class="title-line"></div>
-            </div>
+            <div class="section-divider" aria-hidden="true"><span></span></div>
             <ul class="nav-list">
               @for (item of group.items; track item.route) {
                 @if (canShowItem(item)) {
@@ -148,7 +146,7 @@ interface NavGroup {
       right: 0;
       height: 100vh;
       width: 280px;
-      background: linear-gradient(180deg, #0a0f1a 0%, #131b2e 50%, #1a2540 100%);
+      background: var(--sidebar-bg, linear-gradient(180deg, #0a0f1a 0%, #131b2e 50%, #1a2540 100%));
       display: flex;
       flex-direction: column;
       transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -172,6 +170,15 @@ interface NavGroup {
       /* Collapsed State */
       &.collapsed {
         width: 80px;
+
+        .nav-list {
+          grid-template-columns: 1fr;
+        }
+
+        .nav-link {
+          min-height: 3.35rem;
+          padding: .55rem .25rem;
+        }
 
         .logo-text,
         .pin-button,
@@ -504,41 +511,22 @@ interface NavGroup {
       }
     }
 
-    .section-title {
+    .section-divider {
       padding: 0.5rem 1rem;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.65rem;
       display: flex;
       align-items: center;
-      min-height: 28px;
-
-      .title-text {
-        font-size: 0.65rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        color: rgba(148, 163, 184, 0.6);
-        transition: all 0.3s ease;
-        white-space: nowrap;
-      }
-
-      .title-line {
-        height: 2px;
-        background: linear-gradient(90deg, rgba(59, 130, 246, 0.4) 0%, transparent 100%);
-        border-radius: 1px;
-        opacity: 0;
-        width: 0;
-        margin: 0 auto;
-        transition: all 0.3s ease;
-      }
+      min-height: 18px;
+      span { display: block; width: 100%; height: 1px; border-radius: 999px; background: linear-gradient(90deg, transparent, rgba(148, 163, 184, .42), transparent); }
     }
 
     .nav-list {
       list-style: none;
       padding: 0;
       margin: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.55rem;
     }
 
     .nav-empty-state {
@@ -559,13 +547,18 @@ interface NavGroup {
 
     .nav-link {
       display: flex;
+      min-height: 5.25rem;
+      flex-direction: column;
       align-items: center;
+      justify-content: center;
+      gap: .45rem;
       padding: 0.75rem 1rem;
       color: rgba(203, 213, 225, 0.85);
       text-decoration: none;
       border-radius: 12px;
       position: relative;
       overflow: hidden;
+      text-align: center;
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
       &::before {
@@ -611,31 +604,34 @@ interface NavGroup {
     }
 
     .nav-icon-wrapper {
-      width: 38px;
-      height: 38px;
+      width: 44px;
+      height: 44px;
       display: flex;
       align-items: center;
       justify-content: center;
       border-radius: 10px;
       background: rgba(255, 255, 255, 0.04);
       flex-shrink: 0;
-      margin-left: 0.875rem;
+      margin-left: 0;
       transition: all 0.25s ease;
 
       i {
-        font-size: 1rem;
+        font-size: 1.25rem;
       }
     }
 
     .nav-text {
-      font-size: 0.9rem;
-      white-space: nowrap;
+      max-width: 100%;
+      font-size: 0.76rem;
+      line-height: 1.25;
+      white-space: normal;
       transition: all 0.3s ease;
     }
 
     .nav-badge {
-      margin-right: auto;
-      margin-left: 0.5rem;
+      position: absolute;
+      top: .42rem;
+      inset-inline-end: .42rem;
       padding: 0.125rem 0.5rem;
       font-size: 0.7rem;
       font-weight: 600;
@@ -649,8 +645,7 @@ interface NavGroup {
     }
 
     :host-context([dir="ltr"]) .nav-badge {
-      margin-right: 0.5rem;
-      margin-left: auto;
+      inset-inline-end: .42rem;
     }
 
     .active-indicator {
@@ -897,8 +892,9 @@ export class SidebarComponent {
       items: [
         { label: 'العملاء', icon: 'pi-users', route: '/owner/clients', roles: [UserRole.Owner], permission: 'ViewMembers' },
         { label: 'المدربين', icon: 'pi-id-card', route: '/owner/coaches', roles: [UserRole.Owner], permission: 'ManageCoaches' },
+        { label: 'فريق المدرب الحر', icon: 'pi-users', route: '/owner/freelance-team', roles: [UserRole.Owner], permission: 'ManageCoaches', freelanceOnly: true },
         { label: 'بطاقات العضوية', icon: 'pi-qrcode', route: '/owner/membership-cards', roles: [UserRole.Owner], permission: 'ManageMembers' },
-        { label: 'البوابة الإلكترونية', icon: 'pi-sign-in', route: '/owner/gate-access', roles: [UserRole.Owner], permission: 'ManageAttendance' },
+        { label: 'الدخول والحضور والموظفون', icon: 'pi-sign-in', route: '/owner/gate-access', roles: [UserRole.Owner], permission: 'ManageAttendance' },
       ]
     },
     {
@@ -1112,6 +1108,8 @@ export class SidebarComponent {
   }
 
   canShowItem(item: NavItem): boolean {
-    return this.matchesPanel(item.roles) && this.matchesPermission(item.permission);
+    return this.matchesPanel(item.roles)
+      && this.matchesPermission(item.permission)
+      && (!item.freelanceOnly || this.authService.isFreelanceWorkspace());
   }
 }

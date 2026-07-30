@@ -4,12 +4,13 @@ import { RouterModule, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { NotificationService } from '../../../../core/services/notification.service';
+import { PasswordFieldComponent } from '../../../../shared/components/password-field/password-field.component';
 import { BrandingService } from '../../../../core/services/branding.service';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, PasswordFieldComponent],
   template: `
     <div class="register-page">
       <h2>إنشاء حساب جديد</h2>
@@ -100,12 +101,7 @@ import { BrandingService } from '../../../../core/services/branding.service';
           <div class="form-group">
             <label class="form-label">كلمة المرور</label>
             <div class="input-wrapper">
-              <i class="pi pi-lock"></i>
-              <input [type]="showPassword ? 'text' : 'password'" class="form-input" formControlName="password"
-                placeholder="كلمة مرور قوية" [class.error]="isFieldInvalid('password')" />
-              <button type="button" class="toggle-password" (click)="showPassword = !showPassword">
-                <i [class]="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
-              </button>
+              <app-password-field formControlName="password"></app-password-field>
             </div>
             <span class="error-message" *ngIf="isFieldInvalid('password')">
               @if (registerForm.get('password')?.errors?.['required']) { كلمة المرور مطلوبة }
@@ -116,12 +112,7 @@ import { BrandingService } from '../../../../core/services/branding.service';
           <div class="form-group">
             <label class="form-label">تأكيد كلمة المرور</label>
             <div class="input-wrapper">
-              <i class="pi pi-lock"></i>
-              <input [type]="showConfirmPassword ? 'text' : 'password'" class="form-input" formControlName="confirmPassword"
-                placeholder="أعد كتابة كلمة المرور" [class.error]="isFieldInvalid('confirmPassword') || passwordMismatch" />
-              <button type="button" class="toggle-password" (click)="showConfirmPassword = !showConfirmPassword">
-                <i [class]="showConfirmPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
-              </button>
+              <app-password-field formControlName="confirmPassword"></app-password-field>
             </div>
             <span class="error-message" *ngIf="isFieldInvalid('confirmPassword')">تأكيد كلمة المرور مطلوب</span>
             <span class="error-message" *ngIf="passwordMismatch && !isFieldInvalid('confirmPassword')">كلمات المرور غير متطابقة</span>

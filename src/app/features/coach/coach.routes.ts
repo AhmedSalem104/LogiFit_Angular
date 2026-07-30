@@ -22,6 +22,11 @@ export const COACH_ROUTES: Routes = [
     title: 'تفاصيل المتدرب'
   },
   {
+    path: 'subscriptions',
+    loadComponent: () => import('../owner/subscriptions/subscriptions-list.component').then(m => m.SubscriptionsListComponent),
+    title: 'Create client and subscription'
+  },
+  {
     path: 'workout-programs',
     loadComponent: () => import('./workout-programs/programs-list.component').then(m => m.ProgramsListComponent),
     title: 'برامج التمرين'

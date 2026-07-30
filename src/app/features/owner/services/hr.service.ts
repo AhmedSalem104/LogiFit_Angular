@@ -36,6 +36,12 @@ export class HrService {
   terminateEmployee(id: string, body: TerminateEmployeeRequest): Observable<void> {
     return this.http.post<void>(`${this.api}/Employees/${id}/terminate`, body);
   }
+  regenerateEmployeeQr(id: string): Observable<{ id: string; qrCode: string; qrGeneratedAt: string }> {
+    return this.http.post<{ id: string; qrCode: string; qrGeneratedAt: string }>(`${this.api}/Employees/${id}/qr/regenerate`, {});
+  }
+  revokeEmployeeQr(id: string): Observable<void> {
+    return this.http.post<void>(`${this.api}/Employees/${id}/qr/revoke`, {});
+  }
 
   // ============= Shifts =============
   listShifts(params?: { branchId?: string; isActive?: boolean }): Observable<Shift[]> {
