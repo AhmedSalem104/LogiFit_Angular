@@ -17,8 +17,10 @@
 5. `/auth/login` remains an explicit legacy-gym compatibility route, not the public entry.
 6. A new global identity still uses a one-time email verification link. Password recovery at
    `/identity/reset-password` lets the user choose the existing email link or verified Phone + OTP.
-7. OTP expiry and resend timers come from the server challenge. The Development `1234` hint is
-   present only in a non-production build and is never accepted without a valid challenge.
+7. OTP expiry and resend timers come from the server challenge. Issue #127 temporarily displays
+   the `1234` hosted-test hint in both builds until the external provider is available. The backend
+   remains authoritative and never accepts it without a valid challenge or after the temporary
+   server setting expires.
 8. Refresh Token is never stored by Angular. The backend sets an HttpOnly cookie; interceptors
    send credentials, rotate on `401`, and retain only the Access Token in JavaScript storage.
 
