@@ -4,18 +4,31 @@
 
 ### Unified login entry (2026-07-30)
 
-1. The public application root redirects to `/identity/login`, which presents a single RTL card: verified email first, password second, then destination.
-2. `POST /api/identity/login` returns active workspaces and pending applications together. One active workspace with no pending application is selected directly with `POST /api/identity/select-workspace`; all other mixed states remain visible as separate cards.
-3. A user with no workspace sees Gym, Freelance Workspace and Join Workspace cards. Gym and freelance cards use their existing application paths. Join is explicitly invitation/QR guidance until the invite and QR API is implemented, so the frontend never creates a role or membership itself.
-4. `/auth/login` remains an explicit legacy-gym compatibility route, not the public entry.
-5. A new global identity is created at `/identity/register` and remains unavailable until its one-time email link is opened at `/identity/verify-email`. Password recovery uses `/identity/reset-password`; neither flow uses an OTP, stores a raw email-action token, or grants a workspace membership.
+1. The public application root redirects to `/identity/login`, a single RTL card with two
+   proof methods: Email + Password or Phone + OTP.
+2. Email calls `POST /api/identity/login`. Phone requests a real challenge through
+   `POST /api/identity/phone-login/request`, then verifies `challengeId + code + sessionBinding`
+   through `/phone-login/verify`. Both return the same active-workspace/pending-application context.
+3. One active workspace with no pending application is selected directly with
+   `POST /api/identity/select-workspace`; all other mixed states remain visible as separate cards.
+4. A user with no workspace sees Gym, Freelance Workspace and Join Workspace cards. Join opens
+   the email-bound invitation flow; client join codes/QR remain controlled by their backend policy.
+   The frontend never creates a role or membership itself.
+5. `/auth/login` remains an explicit legacy-gym compatibility route, not the public entry.
+6. A new global identity still uses a one-time email verification link. Password recovery at
+   `/identity/reset-password` lets the user choose the existing email link or verified Phone + OTP.
+7. OTP expiry and resend timers come from the server challenge. The Development `1234` hint is
+   present only in a non-production build and is never accepted without a valid challenge.
+8. Refresh Token is never stored by Angular. The backend sets an HttpOnly cookie; interceptors
+   send credentials, rotate on `401`, and retain only the Access Token in JavaScript storage.
 
 ### Existing freelance application flow
 
 1. المدرب الحر يفتح `/auth/register-freelance` ويرسل هوية المالك، معرّف المساحة، والهوية البصرية الأساسية. لا يُنشأ JWT ولا مساحة تشغيلية في هذه المرحلة.
 2. ينتقل إلى `/identity/application-status` باستخدام Tracking Token قصير العمر محفوظ في جلسة المتصفح. عند `NeedsMoreInformation` لا يمكنه تعديل سوى الحقول التي طلبتها الإدارة ثم يعيد التقديم.
 3. عند انتهاء جلسة المتابعة يعود إلى `/identity/login`: الاستجابة تعيد المساحات النشطة والطلبات المعلقة معًا. يمكنه دخول مساحة نشطة أو إصدار جلسة متابعة جديدة لطلبه؛ لا يحجب أحدهما الآخر.
-4. بعد اعتماد المنصة يختار المدرب المساحة من `/identity/login`، ويستلم عندها فقط عقد JWT/Refresh Token الحالي ويصل إلى لوحة المالك. دخول الجيم التقليدي ومساره القديم لا يتغيران.
+4. بعد اعتماد المنصة يختار المدرب المساحة من `/identity/login`، ويستلم عندها Access JWT
+   بينما يضع الخادم Refresh Token في HttpOnly Cookie، ثم يصل إلى لوحة المالك.
 5. المدرب أو المساعد المدعو ينشئ هوية عامة من `/identity/register` بالبريد الذي سيستخدمه مالك مساحة المدرب الحر. يرسل المالك طلب انضمام من `/owner/freelance-team`، ولا يصبح العضو نشطًا قبل موافقة Platform Admin وفحص حد الباقة مرة أخرى.
 
 ## الحدود بين الواجهات
@@ -44,7 +57,8 @@ flowchart LR
 ## تدفق الدخول
 
 1. يبدأ المستخدم من `/auth/login` أو `/auth/register`.
-2. يرسل `AuthService` الطلب إلى Tenant API ويخزّن access/refresh token بأسماء
+2. يرسل `AuthService` الطلب إلى Tenant API ويخزّن Access Token فقط؛ Refresh Token في
+   HttpOnly Cookie لا يقرأها JavaScript.
    مفاتيح البيئة فقط.
 3. يختار الـguard مساحة العمل وفق الدور، ثم يمرر JWT في interceptor.
 4. عند `401` تتم محاولة refresh واحدة مشتركة للطلبات المتوازية؛ فشلها يخرج المستخدم.

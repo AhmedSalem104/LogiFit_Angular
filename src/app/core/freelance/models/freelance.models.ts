@@ -110,16 +110,25 @@ export interface ClientJoinResult {
   membershipStatus: number;
 }
 
-export interface PasskeyCeremonyOptions {
-  ceremonyId: string;
-  options: PublicKeyCredentialRequestOptionsJSON;
+export enum OtpPurpose {
+  PhoneVerification = 1,
+  PasswordlessLogin = 2,
+  PlatformAdminLogin = 3,
+  SensitiveActionStepUp = 4,
+  PasswordReset = 5,
+  ChangePhone = 6,
+  InviteAcceptance = 7,
 }
 
-interface PublicKeyCredentialRequestOptionsJSON {
-  challenge: string;
-  timeout?: number;
-  rpId?: string;
-  allowCredentials?: Array<{ id: string; type: PublicKeyCredentialType; transports?: AuthenticatorTransport[] }>;
-  userVerification?: UserVerificationRequirement;
-  extensions?: AuthenticationExtensionsClientInputs;
+export interface OtpChallenge {
+  challengeId: string;
+  purpose: OtpPurpose;
+  expiresAtUtc: string;
+  resendAvailableAtUtc: string;
+  maskedPhoneNumber: string;
+}
+
+export interface OtpStepUp {
+  token: string;
+  expiresAtUtc: string;
 }

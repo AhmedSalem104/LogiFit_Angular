@@ -123,7 +123,8 @@ plans → select-plan → payment-methods → upload proof → (admin approves) 
 - **Usage-vs-limit** progress bars, invoices, and a full **payment-proof upload** flow with request history and reject reasons.
 
 ### 🔒 Authentication & Sessions
-- **JWT** with a **15-minute access token** + **refresh token**.
+- **JWT** with a **15-minute access token** plus a rotated Refresh Token stored only in an
+  HttpOnly, Secure cookie.
 - Transparent **auto-refresh** on `401` (single-flight — one refresh, queued retries); falls back to logout when refresh fails.
 - `logout-all` invalidates every device session.
 - **Plan-limit gating:** a `402 Payment Required` response routes owners to the upgrade screen.
@@ -183,7 +184,6 @@ export const environment = {
   apiUrl: '/api',   // relative → proxied to the backend (avoids CORS)
   platformUrl: 'https://logicfit-platform.runasp.net',  // Platform (gym signup)
   tokenKey: 'logicfit_token',
-  refreshTokenKey: 'logicfit_refresh_token',
   userKey: 'logicfit_user',
   permissionsKey: 'logicfit_permissions',
   tenantIdKey: 'logicfit_tenant_id',
@@ -192,7 +192,8 @@ export const environment = {
 };
 ```
 
-> 💡 On `localhost` there's no subdomain, so the login screen falls back to a manual gym picker for convenience.
+> 💡 The public root uses identity-first Email + Password or Phone + OTP. The explicit
+> `/auth/login` route keeps the legacy gym/subdomain flow for compatibility.
 
 ### Build for Production
 ```bash

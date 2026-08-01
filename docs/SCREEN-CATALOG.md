@@ -6,16 +6,19 @@
 
 ```mermaid
 flowchart TD
-  A[فتح التطبيق] --> B[تحميل هوية الجيم من /api/branding/{identifier}]
-  B --> C[تطبيق CSS variables والشعار والصور]
-  C --> D[تسجيل الدخول /api/auth/login]
-  D --> E{الدور}
-  E -->|Owner / Manager / Receptionist / Accountant| F[/owner]
-  E -->|Coach / Trainer| G[/coach]
-  E -->|Client| H[/client]
-  F --> I[REST APIs مع Tenant isolation]
-  G --> I
+  A[فتح التطبيق] --> B[الدخول الموحد /identity/login]
+  B --> C{طريقة إثبات الهوية}
+  C -->|Email + Password| D[/api/identity/login]
+  C -->|Phone + OTP| E[/phone-login/request ثم verify]
+  D --> F{مساحات العمل}
+  E --> F
+  F -->|مساحة واحدة| G[دخول مباشر]
+  F -->|أكثر من مساحة| H[اختيار Workspace]
+  G --> I{الدور}
   H --> I
+  I -->|Owner / Manager / Receptionist / Accountant| J[/owner]
+  I -->|Coach / Trainer| K[/coach]
+  I -->|Client| L[/client]
 ```
 
 ## شاشات المصادقة (`/auth`)
@@ -27,6 +30,10 @@ flowchart TD
 | `/auth/register-gym` | بدء تسجيل جيم جديد | اسم الجيم وبيانات المالك | إنشاء Tenant ثم توجيه المالك |
 | `/auth/forgot-password` | طلب كود الاستعادة | هاتف/معرف الجيم | رسالة موحدة لا تكشف وجود الحساب |
 | `/auth/reset-password` | تعيين كلمة مرور جديدة | الكود وكلمة المرور | انتهاء الكود، نجاح، فشل |
+| `/identity/login` | الدخول الموحد | Email + Password أو هاتف E.164 + OTP ثم السياق/المساحة | OTP منتهي/مقفل/مستهلك، أكثر من مساحة، طلبات معلقة |
+| `/identity/reset-password` | استعادة الهوية | رابط بريد أو Phone + OTP | رد غير كاشف وإبطال الجلسات بعد النجاح |
+| `/identity/phone-security` | تأكيد/تغيير الهاتف | Country Code، هاتف، OTP وتوقيت الإعادة | رقم مكرر/غير صالح، انتهاء، خروج بعد التغيير |
+| `/identity/join` | قبول دعوة | معاينة المساحة والدور، إثبات الهوية، OTP اختياري حسب سياسة الخادم | دعوة منتهية/مستهلكة، اختلاف البريد، حد الباقة |
 
 ## لوحة المالك والإدارة (`/owner`)
 
@@ -101,7 +108,7 @@ sequenceDiagram
 | Route | المستخدم | مصدر البيانات | الحاجز التشغيلي |
 |---|---|---|---|
 | `/auth/register-freelance` | مدرب حر جديد | `POST /api/workspace-applications/freelance` | طلب فقط؛ الاعتماد النهائي للمنصة. |
-| `/identity/login` | أي هوية عامة | `POST /api/identity/login` ثم اختيار مساحة أو إعادة إصدار Tracking Token | لا يصدر JWT قبل اختيار مساحة نشطة. |
+| `/identity/login` | أي هوية عامة | Email + Password أو `/phone-login/{request,verify}` ثم اختيار مساحة أو إعادة إصدار Tracking Token | لا يصدر Tenant JWT قبل اختيار مساحة نشطة؛ Refresh Cookie غير قابلة للقراءة من JavaScript. |
 | `/identity/application-status` | مقدم طلب | جلسة Tracking قصيرة العمر | يحرر الحقول المطلوبة فقط؛ لا تظهر بيانات صحية أو تدريبية. |
 
 ## عقود الهوية والصور

@@ -73,11 +73,6 @@ export interface RegisterRequest {
   fullName: string;
 }
 
-// Refresh token request
-export interface RefreshRequest {
-  refreshToken: string;
-}
-
 // Create Tenant request
 export interface CreateTenantRequest {
   name: string;
@@ -141,7 +136,6 @@ export interface AuthResponse {
   permissions?: Permission[];
   tenantId: string;
   accessToken: string;
-  refreshToken: string;
   expiresAt: string;
   mustChangePassword?: boolean;
 }
