@@ -10,7 +10,7 @@
 - When no workspace or request exists, the screen presents only Gym, Freelance Workspace, and Join Workspace cards. Join is guidance for an invitation or QR until its backend contract is delivered; it does not invent a role or membership in the browser.
 - `/auth/login` stays as an explicit legacy-gym compatibility route, but is no longer the public default. Raw Tenant GUID input is hidden in Production.
 
-### Identity, OTP, and session contract (Issue #118, local/unreleased)
+### Identity, OTP, and session contract (Issue #118; merged to `develop`, not released/deployed/production-verified)
 
 - `/identity/register` collects full name, email, password, and optional contact phone, then displays a check-email state. It does not sign the user in.
 - `/identity/verify-email#token=...` reads the one-use token from the URL fragment and posts it once to `POST /api/identity/verify-email`; the token is not persisted in browser storage.
