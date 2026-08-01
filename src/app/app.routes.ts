@@ -36,6 +36,14 @@ export const routes: Routes = [
         title: 'Password reset - LogicFit'
       },
       {
+        path: 'phone-security',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/auth/pages/identity-phone-security/identity-phone-security.component')
+            .then(m => m.IdentityPhoneSecurityComponent),
+        title: 'أمان رقم الهاتف - LogicFit'
+      },
+      {
         path: 'application-status',
         loadComponent: () =>
           import('./features/auth/pages/application-status/application-status.component').then(m => m.ApplicationStatusComponent),

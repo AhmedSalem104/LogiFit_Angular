@@ -66,11 +66,18 @@ export class ApplicationStatusComponent implements OnInit {
   ngOnInit(): void { this.load(); }
 
   load(): void {
-    if (!this.onboarding.getTrackingToken()) { this.loading.set(false); return; }
+    if (!this.onboarding.getTrackingToken()) { this.recoverTrackingSession(); return; }
     this.loading.set(true); this.error.set('');
     this.onboarding.getTrackingStatus().subscribe({
       next: status => { this.status.set(status); this.patchEditableValues(status); this.loading.set(false); },
-      error: err => { this.error.set(err?.translatedMessage || err?.error?.message || 'تعذر تحميل حالة الطلب.'); this.loading.set(false); },
+      error: err => {
+        if (err?.status === 401 || err?.status === 403) {
+          this.recoverTrackingSession();
+          return;
+        }
+        this.error.set(err?.translatedMessage || err?.error?.message || 'تعذر تحميل حالة الطلب.');
+        this.loading.set(false);
+      },
     });
   }
 
@@ -88,6 +95,15 @@ export class ApplicationStatusComponent implements OnInit {
   isLongText(field: string): boolean { return ['Bio', 'WelcomeMessage', 'SocialLinks', 'BookingSettings'].includes(field); }
   statusLabel(status: ApplicationRequestStatus): string { return ({ 1: 'مسودة', 2: 'مُقدّم', 3: 'قيد المراجعة', 4: 'مطلوب استكمال', 5: 'مقبول', 6: 'مرفوض', 7: 'ملغى', 8: 'منتهي' } as Record<number, string>)[status]; }
   applicationLabel(type: number): string { return type === 2 ? 'طلب مساحة مدرب حر' : 'طلب انضمام إلى مساحة عمل'; }
+
+  private recoverTrackingSession(): void {
+    this.onboarding.clearTrackingToken();
+    this.loading.set(false);
+    this.router.navigate(['/identity/login'], {
+      queryParams: { continue: 'application-status' },
+      replaceUrl: true,
+    });
+  }
 
   private patchEditableValues(status: ApplicationTrackingStatus): void {
     for (const [field, value] of Object.entries(status.editableValues || {})) {

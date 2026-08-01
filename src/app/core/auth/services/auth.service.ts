@@ -124,11 +124,7 @@ export class AuthService {
    * On success, rotates the stored tokens. Returns the new access token.
    */
   refreshToken(): Observable<string> {
-    const refreshToken = this.getRefreshToken();
-    if (!refreshToken) {
-      return throwError(() => new Error('No refresh token available'));
-    }
-    return this.http.post<AuthResponse>(`${this.apiUrl}/refresh`, { refreshToken }).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/refresh`, {}, { withCredentials: true }).pipe(
       tap(response => this.handleAuthSuccess(response)),
       map(response => response.accessToken),
       catchError(error => {
@@ -205,13 +201,6 @@ export class AuthService {
    */
   getToken(): string | null {
     return this.token();
-  }
-
-  /**
-   * Get current refresh token
-   */
-  getRefreshToken(): string | null {
-    return this.storage.getString(environment.refreshTokenKey);
   }
 
   /**
@@ -336,10 +325,6 @@ export class AuthService {
     // Store tokens
     this.storage.setString(environment.tokenKey, response.accessToken);
     this.token.set(response.accessToken);
-    if (response.refreshToken) {
-      this.storage.setString(environment.refreshTokenKey, response.refreshToken);
-    }
-
     // Store permissions
     const permissions = response.permissions ?? [];
     this.storage.setItem(environment.permissionsKey, permissions);
@@ -381,7 +366,6 @@ export class AuthService {
    */
   private clearSession(): void {
     this.storage.removeItem(environment.tokenKey);
-    this.storage.removeItem(environment.refreshTokenKey);
     this.storage.removeItem(environment.userKey);
     this.storage.removeItem(environment.permissionsKey);
     this.token.set(null);
@@ -424,13 +408,11 @@ export class AuthService {
       const decoded = this.decodeToken(token);
       const expirationDate = new Date(decoded.exp * 1000);
 
-      if (expirationDate < new Date() && !this.getRefreshToken()) {
-        this.logout();
+      if (expirationDate < new Date()) {
+        this.refreshToken().subscribe({ error: () => this.logout() });
       }
     } catch {
-      if (!this.getRefreshToken()) {
-        this.logout();
-      }
+      this.refreshToken().subscribe({ error: () => this.logout() });
     }
   }
 

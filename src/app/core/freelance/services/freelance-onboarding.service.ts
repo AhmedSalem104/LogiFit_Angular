@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, from, switchMap, tap } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
   ApplicationTrackingSession,
@@ -11,7 +11,9 @@ import {
   WorkspaceInvitePreview,
   WorkspaceClientJoinPreview,
   ClientJoinResult,
-  PasskeyCeremonyOptions,
+  OtpChallenge,
+  OtpPurpose,
+  OtpStepUp,
 } from '../models/freelance.models';
 
 /** Public identity and application calls. No tenant JWT is attached to these endpoints. */
@@ -46,8 +48,11 @@ export class FreelanceOnboardingService {
     return this.http.post<WorkspaceInvitePreview>(`${environment.apiUrl}/workspace-invites/preview`, { token });
   }
 
-  acceptWorkspaceInvite(token: string, workspaceSelectionToken: string): Observable<void> {
-    return this.http.post<void>(`${environment.apiUrl}/workspace-invites/accept`, { token, workspaceSelectionToken });
+  acceptWorkspaceInvite(token: string, workspaceSelectionToken: string, challengeId?: string,
+    code?: string, sessionBinding?: string): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/workspace-invites/accept`, {
+      token, workspaceSelectionToken, challengeId, code, sessionBinding,
+    });
   }
 
   previewClientJoin(code: string): Observable<WorkspaceClientJoinPreview> {
@@ -58,15 +63,55 @@ export class FreelanceOnboardingService {
     return this.http.post<ClientJoinResult>(`${environment.apiUrl}/workspace/client-join-codes/join`, { code, workspaceSelectionToken });
   }
 
-  signInWithPasskey(email: string): Observable<IdentitySignInResponse> {
-    return this.http.post<PasskeyCeremonyOptions>(`${this.identityBase}/passkeys/sign-in/options`, { email }).pipe(
-      switchMap(ceremony => from(this.getPasskeyAssertion(ceremony.options)).pipe(
-        switchMap(credential => this.http.post<IdentitySignInResponse>(`${this.identityBase}/passkeys/sign-in/verify`, {
-          ceremonyId: ceremony.ceremonyId,
-          credential,
-        }))
-      ))
-    );
+  requestPhoneLogin(phoneNumber: string, sessionBinding: string): Observable<OtpChallenge> {
+    return this.http.post<OtpChallenge>(`${this.identityBase}/phone-login/request`, { phoneNumber, sessionBinding });
+  }
+
+  verifyPhoneLogin(challengeId: string, code: string, sessionBinding: string): Observable<IdentitySignInResponse> {
+    return this.http.post<IdentitySignInResponse>(`${this.identityBase}/phone-login/verify`, {
+      challengeId, code, sessionBinding,
+    });
+  }
+
+  requestPhoneVerification(phoneNumber: string, purpose: OtpPurpose, workspaceSelectionToken: string | null,
+    sessionBinding: string): Observable<OtpChallenge> {
+    return this.http.post<OtpChallenge>(`${this.identityBase}/phone/request`, {
+      phoneNumber, purpose, workspaceSelectionToken, sessionBinding,
+    });
+  }
+
+  verifyPhone(challengeId: string, code: string, purpose: OtpPurpose,
+    workspaceSelectionToken: string | null, sessionBinding: string): Observable<void> {
+    return this.http.post<void>(`${this.identityBase}/phone/verify`, {
+      challengeId, code, purpose, workspaceSelectionToken, sessionBinding,
+    });
+  }
+
+  requestPhonePasswordReset(phoneNumber: string, sessionBinding: string): Observable<OtpChallenge> {
+    return this.http.post<OtpChallenge>(`${this.identityBase}/phone/password-reset/request`, {
+      phoneNumber, sessionBinding,
+    });
+  }
+
+  resetPasswordWithPhone(challengeId: string, code: string, newPassword: string,
+    sessionBinding: string): Observable<void> {
+    return this.http.post<void>(`${this.identityBase}/phone/password-reset/confirm`, {
+      challengeId, code, newPassword, sessionBinding,
+    });
+  }
+
+  requestStepUp(sessionBinding: string): Observable<OtpChallenge> {
+    return this.http.post<OtpChallenge>(`${this.identityBase}/step-up/request`, { sessionBinding });
+  }
+
+  verifyStepUp(challengeId: string, code: string, sessionBinding: string): Observable<OtpStepUp> {
+    return this.http.post<OtpStepUp>(`${this.identityBase}/step-up/verify`, { challengeId, code, sessionBinding });
+  }
+
+  requestInviteOtp(token: string, workspaceSelectionToken: string, sessionBinding: string): Observable<OtpChallenge> {
+    return this.http.post<OtpChallenge>(`${environment.apiUrl}/workspace-invites/otp/request`, {
+      token, workspaceSelectionToken, sessionBinding,
+    });
   }
 
   selectWorkspace(workspaceSelectionToken: string, workspaceId: string): Observable<WorkspaceAuthResponse> {
@@ -124,42 +169,4 @@ export class FreelanceOnboardingService {
     return token ? new HttpHeaders({ 'X-Application-Tracking-Token': token }) : new HttpHeaders();
   }
 
-  private async getPasskeyAssertion(options: PasskeyCeremonyOptions['options']): Promise<Record<string, unknown>> {
-    if (!window.PublicKeyCredential || !navigator.credentials) throw new Error('Passkey غير متاح في هذا المتصفح.');
-    const publicKey: PublicKeyCredentialRequestOptions = {
-      ...options,
-      challenge: this.base64UrlToBytes(options.challenge),
-      allowCredentials: options.allowCredentials?.map(item => ({
-        ...item,
-        id: this.base64UrlToBytes(item.id),
-      })),
-    };
-    const value = await navigator.credentials.get({ publicKey }) as PublicKeyCredential | null;
-    if (!value) throw new Error('لم يتم إكمال التحقق بـ Passkey.');
-    const response = value.response as AuthenticatorAssertionResponse;
-    return {
-      id: value.id,
-      rawId: this.bytesToBase64Url(value.rawId),
-      type: value.type,
-      response: {
-        authenticatorData: this.bytesToBase64Url(response.authenticatorData),
-        clientDataJSON: this.bytesToBase64Url(response.clientDataJSON),
-        signature: this.bytesToBase64Url(response.signature),
-        userHandle: response.userHandle ? this.bytesToBase64Url(response.userHandle) : null,
-      },
-      clientExtensionResults: value.getClientExtensionResults(),
-    };
-  }
-
-  private base64UrlToBytes(value: string): Uint8Array {
-    const padded = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4);
-    return Uint8Array.from(atob(padded), char => char.charCodeAt(0));
-  }
-
-  private bytesToBase64Url(value: ArrayBuffer): string {
-    const bytes = new Uint8Array(value);
-    let binary = '';
-    bytes.forEach(byte => binary += String.fromCharCode(byte));
-    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-  }
 }

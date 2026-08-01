@@ -8,25 +8,18 @@ import { AuthService } from '../services/auth.service';
 export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const token = authService.getToken();
-  const isPublicIdentityRequest = req.url.includes('/auth/')
-    || req.url.includes('/identity/')
-    || req.url.includes('/workspace-applications/');
+  // Refresh cookies are HttpOnly and cross-origin capable. JavaScript never reads them.
+  let outgoing = req.clone({ withCredentials: true });
 
-  // Identity proof and application tracking deliberately use opaque short-lived
-  // tokens, never a tenant JWT.
-  if (isPublicIdentityRequest) {
-    return next(req);
-  }
-
-  // Add token if available
+  // Sending an existing access token to an AllowAnonymous endpoint is harmless, while protected
+  // identity endpoints (phone change and step-up) require it.
   if (token) {
-    const clonedReq = req.clone({
+    outgoing = outgoing.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`
       }
     });
-    return next(clonedReq);
   }
 
-  return next(req);
+  return next(outgoing);
 };
