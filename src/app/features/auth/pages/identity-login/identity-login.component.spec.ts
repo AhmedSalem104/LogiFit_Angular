@@ -41,6 +41,7 @@ describe('IdentityLoginComponent unified authentication', () => {
   };
 
   beforeEach(() => {
+    sessionStorage.clear();
     onboarding = jasmine.createSpyObj<FreelanceOnboardingService>('FreelanceOnboardingService', [
       'identityLogin', 'requestPhoneLogin', 'verifyPhoneLogin', 'selectWorkspace',
       'reissueTrackingSessions', 'saveTrackingToken',
@@ -66,7 +67,10 @@ describe('IdentityLoginComponent unified authentication', () => {
     component = TestBed.runInInjectionContext(() => new IdentityLoginComponent());
   });
 
-  afterEach(() => component.ngOnDestroy());
+  afterEach(() => {
+    component.ngOnDestroy();
+    sessionStorage.clear();
+  });
 
   it('normalizes country code and local phone before requesting a real challenge', () => {
     component.phoneForm.setValue({ countryCode: '+20', phoneNumber: '010 1234 5678' });
@@ -88,6 +92,30 @@ describe('IdentityLoginComponent unified authentication', () => {
     expect(onboarding.verifyPhoneLogin).toHaveBeenCalledWith(
       challenge.challengeId, '1234', jasmine.any(String));
     expect(component.result()).toEqual(identityResult);
+    expect(sessionStorage.getItem('logicfit_pending_phone_login_challenge')).toBeNull();
+  });
+
+  it('restores an unexpired pending challenge after a page recreation', () => {
+    component.phoneForm.setValue({ countryCode: '+20', phoneNumber: '01012345678' });
+    component.requestOtp();
+    expect(sessionStorage.getItem('logicfit_pending_phone_login_challenge')).not.toBeNull();
+    component.ngOnDestroy();
+
+    component = TestBed.runInInjectionContext(() => new IdentityLoginComponent());
+
+    expect(component.challenge()?.challengeId).toBe(challenge.challengeId);
+    expect(component.method()).toBe('phone');
+    expect(component.otpSeconds()).toBeGreaterThan(0);
+  });
+
+  it('clears the pending challenge when the user changes the phone', () => {
+    component.phoneForm.setValue({ countryCode: '+20', phoneNumber: '01012345678' });
+    component.requestOtp();
+
+    component.cancelOtp();
+
+    expect(component.challenge()).toBeNull();
+    expect(sessionStorage.getItem('logicfit_pending_phone_login_challenge')).toBeNull();
   });
 
   it('reissues and saves only the tracking token for the selected pending request', () => {
