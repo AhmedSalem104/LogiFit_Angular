@@ -23,6 +23,13 @@
    server setting expires.
 8. Refresh Token is never stored by Angular. The backend sets an HttpOnly cookie; interceptors
    send credentials, rotate on `401`, and retain only the Access Token in JavaScript storage.
+9. Issue #55 persists only safe pending challenge metadata in `sessionStorage`, tied to the same
+   browser binding. Reloading the page restores the OTP step while it is unexpired; cancel,
+   success, or expiry removes it. Repeating the request from that browser reuses the pending
+   Backend challenge without a duplicate send.
+10. Identity registration normalizes an optional country-code/local phone to E.164. After email
+    confirmation, the first successful Phone + OTP verifies the stored phone and returns the same
+    workspace/application context. A decoy challenge for an unknown number never creates access.
 
 ### Existing freelance application flow
 

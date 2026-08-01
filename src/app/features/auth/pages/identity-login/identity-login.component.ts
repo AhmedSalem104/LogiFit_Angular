@@ -15,6 +15,13 @@ import {
 
 type LoginMethod = 'email' | 'phone';
 
+interface StoredPhoneOtpChallenge {
+  version: 1;
+  phoneNumber: string;
+  sessionBinding: string;
+  challenge: OtpChallenge;
+}
+
 @Component({
   selector: 'app-identity-login',
   standalone: true,
@@ -194,6 +201,7 @@ type LoginMethod = 'email' | 'phone';
   `],
 })
 export class IdentityLoginComponent implements OnDestroy {
+  private static readonly pendingChallengeKey = 'logicfit_pending_phone_login_challenge';
   private readonly fb = inject(FormBuilder);
   private readonly onboarding = inject(FreelanceOnboardingService);
   private readonly auth = inject(AuthService);
@@ -226,6 +234,10 @@ export class IdentityLoginComponent implements OnDestroy {
     code: ['', [Validators.required, Validators.pattern(/^\d{4,6}$/)]],
   });
 
+  constructor() {
+    this.restorePendingChallenge();
+  }
+
   steps() {
     const verified = !!this.result();
     const otp = !!this.challenge();
@@ -252,16 +264,26 @@ export class IdentityLoginComponent implements OnDestroy {
   }
 
   requestOtp(): void {
+    if (this.loading()) return;
     if (this.phoneForm.invalid) { this.phoneForm.markAllAsTouched(); return; }
+    const phoneNumber = this.normalizedPhone();
     this.loading.set(true); this.error.set('');
-    this.onboarding.requestPhoneLogin(this.normalizedPhone(), this.sessionBinding).subscribe({
+    this.onboarding.requestPhoneLogin(phoneNumber, this.sessionBinding).subscribe({
       next: challenge => {
         this.challenge.set(challenge);
+        this.persistPendingChallenge(phoneNumber, challenge);
         this.otpForm.reset();
         this.startTimer(challenge);
         this.loading.set(false);
       },
-      error: err => this.fail(err, 'تعذر إرسال رمز التحقق الآن.'),
+      error: err => {
+        if (this.errorCode(err) === 'OTP_RESEND_COOLDOWN' && this.restorePendingChallenge(phoneNumber)) {
+          this.error.set('الرمز السابق ما زال صالحًا. أدخله لإكمال تسجيل الدخول.');
+          this.loading.set(false);
+          return;
+        }
+        this.fail(err, this.requestOtpError(err));
+      },
     });
   }
 
@@ -277,6 +299,7 @@ export class IdentityLoginComponent implements OnDestroy {
 
   cancelOtp(): void {
     this.stopTimer();
+    this.clearPendingChallenge();
     this.challenge.set(null);
     this.otpForm.reset();
     this.error.set('');
@@ -322,6 +345,7 @@ export class IdentityLoginComponent implements OnDestroy {
 
   reset(): void {
     this.stopTimer();
+    this.clearPendingChallenge();
     this.result.set(null);
     this.challenge.set(null);
     this.error.set('');
@@ -348,6 +372,7 @@ export class IdentityLoginComponent implements OnDestroy {
 
   private handleIdentity(result: IdentitySignInResponse): void {
     this.stopTimer();
+    this.clearPendingChallenge();
     this.challenge.set(null);
     this.result.set(result);
     this.loading.set(false);
@@ -363,6 +388,7 @@ export class IdentityLoginComponent implements OnDestroy {
       const now = Date.now();
       this.otpSeconds.set(Math.max(0, Math.ceil((new Date(challenge.expiresAtUtc).getTime() - now) / 1000)));
       this.resendSeconds.set(Math.max(0, Math.ceil((new Date(challenge.resendAvailableAtUtc).getTime() - now) / 1000)));
+      if (this.otpSeconds() === 0) this.clearPendingChallenge();
     };
     update();
     this.timerId = setInterval(update, 1000);
@@ -391,11 +417,64 @@ export class IdentityLoginComponent implements OnDestroy {
   }
 
   private otpError(error: any): string {
-    const code = error?.error?.message || error?.error?.code;
+    const code = this.errorCode(error);
     if (code === 'OTP_EXPIRED') return 'انتهت صلاحية الرمز. اطلب رمزًا جديدًا.';
     if (code === 'OTP_LOCKED') return 'تم تجاوز عدد المحاولات. اطلب رمزًا جديدًا.';
     if (code === 'OTP_ALREADY_USED') return 'تم استخدام هذا الرمز من قبل.';
+    if (code === 'Invalid credentials') {
+      return 'تعذر الدخول بهذا الرقم. استخدم البريد وكلمة المرور أولًا وتأكد من ربط رقم الهاتف بهويتك.';
+    }
     return 'الرمز غير صحيح أو لم يعد صالحًا.';
+  }
+
+  private requestOtpError(error: any): string {
+    const code = this.errorCode(error);
+    if (code === 'OTP_RESEND_COOLDOWN') return 'انتظر حتى ينتهي عداد إعادة الإرسال، ثم حاول مرة أخرى.';
+    if (code === 'OTP_DAILY_LIMIT_REACHED') return 'تم بلوغ الحد اليومي لإرسال الرموز لهذا الرقم. حاول لاحقًا.';
+    return 'تعذر إرسال رمز التحقق الآن.';
+  }
+
+  private errorCode(error: any): string {
+    return error?.error?.message || error?.error?.code || '';
+  }
+
+  private persistPendingChallenge(phoneNumber: string, challenge: OtpChallenge): void {
+    const value: StoredPhoneOtpChallenge = {
+      version: 1,
+      phoneNumber,
+      sessionBinding: this.sessionBinding,
+      challenge,
+    };
+    sessionStorage.setItem(IdentityLoginComponent.pendingChallengeKey, JSON.stringify(value));
+  }
+
+  private restorePendingChallenge(expectedPhoneNumber?: string): boolean {
+    const raw = sessionStorage.getItem(IdentityLoginComponent.pendingChallengeKey);
+    if (!raw) return false;
+    try {
+      const stored = JSON.parse(raw) as StoredPhoneOtpChallenge;
+      const valid = stored.version === 1 &&
+        stored.sessionBinding === this.sessionBinding &&
+        !!stored.challenge?.challengeId &&
+        new Date(stored.challenge.expiresAtUtc).getTime() > Date.now() &&
+        (!expectedPhoneNumber || stored.phoneNumber === expectedPhoneNumber);
+      if (!valid) {
+        this.clearPendingChallenge();
+        return false;
+      }
+      this.method.set('phone');
+      this.phoneForm.patchValue({ phoneNumber: stored.phoneNumber });
+      this.challenge.set(stored.challenge);
+      this.startTimer(stored.challenge);
+      return true;
+    } catch {
+      this.clearPendingChallenge();
+      return false;
+    }
+  }
+
+  private clearPendingChallenge(): void {
+    sessionStorage.removeItem(IdentityLoginComponent.pendingChallengeKey);
   }
 
   private fail(error: any, fallback: string): void {

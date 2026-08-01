@@ -10,9 +10,12 @@
 - When no workspace or request exists, the screen presents only Gym, Freelance Workspace, and Join Workspace cards. Join is guidance for an invitation or QR until its backend contract is delivered; it does not invent a role or membership in the browser.
 - `/auth/login` stays as an explicit legacy-gym compatibility route, but is no longer the public default. Raw Tenant GUID input is hidden in Production.
 
-### Identity, OTP, and session contract (Issues #118 and #127)
+### Identity, OTP, and session contract (Issues #118, #127, and #55)
 
-- `/identity/register` collects full name, email, password, and optional contact phone, then displays a check-email state. It does not sign the user in.
+- `/identity/register` collects full name, email, password, and an optional country-code/local
+  phone pair. It sends only the normalized E.164 value, then displays a check-email state. It does
+  not sign the user in; the first successful Phone + OTP after email confirmation verifies that
+  stored phone.
 - `/identity/verify-email#token=...` reads the one-use token from the URL fragment and posts it once to `POST /api/identity/verify-email`; the token is not persisted in browser storage.
 - `/identity/reset-password` requests `POST /api/identity/password-reset`; the reset link opens the same route with a fragment token and submits `POST /api/identity/password-reset/confirm`.
 - `/identity/login` keeps `POST /api/identity/login { email, password }` and adds
@@ -23,6 +26,11 @@
   production build also displays `1234`; only the backend can accept it, and only with a valid,
   unexpired challenge while the server-side temporary provider remains enabled. Remove the hint
   when the external provider is enabled.
+- Issue #55 stores only pending `challengeId`, masked destination, E.164 phone, expiry/resend
+  timestamps, and the matching browser binding in `sessionStorage`. Refresh restores the OTP card;
+  success, cancellation, or expiry removes the record. The OTP code, access token, and refresh
+  token are never stored in that recovery record. A same-session retry consumes the Backend's
+  idempotent recovery contract instead of trapping the user on `OTP_RESEND_COOLDOWN`.
 - `/identity/phone-security` verifies or changes a phone through `/api/identity/phone/request`
   and `/phone/verify`. A confirmed phone change revokes existing sessions and returns the user
   to sign-in.
