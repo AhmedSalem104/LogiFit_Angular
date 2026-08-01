@@ -4,20 +4,32 @@
 
 ### Unified entry update (2026-07-30)
 
-- `/` now opens `/identity/login`, the public identity-first entry. Its explicit steps are verified email, password verification, and then one destination view for active workspaces and pending applications.
+- `/` now opens `/identity/login`, the public identity-first entry. It offers Email + Password
+  and Phone + OTP, then renders the same server-issued workspace/application context.
 - A single active workspace with no pending application is entered directly. Otherwise the user sees a workspace card and/or an application-tracking card; a pending request never hides an active workspace.
 - When no workspace or request exists, the screen presents only Gym, Freelance Workspace, and Join Workspace cards. Join is guidance for an invitation or QR until its backend contract is delivered; it does not invent a role or membership in the browser.
 - `/auth/login` stays as an explicit legacy-gym compatibility route, but is no longer the public default. Raw Tenant GUID input is hidden in Production.
 
-### Email identity contract (Issue #113, pending backend PR #115)
+### Identity, OTP, and session contract (Issue #118, local/unreleased)
 
 - `/identity/register` collects full name, email, password, and optional contact phone, then displays a check-email state. It does not sign the user in.
 - `/identity/verify-email#token=...` reads the one-use token from the URL fragment and posts it once to `POST /api/identity/verify-email`; the token is not persisted in browser storage.
 - `/identity/reset-password` requests `POST /api/identity/password-reset`; the reset link opens the same route with a fragment token and submits `POST /api/identity/password-reset/confirm`.
-- `/identity/login` calls `POST /api/identity/login { email, password }`. Phone is not an identity login field.
+- `/identity/login` keeps `POST /api/identity/login { email, password }` and adds
+  `/api/identity/phone-login/request` then `/phone-login/verify`. The phone control combines a
+  country code with the local number and sends the normalized E.164 value to the server.
+- The OTP screen displays the masked destination, expiry/resend countdowns, and typed expired,
+  locked, consumed, or invalid errors. The `1234` hint is compiled only in Development.
+- `/identity/phone-security` verifies or changes a phone through `/api/identity/phone/request`
+  and `/phone/verify`. A confirmed phone change revokes existing sessions and returns the user
+  to sign-in.
+- `/identity/reset-password` offers the existing email-link path and Phone + OTP through
+  `/api/identity/phone/password-reset/{request,confirm}`.
+- Invite acceptance asks for `InviteAcceptance` OTP only when backend policy returns
+  `INVITE_OTP_REQUIRED`; the frontend never decides the policy itself.
 
 - `WorkspaceType.FreelanceCoach` remains tenant-isolated but has an independent public identity and branding profile.
-- `/identity/login` proves the global identity before issuing a tenant JWT. It returns active workspaces and pending applications together; selecting one workspace exchanges a short-lived selection token for the existing JWT/refresh-token contract.
+- `/identity/login` proves the global identity before issuing a tenant JWT. It returns active workspaces and pending applications together; selecting one workspace exchanges a short-lived selection token for the existing JWT and HttpOnly refresh-cookie contract.
 - Public requests use opaque, short-lived tracking tokens held in `sessionStorage`. They are not refresh tokens and no normal tenant session is issued before Platform approval.
 - The legacy gym login and client registration routes remain unchanged. New routes are `/auth/register-freelance`, `/identity/login`, and `/identity/application-status`.
 
@@ -61,15 +73,20 @@
 - ⚠️ الـ backend يرجّع الدور كـ**نص** ("Owner") في login response، لكن يستقبله كـ**رقم** في register. `auth.service.ts` يعالج الحالتين (`mapRoleToEnum`).
 
 **التدفّق:**
-- JWT محفوظ في `localStorage` (مفتاح `logicfit_token`)، بيانات المستخدم في `logicfit_user`.
-- فكّ التوكن يدوياً (`atob` على الـ payload) للتحقق من `exp`. عند الانتهاء → `logout()` → توجيه لـ `/auth/login`.
+- Access JWT فقط محفوظ في `localStorage` (مفتاح `logicfit_token`) مع بيانات المستخدم.
+  Refresh Token لا يظهر للـJavaScript؛ الخادم يضعه في `HttpOnly; Secure; SameSite=None`
+  Cookie، وكل refresh request يستخدم `withCredentials`.
+- فكّ Access Token يدوياً (`atob` على الـ payload) للتحقق من `exp`. عند الانتهاء يحاول
+  `errorInterceptor` عملية refresh واحدة مشتركة ثم يخرج عند الفشل.
 - **تسجيل صالة جديدة** (`registerGym`): خطوتان متسلسلتان — (1) POST `/tenants` لإنشاء الـ tenant (subdomain يُولّد آلياً من اسم الصالة + timestamp)، (2) `register` للـ owner بـ `role=1`.
 
 **الحرّاس (`core/auth/guards`):** `authGuard`, `guestGuard`, `ownerGuard`, `coachGuard`, `clientGuard`.
 
 **الـ Interceptors (`core/auth/interceptors`):**
-- `jwtInterceptor`: يضيف `Authorization: Bearer` لكل الطلبات **ماعدا** مسارات `/auth/`.
-- `errorInterceptor`: يترجم أخطاء HTTP للعربية. `401` → `logout()`. `403` → توجيه حسب الدور. يرفق `translatedMessage` بكل خطأ.
+- `jwtInterceptor`: يضيف `Authorization: Bearer` عند وجود Access Token ويضبط
+  `withCredentials=true` حتى تُرسل Refresh Cookie دون قراءتها.
+- `errorInterceptor`: يترجم أخطاء HTTP، وينفذ single-flight refresh عند `401` ثم يعيد
+  الطلب؛ فشل refresh يمسح جلسة الواجهة.
 
 **التوجيه بعد الدخول:** `getRedirectUrl()` → `/owner/dashboard` أو `/coach/dashboard` أو `/client/dashboard`.
 
@@ -99,7 +116,8 @@ shared/
 state/          theme.state.ts
 ```
 
-**التوجيه:** جذر `app.routes.ts` يوزّع على `auth` / `owner` / `coach` / `client`، كل قسم `loadChildren` من ملف routes خاص به. الافتراضي `''` → `auth/login`، و`**` → `auth/login`.
+**التوجيه:** جذر `app.routes.ts` يوزّع على `identity` / `auth` / `owner` / `coach` /
+`client`. الافتراضي و`**` → `/identity/login`; `/auth/login` مسار توافق صريح.
 
 ---
 
@@ -259,7 +277,9 @@ Vercel: Build = `npm run build`, Output = `dist/logicfit-app/browser`.
 منظومة SaaS كاملة أُضيفت للتوافق مع الباك اند الجديد (Tenant API):
 
 **المصادقة (متغيّرة):**
-- التوكن الآن **`accessToken` عمره 15 دقيقة** + **`refreshToken`**. التجديد تلقائي عبر `error.interceptor` (single-flight: عند `401` يجدّد مرة ويعيد الطلب، ولو فشل → logout). `POST /auth/refresh`, `POST /auth/logout-all`.
+- Access Token عمره 15 دقيقة ويُحفظ في الواجهة، أما Refresh Token ففي HttpOnly Cookie
+  فقط. التجديد تلقائي عبر `error.interceptor` (single-flight) باستخدام
+  `POST /auth/refresh` بلا body؛ `POST /auth/logout-all` يلغي كل الجلسات.
 - login يرجّع `roles[]` + **`permissions[]`** — مخزّنة في `AuthService.permissions` (signal).
 - **register ينشئ Client فقط** (أُزيل اختيار الدور). نسيت/إعادة كلمة المرور الآن بـ `phoneNumber + tenantId + resetToken` (شاشة `reset-password` جديدة).
 
@@ -282,7 +302,8 @@ Vercel: Build = `npm run build`, Output = `dist/logicfit-app/browser`.
 - routes: `/owner/subscription`, `/owner/subscription/invoices`. مجموعة sidebar "اشتراك المنصة".
 - Enums: `TenantSubscriptionStatus`, `PaymentRequestStatus`, `SubscriptionInvoiceStatus`, `BillingCycle`, `FeatureCode`.
 
-**مفاتيح تخزين جديدة** (`environment`): `refreshTokenKey`, `permissionsKey`, `tenantIdKey`, `brandingKey`.
+**مفاتيح التخزين** (`environment`): `tokenKey`, `permissionsKey`, `tenantIdKey`,
+`brandingKey`. لا يوجد `refreshTokenKey`.
 
 **تحديد الصالة (tenant) في شاشات الدخول:** login / register / forgot-password تستخدم `tenantId` المُستخرَج من الـ subdomain (عبر `BrandingService.getResolvedTenantId()`) وتعرض اسم الصالة كـ banner للقراءة فقط — **بدون كشف قائمة كل الصالات علناً**. قائمة الصالات (`getTenants()`) تبقى فقط كـ fallback على localhost / الدومين المجرّد (تطوير).
 

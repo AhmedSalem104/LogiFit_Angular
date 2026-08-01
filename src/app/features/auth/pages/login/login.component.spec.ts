@@ -8,7 +8,7 @@ import { NotificationService } from '../../../../core/services/notification.serv
 import { TenantStatusService } from '../../../../core/tenant/tenant-status.service';
 import { LoginComponent } from './login.component';
 
-describe('LoginComponent onboarding flow', () => {
+describe('LoginComponent legacy gym compatibility flow', () => {
   let component: LoginComponent;
   const branding = {
     branding: signal(null),
@@ -31,41 +31,34 @@ describe('LoginComponent onboarding flow', () => {
     component = TestBed.runInInjectionContext(() => new LoginComponent());
   });
 
-  it('starts at the workspace selection step', () => {
-    expect(component.onboardingStep).toBe(1);
-    expect(component.stepProgress).toBe(50);
+  it('starts without a tenant on a non-branded host', () => {
+    expect(component.tenantResolved()).toBeFalse();
+    expect(component.resolvedGymName()).toBeNull();
   });
 
-  it('shows the access cards before a visitor chooses a login path', () => {
+  it('clears stale tenant state and asks for a gym identifier', () => {
     component.ngOnInit();
 
-    expect(component.isChoosingAccess()).toBeTrue();
-  });
-
-  it('opens the existing gym flow only after choosing the gym card', () => {
-    component.chooseGymLogin();
-
-    expect(component.isChoosingAccess()).toBeFalse();
     expect(component.tenantResolved()).toBeFalse();
+    expect(branding.clearResolvedTenant).toHaveBeenCalled();
   });
 
-  it('uses button actions to navigate to the identity and registration paths', () => {
-    component.goToIdentityLogin();
-    component.goToFreelanceRegistration();
-    component.goToGymRegistration();
-    component.goToClientRegistration();
+  it('accepts a valid tenant GUID only through the explicit development helper', () => {
+    component.manualTenantId = '5cf4f4c7-17ba-4981-a948-a8fbe1af2da5';
 
-    expect(router.navigate).toHaveBeenCalledWith(['/identity/login']);
-    expect(router.navigate).toHaveBeenCalledWith(['/auth/register-freelance']);
-    expect(router.navigate).toHaveBeenCalledWith(['/auth/register-gym']);
-    expect(router.navigate).toHaveBeenCalledWith(['/auth/register']);
+    component.useManualTenant();
+
+    expect(component.tenantResolved()).toBeTrue();
+    expect(component.loginForm.value.tenantId).toBe(component.manualTenantId);
   });
 
-  it('moves to the credentials step after the workspace is resolved', () => {
-    component.tenantResolved.set(true);
+  it('rejects an invalid development tenant identifier', () => {
+    component.manualTenantId = 'not-a-guid';
 
-    expect(component.onboardingStep).toBe(2);
-    expect(component.stepProgress).toBe(100);
+    component.useManualTenant();
+
+    expect(component.tenantResolved()).toBeFalse();
+    expect(component.manualError()).toContain('GUID');
   });
 
   it('returns to workspace selection when the user changes the workspace', () => {

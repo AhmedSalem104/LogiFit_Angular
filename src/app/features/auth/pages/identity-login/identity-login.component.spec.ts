@@ -1,13 +1,20 @@
 import { TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
+import { Router } from '@angular/router';
 import { of } from 'rxjs';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { FreelanceOnboardingService } from '../../../../core/freelance/services/freelance-onboarding.service';
-import { ApplicationRequestStatus, ApplicationType, IdentitySignInResponse, PendingApplication } from '../../../../core/freelance/models/freelance.models';
+import {
+  ApplicationRequestStatus,
+  ApplicationType,
+  IdentitySignInResponse,
+  OtpChallenge,
+  OtpPurpose,
+  PendingApplication,
+} from '../../../../core/freelance/models/freelance.models';
 import { IdentityLoginComponent } from './identity-login.component';
 
-describe('IdentityLoginComponent tracking recovery', () => {
+describe('IdentityLoginComponent unified authentication', () => {
   let component: IdentityLoginComponent;
   let onboarding: jasmine.SpyObj<FreelanceOnboardingService>;
   let router: jasmine.SpyObj<Router>;
@@ -25,11 +32,21 @@ describe('IdentityLoginComponent tracking recovery', () => {
     pendingApplications: [pendingApplication],
     requiresWorkspaceSelection: true,
   };
+  const challenge: OtpChallenge = {
+    challengeId: 'd4832234-d6e9-4919-8c78-d01e033227e3',
+    purpose: OtpPurpose.PasswordlessLogin,
+    expiresAtUtc: new Date(Date.now() + 300_000).toISOString(),
+    resendAvailableAtUtc: new Date(Date.now() + 60_000).toISOString(),
+    maskedPhoneNumber: '+20***678',
+  };
 
   beforeEach(() => {
     onboarding = jasmine.createSpyObj<FreelanceOnboardingService>('FreelanceOnboardingService', [
+      'identityLogin', 'requestPhoneLogin', 'verifyPhoneLogin', 'selectWorkspace',
       'reissueTrackingSessions', 'saveTrackingToken',
     ]);
+    onboarding.requestPhoneLogin.and.returnValue(of(challenge));
+    onboarding.verifyPhoneLogin.and.returnValue(of(identityResult));
     onboarding.reissueTrackingSessions.and.returnValue(of([{
       applicationId: pendingApplication.applicationId,
       status: pendingApplication.status,
@@ -44,14 +61,33 @@ describe('IdentityLoginComponent tracking recovery', () => {
         { provide: FreelanceOnboardingService, useValue: onboarding },
         { provide: AuthService, useValue: {} },
         { provide: Router, useValue: router },
-        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({ continue: 'application-status' }) } } },
       ],
     });
     component = TestBed.runInInjectionContext(() => new IdentityLoginComponent());
   });
 
-  it('identifies the tracking recovery path', () => {
-    expect(component.trackingRecovery).toBeTrue();
+  afterEach(() => component.ngOnDestroy());
+
+  it('normalizes country code and local phone before requesting a real challenge', () => {
+    component.phoneForm.setValue({ countryCode: '+20', phoneNumber: '010 1234 5678' });
+
+    component.requestOtp();
+
+    expect(onboarding.requestPhoneLogin).toHaveBeenCalledWith(
+      '+201012345678', jasmine.any(String));
+    expect(component.challenge()).toEqual(challenge);
+  });
+
+  it('does not create workspace access in the browser after OTP verification', () => {
+    component.phoneForm.setValue({ countryCode: '+20', phoneNumber: '01012345678' });
+    component.requestOtp();
+    component.otpForm.setValue({ code: '1234' });
+
+    component.verifyOtp();
+
+    expect(onboarding.verifyPhoneLogin).toHaveBeenCalledWith(
+      challenge.challengeId, '1234', jasmine.any(String));
+    expect(component.result()).toEqual(identityResult);
   });
 
   it('reissues and saves only the tracking token for the selected pending request', () => {
