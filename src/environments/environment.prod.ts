@@ -1,6 +1,7 @@
 export const environment = {
   production: true,
-  otpDevelopmentHint: '',
+  // Temporary Issue #127 exception. Remove this hint when the production OTP provider is enabled.
+  otpDevelopmentHint: 'وضع اختبار مؤقت: استخدم الكود 1234',
   // Production API base. Vercel rewrites /api requests to this backend via vercel.json.
   // Keep browser requests same-origin; vercel.json rewrites /api to the current backend.
   apiUrl: '/api',
