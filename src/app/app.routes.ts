@@ -4,127 +4,20 @@ import { guestGuard } from './core/auth/guards/guest.guard';
 import { ownerGuard, coachGuard, clientGuard } from './core/auth/guards/role.guard';
 
 export const routes: Routes = [
-  // Identity-first routes stay available even to a user who already has a
-  // tenant session, so a pending request never blocks an active workspace.
-  {
-    path: 'identity',
-    loadComponent: () =>
-      import('./core/layout/auth-layout/auth-layout.component').then(m => m.AuthLayoutComponent),
-    children: [
-      {
-        path: 'login',
-        loadComponent: () =>
-          import('./features/auth/pages/identity-login/identity-login.component').then(m => m.IdentityLoginComponent),
-        title: 'الدخول بالهوية - LogicFit'
-      },
-      {
-        path: 'register',
-        loadComponent: () =>
-          import('./features/auth/pages/identity-register/identity-register.component').then(m => m.IdentityRegisterComponent),
-        title: 'إنشاء هوية - LogicFit'
-      },
-      {
-        path: 'verify-email',
-        loadComponent: () =>
-          import('./features/auth/pages/identity-email-verification/identity-email-verification.component').then(m => m.IdentityEmailVerificationComponent),
-        title: 'Email verification - LogicFit'
-      },
-      {
-        path: 'reset-password',
-        loadComponent: () =>
-          import('./features/auth/pages/identity-password-reset/identity-password-reset.component').then(m => m.IdentityPasswordResetComponent),
-        title: 'Password reset - LogicFit'
-      },
-      {
-        path: 'phone-security',
-        canActivate: [authGuard],
-        loadComponent: () =>
-          import('./features/auth/pages/identity-phone-security/identity-phone-security.component')
-            .then(m => m.IdentityPhoneSecurityComponent),
-        title: 'أمان رقم الهاتف - LogicFit'
-      },
-      {
-        path: 'application-status',
-        loadComponent: () =>
-          import('./features/auth/pages/application-status/application-status.component').then(m => m.ApplicationStatusComponent),
-        title: 'متابعة الطلب - LogicFit'
-      },
-      {
-        path: 'accept-invite',
-        loadComponent: () =>
-          import('./features/auth/pages/identity-join/identity-join.component').then(m => m.IdentityJoinComponent),
-        data: { mode: 'invite' },
-        title: 'قبول دعوة - LogicFit'
-      },
-      {
-        path: 'join-client',
-        loadComponent: () =>
-          import('./features/auth/pages/identity-join/identity-join.component').then(m => m.IdentityJoinComponent),
-        data: { mode: 'client' },
-        title: 'انضمام عميل - LogicFit'
-      }
-    ]
-  },
-
-  // Auth Routes (Guest only)
-  {
-    path: 'auth',
-    canActivate: [guestGuard],
-    loadComponent: () =>
-      import('./core/layout/auth-layout/auth-layout.component').then(m => m.AuthLayoutComponent),
-    loadChildren: () =>
-      import('./features/auth/auth.routes').then(m => m.authRoutes)
-  },
-
-  // Owner Routes
-  {
-    path: 'owner',
-    canActivate: [authGuard, ownerGuard],
-    loadComponent: () =>
-      import('./core/layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent),
-    loadChildren: () =>
-      import('./features/owner/owner.routes').then(m => m.ownerRoutes)
-  },
-
-  // Coach Routes
-  {
-    path: 'coach',
-    canActivate: [authGuard, coachGuard],
-    loadComponent: () =>
-      import('./core/layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent),
-    loadChildren: () =>
-      import('./features/coach/coach.routes').then(m => m.COACH_ROUTES)
-  },
-
-  // Client Routes
-  {
-    path: 'client',
-    canActivate: [authGuard, clientGuard],
-    loadComponent: () =>
-      import('./core/layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent),
-    loadChildren: () =>
-      import('./features/client/client.routes').then(m => m.clientRoutes)
-  },
-
-  // Tenant blocked (suspended / expired / archived) — no guard: a logged-out
-  // blocked user must still be able to see the status screen.
-  {
-    path: 'gym-unavailable',
-    loadComponent: () =>
-      import('./features/tenant/gym-unavailable/gym-unavailable.component')
-        .then(m => m.GymUnavailableComponent)
-  },
-
-  // Default redirect
-  {
-    path: '',
-    redirectTo: 'identity/login',
-    pathMatch: 'full'
-  },
-
-  // 404 - Redirect to login
-  {
-    path: '**',
-    redirectTo: 'identity/login'
-  }
+  { path: 'identity', loadComponent: () => import('./core/layout/auth-layout/auth-layout.component').then(m => m.AuthLayoutComponent), children: [
+    { path: 'login', loadComponent: () => import('./features/auth/pages/identity-login/identity-login.component').then(m => m.IdentityLoginComponent) },
+    { path: 'register', loadComponent: () => import('./features/auth/pages/identity-register/identity-register.component').then(m => m.IdentityRegisterComponent) },
+    { path: 'verify-email', loadComponent: () => import('./features/auth/pages/identity-email-verification/identity-email-verification.component').then(m => m.IdentityEmailVerificationComponent) },
+    { path: 'reset-password', loadComponent: () => import('./features/auth/pages/identity-password-reset/identity-password-reset.component').then(m => m.IdentityPasswordResetComponent) },
+    { path: 'application-status', loadComponent: () => import('./features/auth/pages/application-status/application-status.component').then(m => m.ApplicationStatusComponent) },
+    { path: 'accept-invite', loadComponent: () => import('./features/auth/pages/identity-join/identity-join.component').then(m => m.IdentityJoinComponent), data: { mode: 'invite' } },
+    { path: 'join-client', loadComponent: () => import('./features/auth/pages/identity-join/identity-join.component').then(m => m.IdentityJoinComponent), data: { mode: 'client' } },
+  ] },
+  { path: 'auth', canActivate: [guestGuard], loadComponent: () => import('./core/layout/auth-layout/auth-layout.component').then(m => m.AuthLayoutComponent), loadChildren: () => import('./features/auth/auth.routes').then(m => m.authRoutes) },
+  { path: 'owner', canActivate: [authGuard, ownerGuard], loadComponent: () => import('./core/layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent), loadChildren: () => import('./features/owner/owner.routes').then(m => m.ownerRoutes) },
+  { path: 'coach', canActivate: [authGuard, coachGuard], loadComponent: () => import('./core/layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent), loadChildren: () => import('./features/coach/coach.routes').then(m => m.COACH_ROUTES) },
+  { path: 'client', canActivate: [authGuard, clientGuard], loadComponent: () => import('./core/layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent), loadChildren: () => import('./features/client/client.routes').then(m => m.clientRoutes) },
+  { path: 'gym-unavailable', loadComponent: () => import('./features/tenant/gym-unavailable/gym-unavailable.component').then(m => m.GymUnavailableComponent) },
+  { path: '', redirectTo: 'identity/login', pathMatch: 'full' },
+  { path: '**', redirectTo: 'identity/login' },
 ];

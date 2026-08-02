@@ -11,9 +11,6 @@ import {
   WorkspaceInvitePreview,
   WorkspaceClientJoinPreview,
   ClientJoinResult,
-  OtpChallenge,
-  OtpPurpose,
-  OtpStepUp,
 } from '../models/freelance.models';
 
 /** Public identity and application calls. No tenant JWT is attached to these endpoints. */
@@ -48,11 +45,8 @@ export class FreelanceOnboardingService {
     return this.http.post<WorkspaceInvitePreview>(`${environment.apiUrl}/workspace-invites/preview`, { token });
   }
 
-  acceptWorkspaceInvite(token: string, workspaceSelectionToken: string, challengeId?: string,
-    code?: string, sessionBinding?: string): Observable<void> {
-    return this.http.post<void>(`${environment.apiUrl}/workspace-invites/accept`, {
-      token, workspaceSelectionToken, challengeId, code, sessionBinding,
-    });
+  acceptWorkspaceInvite(token: string, workspaceSelectionToken: string): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/workspace-invites/accept`, { token, workspaceSelectionToken });
   }
 
   previewClientJoin(code: string): Observable<WorkspaceClientJoinPreview> {
@@ -61,57 +55,6 @@ export class FreelanceOnboardingService {
 
   joinWorkspaceAsClient(code: string, workspaceSelectionToken: string): Observable<ClientJoinResult> {
     return this.http.post<ClientJoinResult>(`${environment.apiUrl}/workspace/client-join-codes/join`, { code, workspaceSelectionToken });
-  }
-
-  requestPhoneLogin(phoneNumber: string, sessionBinding: string): Observable<OtpChallenge> {
-    return this.http.post<OtpChallenge>(`${this.identityBase}/phone-login/request`, { phoneNumber, sessionBinding });
-  }
-
-  verifyPhoneLogin(challengeId: string, code: string, sessionBinding: string): Observable<IdentitySignInResponse> {
-    return this.http.post<IdentitySignInResponse>(`${this.identityBase}/phone-login/verify`, {
-      challengeId, code, sessionBinding,
-    });
-  }
-
-  requestPhoneVerification(phoneNumber: string, purpose: OtpPurpose, workspaceSelectionToken: string | null,
-    sessionBinding: string): Observable<OtpChallenge> {
-    return this.http.post<OtpChallenge>(`${this.identityBase}/phone/request`, {
-      phoneNumber, purpose, workspaceSelectionToken, sessionBinding,
-    });
-  }
-
-  verifyPhone(challengeId: string, code: string, purpose: OtpPurpose,
-    workspaceSelectionToken: string | null, sessionBinding: string): Observable<void> {
-    return this.http.post<void>(`${this.identityBase}/phone/verify`, {
-      challengeId, code, purpose, workspaceSelectionToken, sessionBinding,
-    });
-  }
-
-  requestPhonePasswordReset(phoneNumber: string, sessionBinding: string): Observable<OtpChallenge> {
-    return this.http.post<OtpChallenge>(`${this.identityBase}/phone/password-reset/request`, {
-      phoneNumber, sessionBinding,
-    });
-  }
-
-  resetPasswordWithPhone(challengeId: string, code: string, newPassword: string,
-    sessionBinding: string): Observable<void> {
-    return this.http.post<void>(`${this.identityBase}/phone/password-reset/confirm`, {
-      challengeId, code, newPassword, sessionBinding,
-    });
-  }
-
-  requestStepUp(sessionBinding: string): Observable<OtpChallenge> {
-    return this.http.post<OtpChallenge>(`${this.identityBase}/step-up/request`, { sessionBinding });
-  }
-
-  verifyStepUp(challengeId: string, code: string, sessionBinding: string): Observable<OtpStepUp> {
-    return this.http.post<OtpStepUp>(`${this.identityBase}/step-up/verify`, { challengeId, code, sessionBinding });
-  }
-
-  requestInviteOtp(token: string, workspaceSelectionToken: string, sessionBinding: string): Observable<OtpChallenge> {
-    return this.http.post<OtpChallenge>(`${environment.apiUrl}/workspace-invites/otp/request`, {
-      token, workspaceSelectionToken, sessionBinding,
-    });
   }
 
   selectWorkspace(workspaceSelectionToken: string, workspaceId: string): Observable<WorkspaceAuthResponse> {

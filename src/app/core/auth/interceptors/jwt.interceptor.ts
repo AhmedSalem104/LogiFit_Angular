@@ -12,7 +12,7 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
   let outgoing = req.clone({ withCredentials: true });
 
   // Sending an existing access token to an AllowAnonymous endpoint is harmless, while protected
-  // identity endpoints (phone change and step-up) require it.
+  // Identity endpoints use the email/password session contract.
   if (token) {
     outgoing = outgoing.clone({
       setHeaders: {
