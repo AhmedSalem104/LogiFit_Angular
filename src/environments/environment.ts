@@ -1,6 +1,5 @@
 export const environment = {
   production: false,
-  otpDevelopmentHint: 'وضع التطوير فقط: استخدم الكود 1234',
   // Shared API base used by the deployed LogicFit backend.
   // Local development can switch to the proxy target in proxy.conf.json when needed.
   // Keep browser requests same-origin; proxy.conf.json forwards them to the current backend.

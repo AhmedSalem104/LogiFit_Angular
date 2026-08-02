@@ -24,7 +24,7 @@ import { FreelanceOnboardingService } from '../../../../core/freelance/services/
             inputmode="tel" placeholder="10 1234 5678" />
         </span>
       </label>
-      <small class="phone-hint">يُحفظ الرقم بصيغة دولية E.164، ويُوثّق عند أول دخول ناجح عبر OTP بعد تأكيد البريد.</small>
+      <small class="phone-hint">رقم الهاتف اختياري للتواصل فقط، ويُحفظ بصيغة دولية E.164 ولا يُستخدم لتسجيل الدخول.</small>
       <label>كلمة المرور<input class="form-input" type="password" formControlName="password" autocomplete="new-password" dir="ltr" /></label>
       <label>تأكيد كلمة المرور<input class="form-input" type="password" formControlName="confirmPassword" autocomplete="new-password" dir="ltr" /></label>
       @if (error()) { <p class="error">{{ error() }}</p> }

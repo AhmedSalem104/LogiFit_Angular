@@ -1,45 +1,12 @@
 import { Routes } from '@angular/router';
 
+/** Legacy auth paths are compatibility redirects only; identity-first owns authentication. */
 export const authRoutes: Routes = [
-  {
-    path: 'login',
-    loadComponent: () =>
-      import('./pages/login/login.component').then(m => m.LoginComponent),
-    title: 'تسجيل الدخول - LogicFit'
-  },
-  {
-    path: 'register',
-    loadComponent: () =>
-      import('./pages/register/register.component').then(m => m.RegisterComponent),
-    title: 'إنشاء حساب - LogicFit'
-  },
-  {
-    path: 'register-gym',
-    loadComponent: () =>
-      import('./pages/register-gym/register-gym.component').then(m => m.RegisterGymComponent),
-    title: 'تسجيل صالة جديدة - LogicFit'
-  },
-  {
-    path: 'register-freelance',
-    loadComponent: () =>
-      import('./pages/register-freelance/register-freelance.component').then(m => m.RegisterFreelanceComponent),
-    title: 'Freelance workspace application - LogicFit'
-  },
-  {
-    path: 'forgot-password',
-    loadComponent: () =>
-      import('./pages/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent),
-    title: 'نسيت كلمة المرور - LogicFit'
-  },
-  {
-    path: 'reset-password',
-    loadComponent: () =>
-      import('./pages/reset-password/reset-password.component').then(m => m.ResetPasswordComponent),
-    title: 'إعادة تعيين كلمة المرور - LogicFit'
-  },
-  {
-    path: '',
-    redirectTo: 'login',
-    pathMatch: 'full'
-  }
+  { path: 'login', redirectTo: '/identity/login', pathMatch: 'full' },
+  { path: 'register', redirectTo: '/identity/register', pathMatch: 'full' },
+  { path: 'forgot-password', redirectTo: '/identity/reset-password', pathMatch: 'full' },
+  { path: 'reset-password', redirectTo: '/identity/reset-password', pathMatch: 'full' },
+  { path: 'register-gym', loadComponent: () => import('./pages/register-gym/register-gym.component').then(m => m.RegisterGymComponent) },
+  { path: 'register-freelance', loadComponent: () => import('./pages/register-freelance/register-freelance.component').then(m => m.RegisterFreelanceComponent) },
+  { path: '', redirectTo: '/identity/login', pathMatch: 'full' },
 ];
