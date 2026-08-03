@@ -4,45 +4,29 @@
 
 ### Unified entry update (2026-07-30)
 
-- `/` now opens `/identity/login`, the public identity-first entry. It offers Email + Password
-  and Phone + OTP, then renders the same server-issued workspace/application context.
+- `/` now opens `/identity/login`, the public identity-first entry. It accepts Email + Password,
+  then renders the same server-issued workspace/application context.
 - A single active workspace with no pending application is entered directly. Otherwise the user sees a workspace card and/or an application-tracking card; a pending request never hides an active workspace.
 - When no workspace or request exists, the screen presents only Gym, Freelance Workspace, and Join Workspace cards. Join is guidance for an invitation or QR until its backend contract is delivered; it does not invent a role or membership in the browser.
-- `/auth/login` stays as an explicit legacy-gym compatibility route, but is no longer the public default. Raw Tenant GUID input is hidden in Production.
+- `/auth/login`, `/auth/register`, and the old phone-based paths are compatibility redirects in the
+  UI only; they do not call legacy Backend endpoints. Raw Tenant GUID input is hidden in Production.
 
-### Identity, OTP, and session contract (Issues #118, #127, and #55)
+### Identity and session contract (Issue #161)
 
-- `/identity/register` collects full name, email, password, and an optional country-code/local
-  phone pair. It sends only the normalized E.164 value, then displays a check-email state. It does
-  not sign the user in; the first successful Phone + OTP after email confirmation verifies that
-  stored phone.
+- `/identity/register` collects full name, email, password, and an optional contact phone. It
+  sends only the normalized E.164 value, then displays a check-email state.
 - `/identity/verify-email#token=...` reads the one-use token from the URL fragment and posts it once to `POST /api/identity/verify-email`; the token is not persisted in browser storage.
 - `/identity/reset-password` requests `POST /api/identity/password-reset`; the reset link opens the same route with a fragment token and submits `POST /api/identity/password-reset/confirm`.
-- `/identity/login` keeps `POST /api/identity/login { email, password }` and adds
-  `/api/identity/phone-login/request` then `/phone-login/verify`. The phone control combines a
-  country code with the local number and sends the normalized E.164 value to the server.
-- The OTP screen displays the masked destination, expiry/resend countdowns, and typed expired,
-  locked, consumed, or invalid errors. During the reviewed Issue #127 hosted-test exception, the
-  production build also displays `1234`; only the backend can accept it, and only with a valid,
-  unexpired challenge while the server-side temporary provider remains enabled. Remove the hint
-  when the external provider is enabled.
-- Issue #55 stores only pending `challengeId`, masked destination, E.164 phone, expiry/resend
-  timestamps, and the matching browser binding in `sessionStorage`. Refresh restores the OTP card;
-  success, cancellation, or expiry removes the record. The OTP code, access token, and refresh
-  token are never stored in that recovery record. A same-session retry consumes the Backend's
-  idempotent recovery contract instead of trapping the user on `OTP_RESEND_COOLDOWN`.
-- `/identity/phone-security` verifies or changes a phone through `/api/identity/phone/request`
-  and `/phone/verify`. A confirmed phone change revokes existing sessions and returns the user
-  to sign-in.
-- `/identity/reset-password` offers the existing email-link path and Phone + OTP through
-  `/api/identity/phone/password-reset/{request,confirm}`.
-- Invite acceptance asks for `InviteAcceptance` OTP only when backend policy returns
-  `INVITE_OTP_REQUIRED`; the frontend never decides the policy itself.
+- `/identity/login` calls only `POST /api/identity/login { email, password }`. Phone is contact data,
+  not a credential. There is no OTP screen, resend timer, passkey control, or WebAuthn call.
+- `/identity/reset-password` uses only the existing email-link path. Refresh and tenant selection
+  use HttpOnly cookies; browser JavaScript never receives a refresh token.
 
 - `WorkspaceType.FreelanceCoach` remains tenant-isolated but has an independent public identity and branding profile.
 - `/identity/login` proves the global identity before issuing a tenant JWT. It returns active workspaces and pending applications together; selecting one workspace exchanges a short-lived selection token for the existing JWT and HttpOnly refresh-cookie contract.
 - Public requests use opaque, short-lived tracking tokens held in `sessionStorage`. They are not refresh tokens and no normal tenant session is issued before Platform approval.
-- The legacy gym login and client registration routes remain unchanged. New routes are `/auth/register-freelance`, `/identity/login`, and `/identity/application-status`.
+- New routes are `/auth/register-freelance`, `/identity/login`, and `/identity/application-status`.
+  Workspace creation and membership activation remain server-approved flows.
 
 > مرجع تقني شامل لمشروع LogicFit. آخر تحديث بناءً على commit `b14aac3` (25 module / 150+ endpoint).
 > **الغرض:** خريطة ذهنية سريعة قبل أي تعديل — الأدوار، المسارات، الخدمات، الـ endpoints، الـ enums، والاصطلاحات.
