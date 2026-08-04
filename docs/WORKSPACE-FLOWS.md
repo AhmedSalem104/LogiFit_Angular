@@ -4,11 +4,11 @@
 
 ### Unified login entry (2026-07-30)
 
-1. The public application root redirects to `/identity/login`, a single RTL card with two
-   proof methods: Email + Password or Phone + OTP.
-2. Email calls `POST /api/identity/login`. Phone requests a real challenge through
-   `POST /api/identity/phone-login/request`, then verifies `challengeId + code + sessionBinding`
-   through `/phone-login/verify`. Both return the same active-workspace/pending-application context.
+1. The public application root redirects to `/identity/login`, a single RTL card using Email +
+   Password.
+2. Email calls `POST /api/identity/login`, which returns the active-workspace/pending-application
+   context. For an older Active Gym with a pending owner membership, the Backend repairs only that
+   owner membership before returning the context.
 3. One active workspace with no pending application is selected directly with
    `POST /api/identity/select-workspace`; all other mixed states remain visible as separate cards.
 4. A user with no workspace sees Gym, Freelance Workspace and Join Workspace cards. Join opens
@@ -16,20 +16,9 @@
    The frontend never creates a role or membership itself.
 5. `/auth/login` remains an explicit legacy-gym compatibility route, not the public entry.
 6. A new global identity still uses a one-time email verification link. Password recovery at
-   `/identity/reset-password` lets the user choose the existing email link or verified Phone + OTP.
-7. OTP expiry and resend timers come from the server challenge. Issue #127 temporarily displays
-   the `1234` hosted-test hint in both builds until the external provider is available. The backend
-   remains authoritative and never accepts it without a valid challenge or after the temporary
-   server setting expires.
-8. Refresh Token is never stored by Angular. The backend sets an HttpOnly cookie; interceptors
+   `/identity/reset-password` uses the email-link flow.
+7. Refresh Token is never stored by Angular. The backend sets an HttpOnly cookie; interceptors
    send credentials, rotate on `401`, and retain only the Access Token in JavaScript storage.
-9. Issue #55 persists only safe pending challenge metadata in `sessionStorage`, tied to the same
-   browser binding. Reloading the page restores the OTP step while it is unexpired; cancel,
-   success, or expiry removes it. Repeating the request from that browser reuses the pending
-   Backend challenge without a duplicate send.
-10. Identity registration normalizes an optional country-code/local phone to E.164. After email
-    confirmation, the first successful Phone + OTP verifies the stored phone and returns the same
-    workspace/application context. A decoy challenge for an unknown number never creates access.
 
 ### Existing freelance application flow
 

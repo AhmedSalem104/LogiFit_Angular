@@ -44,6 +44,15 @@ export class IdentityLoginComponent {
   workspaceLabel(workspace: IdentityWorkspace): string { return workspace.workspaceType === WorkspaceType.FreelanceCoach ? 'مساحة مدرب حر' : 'مساحة جيم'; }
   applicationLabel(application: PendingApplication): string { return application.applicationType === 2 ? 'طلب مساحة مدرب حر' : 'طلب انضمام'; }
   applicationStatus(status: number): string { return ({2:'مُقدّم',3:'قيد المراجعة',4:'مطلوب استكمال بيانات',5:'مقبول',6:'مرفوض',7:'ملغى',8:'منتهي'} as Record<number,string>)[status] || 'مسودة'; }
-  private handleIdentity(value: IdentitySignInResponse): void { this.result.set(value); this.loading.set(false); if (!value.requiresWorkspaceSelection && value.activeWorkspaces.length === 1 && value.pendingApplications.length === 0) this.selectWorkspace(value.activeWorkspaces[0]); }
+  private handleIdentity(value: IdentitySignInResponse): void {
+    this.loading.set(false);
+    // The server still returns the flag for contract compatibility, but the concrete collections
+    // are authoritative for routing: one active workspace and no pending request has exactly one
+    // safe destination. This also prevents a stale flag from reopening the context screen.
+    this.result.set(value);
+    if (value.activeWorkspaces.length === 1 && value.pendingApplications.length === 0) {
+      this.selectWorkspace(value.activeWorkspaces[0]);
+    }
+  }
   private fail(error: any, fallback: string): void { this.error.set(error?.translatedMessage || error?.error?.message || fallback); this.loading.set(false); }
 }

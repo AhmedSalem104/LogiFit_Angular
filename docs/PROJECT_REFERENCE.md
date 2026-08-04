@@ -7,6 +7,7 @@
 - `/` now opens `/identity/login`, the public identity-first entry. It accepts Email + Password,
   then renders the same server-issued workspace/application context.
 - A single active workspace with no pending application is entered directly. Otherwise the user sees a workspace card and/or an application-tracking card; a pending request never hides an active workspace.
+- If the Backend reconciles an older Active Gym owner membership during identity login, the one-workspace response follows this same direct-entry path; the browser never edits membership state.
 - When no workspace or request exists, the screen presents only Gym, Freelance Workspace, and Join Workspace cards. Join is guidance for an invitation or QR until its backend contract is delivered; it does not invent a role or membership in the browser.
 - `/auth/login`, `/auth/register`, and the old phone-based paths are compatibility redirects in the
   UI only; they do not call legacy Backend endpoints. Raw Tenant GUID input is hidden in Production.
