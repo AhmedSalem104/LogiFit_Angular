@@ -302,9 +302,9 @@ Vercel: Build = `npm run build`, Output = `dist/logicfit-app/browser`.
 
 **تحديد الصالة (tenant) في شاشات الدخول:** login / register / forgot-password تستخدم `tenantId` المُستخرَج من الـ subdomain (عبر `BrandingService.getResolvedTenantId()`) وتعرض اسم الصالة كـ banner للقراءة فقط — **بدون كشف قائمة كل الصالات علناً**. قائمة الصالات (`getTenants()`) تبقى فقط كـ fallback على localhost / الدومين المجرّد (تطوير).
 
-**تسجيل صالة جديدة (`register-gym`):** لم يعد ينشئ tenant عبر هذا الـ API (توفير الصالات والموافقة انتقل لمنصة LogicFit). الصفحة الآن **توجيه** لمنصة التسجيل عبر `environment.platformUrl` (`https://logicfit-platform.runasp.net`).
+**تسجيل صالة جديدة (`register-gym`):** لم يعد ينشئ tenant عبر هذا الـ API (توفير الصالات والموافقة انتقل لمنصة LogicFit). الصفحة الآن **توجيه** لمنصة التسجيل عبر `environment.platformDashboardUrl` (`https://logi-fit-platform-admin-dashboard.vercel.app`).
 
-> ⚠️ ملاحظة: **لوحة تحكم المنصة (Super-Admin)** على API منفصل (`logicfit-platform.runasp.net`) — خارج نطاق هذا الفرونت.
+> ⚠️ ملاحظة: **لوحة تحكم المنصة (Super-Admin)** تستخدم API التشغيل الحالي (`https://logicfit-saas-model.runasp.net`) — خارج نطاق هذا الفرونت.
 
 ---
 

@@ -111,10 +111,7 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
 
     .auth-layout {
       align-items: center;
-      background:
-        radial-gradient(circle at 12% 12%, color-mix(in srgb, var(--primary-200) 48%, transparent), transparent 30rem),
-        radial-gradient(circle at 88% 88%, color-mix(in srgb, var(--accent-200) 45%, transparent), transparent 28rem),
-        var(--bg-secondary);
+      background: #1d4ed8;
       display: flex;
       justify-content: center;
       min-height: 100vh;
@@ -128,21 +125,15 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
       border-radius: 28px;
       box-shadow: 0 28px 70px rgba(15, 23, 42, .18);
       display: grid;
-      grid-template-columns: minmax(0, 1.08fr) minmax(420px, .92fr);
-      max-width: 1180px;
+      grid-template-columns: minmax(0, 1fr);
+      max-width: 620px;
       min-height: min(760px, calc(100vh - 3rem));
       overflow: hidden;
       width: 100%;
     }
 
     .auth-journey {
-      background:
-        radial-gradient(560px 360px at 90% -4%, rgba(34, 211, 238, .3), transparent 70%),
-        linear-gradient(145deg, #0b1220 0%, #172554 53%, #1d4ed8 100%);
-      color: #fff;
-      overflow: hidden;
-      padding: clamp(2rem, 5vw, 4.5rem);
-      position: relative;
+      display: none;
     }
 
     .journey-grid {
@@ -185,7 +176,7 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
     .journey-trust { align-items: center; border-top: 1px solid rgba(255,255,255,.16); color: rgba(255,255,255,.78); display: flex; font-size: .78rem; gap: .6rem; margin-top: auto; padding-top: 1.45rem; }
     .journey-trust i { color: #67e8f9; }
 
-    .auth-form-container { background: var(--bg-primary); display: flex; flex-direction: column; min-width: 0; padding: clamp(1.5rem, 4vw, 3.5rem); position: relative; }
+    .auth-form-container { background: var(--card-bg); display: flex; flex-direction: column; min-width: 0; padding: clamp(1.5rem, 4vw, 3.5rem); position: relative; }
     .auth-actions { display: flex; gap: .5rem; justify-content: flex-end; }
     .action-btn { align-items: center; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-secondary); cursor: pointer; display: flex; font-size: .85rem; font-weight: 700; height: 38px; justify-content: center; transition: .2s ease; width: 38px; }
     .action-btn:hover { border-color: var(--primary-400); color: var(--primary-600); transform: translateY(-1px); }
@@ -196,7 +187,7 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
     @media (prefers-reduced-motion: reduce) { .journey-orb { animation: none; } }
 
     @media (max-width: 980px) {
-      .auth-card { grid-template-columns: 1fr; max-width: 680px; min-height: auto; }
+      .auth-card { grid-template-columns: 1fr; max-width: 620px; min-height: auto; }
       .auth-journey { min-height: 330px; padding: 2.2rem; }
       .journey-intro { margin-top: 2.5rem; }
       .journey-intro h1 { font-size: 2.1rem; }
@@ -210,8 +201,8 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
     }
 
     @media (max-width: 560px) {
-      .auth-layout { align-items: stretch; padding: 0; }
-      .auth-card { border: 0; border-radius: 0; box-shadow: none; min-height: 100vh; }
+      .auth-layout { align-items: center; padding: 1rem; }
+      .auth-card { border-radius: 22px; box-shadow: 0 18px 42px rgba(15, 23, 42, .2); min-height: calc(100vh - 2rem); }
       .auth-journey { min-height: 280px; padding: 1.5rem; }
       .brand-lockup { font-size: 1.15rem; }
       .journey-intro { margin-top: 1.7rem; }

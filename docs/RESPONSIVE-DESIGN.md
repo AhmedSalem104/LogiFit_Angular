@@ -4,11 +4,11 @@
 
 ## Unified login card (2026-07-30)
 
-- `/identity/login` uses one centered card on desktop over a quiet neutral background; gym branding is applied only after a server-issued workspace session.
-- At `480px` and below the card becomes full screen without a border or shadow. Language and theme controls remain available.
+- `/identity/login` and the legacy auth routes use one centered card over a uniform LogicFit blue background; the former journey panel is removed from the visible layout.
+- At `560px` and below the card keeps a small blue gutter, rounded corners, and a touch-friendly full-height layout. Language and theme controls remain available.
 - The step indicator shortens at narrow widths and the three start-action cards change from three columns to one. No horizontal scrolling is introduced.
 - The experience must be reviewed in RTL/LTR and Light/Dark modes before release. Visible cards are navigation only; authorization, role assignment, and membership creation remain backend decisions.
-- Email verification and password-reset views use the same card and the same mobile full-screen behavior. The email-action token stays in the URL fragment and is never rendered, copied to localStorage, or shown in an error message.
+- Email verification and password-reset views use the same centered card and responsive blue-gutter behavior. The email-action token stays in the URL fragment and is never rendered, copied to localStorage, or shown in an error message.
 
 - Angular 18 standalone components، Tailwind CSS 3.4، PrimeNG 17، PrimeIcons.
 - الخط الافتراضي: `Cairo` ثم `Tajawal`، مع دعم RTL/LTR من `ThemeState`.
@@ -21,9 +21,9 @@
 
 ### بطاقة تسجيل الدخول الموجهة
 
-- عند أكثر من `980px` تظهر بطاقة المصادقة في عمودين متوازنين: لوحة خطوات الدخول ولوحة النموذج.
-- عند `980px` وأقل تتحول إلى عمود واحد؛ تبقى الخطوات الثلاث مرئية في صف مختصر والنموذج أسفلها.
-- عند `560px` وأقل تلغى الحواف الخارجية للبطاقة لتستفيد التجربة من عرض الهاتف كاملاً، مع بقاء أزرار اللمس والحقول ضمن العرض الآمن ودون تمرير أفقي. بطاقات اختيار نوع الدخول تتحول إلى عمود واحد؛ لا تعتمد التجربة على روابط نصية.
+- عند كل المقاسات تظهر بطاقة دخول واحدة في المنتصف فوق خلفية زرقاء موحدة، بدون لوحة جانبية أو تقسيم للشاشة.
+- عند `560px` وأقل يحتفظ الكارت بهامش أزرق صغير وحواف مستديرة وارتفاع مناسب للشاشة، مع بقاء أزرار اللمس والحقول ضمن العرض الآمن ودون تمرير أفقي.
+- بطاقات اختيار نوع الدخول تتحول إلى عمود واحد عند الحاجة؛ لا تعتمد التجربة على روابط نصية صغيرة للوصول إلى الوظائف الأساسية.
 - يجب فحص `/auth/login` في RTL وLTR والوضعين الفاتح والداكن عند `360px` و`768px` و`1024px` و`1440px`.
 
 | العرض | السلوك |

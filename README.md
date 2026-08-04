@@ -182,7 +182,7 @@ ng serve            # http://localhost:4200
 export const environment = {
   production: false,
   apiUrl: '/api',   // relative → proxied to the backend (avoids CORS)
-  platformUrl: 'https://logicfit-platform.runasp.net',  // Platform (gym signup)
+  platformUrl: 'https://logicfit-saas-model.runasp.net',  // Active LogicFit API host
   tokenKey: 'logicfit_token',
   userKey: 'logicfit_user',
   permissionsKey: 'logicfit_permissions',

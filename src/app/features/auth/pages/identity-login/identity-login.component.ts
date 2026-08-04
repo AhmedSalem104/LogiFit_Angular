@@ -22,7 +22,6 @@ import { IdentitySignInResponse, IdentityWorkspace, PendingApplication, Workspac
           <button class="primary" [disabled]="loading() || form.invalid">@if (loading()) { <i class="pi pi-spin pi-spinner"></i> } {{ loading() ? 'جارٍ التحقق...' : 'متابعة' }}</button>
         </form>
         @if (error()) { <p class="error" role="alert"><i class="pi pi-exclamation-circle"></i>{{ error() }}</p> }
-        <div class="helper-links"><a routerLink="/identity/reset-password">نسيت كلمة المرور؟</a><a routerLink="/identity/register">إنشاء حساب جديد</a></div>
         <p class="security-note"><i class="pi pi-shield"></i> لا نطلب منك اختيار دور؛ الصلاحيات تأتي من مساحة العمل.</p>
       } @else {
         <header class="compact"><p class="eyebrow">اختيار السياق</p><h1>{{ result()!.activeWorkspaces.length > 1 ? 'اختر مساحة العمل' : 'وجهتك جاهزة' }}</h1><p>يمكنك دخول مساحة نشطة أو متابعة طلباتك المعلقة بشكل مستقل.</p></header>
