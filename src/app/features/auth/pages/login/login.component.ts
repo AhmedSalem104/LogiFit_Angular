@@ -114,7 +114,6 @@ import { environment } from '../../../../../environments/environment';
               <input type="checkbox" formControlName="rememberMe" />
               <span>تذكرني</span>
             </label>
-            <a routerLink="/auth/forgot-password" class="forgot-link">نسيت كلمة المرور؟</a>
           </div>
 
           <button type="submit" class="btn btn-primary w-full" [disabled]="loading">
@@ -130,10 +129,6 @@ import { environment } from '../../../../../environments/environment';
       }
 
       <div class="auth-links">
-        <div class="register-link">
-          <span>ليس لديك حساب؟</span>
-          <a routerLink="/auth/register">إنشاء حساب</a>
-        </div>
         <div class="freelance-link">
           <a routerLink="/identity/login">لديك أكثر من مساحة عمل أو طلب قيد المراجعة؟ ادخل بالهوية</a>
         </div>
