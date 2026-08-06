@@ -210,6 +210,7 @@ interface CoachDisplay {
         [open]="dialogOpen()"
         [mode]="dialogMode()"
         entityLabel="مدرب"
+        [emailRequired]="true"
         [initial]="dialogInitial()"
         [saving]="dialogSaving()"
         (save)="onDialogSave($event)"
@@ -570,7 +571,7 @@ export class CoachesListComponent implements OnInit {
         fullName: value.fullName,
         phoneNumber: value.phoneNumber,
         password: value.password!,
-        email: value.email,
+        email: value.email!,
         gender: value.gender,
         birthDate: value.birthDate
       }).subscribe({ next: () => done('تمت إضافة المدرب بنجاح'), error: fail });

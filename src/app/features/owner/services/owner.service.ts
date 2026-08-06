@@ -76,7 +76,7 @@ export interface CoachProfile {
 }
 
 export interface CreateCoachRequest {
-  email?: string;
+  email: string;
   phoneNumber: string;
   password: string;
   fullName: string;
