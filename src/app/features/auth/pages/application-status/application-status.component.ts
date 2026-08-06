@@ -6,6 +6,13 @@ import { concatMap } from 'rxjs';
 import { FreelanceOnboardingService } from '../../../../core/freelance/services/freelance-onboarding.service';
 import { ApplicationRequestStatus, ApplicationTrackingStatus } from '../../../../core/freelance/models/freelance.models';
 
+interface ActivationStep {
+  key: string;
+  label: string;
+  detail: string;
+  state: 'done' | 'current' | 'blocked' | 'pending';
+}
+
 @Component({
   selector: 'app-application-status',
   standalone: true,
@@ -17,12 +24,13 @@ import { ApplicationRequestStatus, ApplicationTrackingStatus } from '../../../..
       @if (loading()) { <p class="muted">جارٍ تحميل حالة الطلب...</p> }
       @else {
         @if (status(); as application) {
-        <div class="status-card" [class.needs-info]="application.status === Status.NeedsMoreInformation">
-          <span class="badge">{{ statusLabel(application.status) }}</span>
+        <div class="status-card" [class.needs-info]="application.status === Status.NeedsMoreInformation" [class.freelance]="application.workspaceType === 2">
+          <div class="status-heading"><span class="type-badge" [class.freelance]="application.workspaceType === 2"><i class="pi" [class.pi-user-edit]="application.workspaceType === 2" [class.pi-building]="application.workspaceType !== 2"></i>{{ application.workspaceType === 2 ? 'مساحة مدرب حر مستقلة' : 'مساحة جيم' }}</span><span class="badge">{{ statusLabel(application.status) }}</span></div>
           <h3>{{ applicationLabel(application.applicationType) }}</h3>
           @if (application.workspaceIdentifier) { <p class="muted" dir="ltr">{{ application.workspaceIdentifier }}</p> }
-          <p class="muted">آخر تحديث: {{ (application.reviewedAt || application.submittedAt) | date:'mediumDate' }}</p>
+          <p class="muted">آخر تحديث: {{ (application.lastUpdatedAtUtc || application.reviewedAt || application.submittedAt) | date:'mediumDate' }}</p>
         </div>
+        <section class="activation-card"><div class="activation-heading"><div><h3>حالة التفعيل</h3><p>نفتح لوحة الإدارة فقط بعد اكتمال كل المراحل المرتبطة.</p></div><span class="access-badge" [class.ready]="application.canAccessDashboard">{{ application.canAccessDashboard ? 'جاهز للدخول' : 'الوصول محمي حتى الجاهزية' }}</span></div><div class="activation-timeline">@for (step of timeline(application); track step.key) {<div class="activation-step" [class.done]="step.state === 'done'" [class.current]="step.state === 'current'" [class.blocked]="step.state === 'blocked'"><span class="step-marker"><i class="pi" [class.pi-check]="step.state === 'done'" [class.pi-exclamation-triangle]="step.state === 'blocked'" [class.pi-clock]="step.state === 'current'" [class.pi-minus]="step.state === 'pending'"></i></span><strong>{{ step.label }}</strong><small>{{ step.detail }}</small></div>}</div><div class="activation-facts"><div><span>الدفع</span><b>{{ paymentLabel(application.paymentStatus) }}</b></div><div><span>قاعدة البيانات</span><b>{{ databaseLabel(application.databaseStatusCode) }}</b></div><div><span>الاشتراك</span><b>{{ subscriptionLabel(application.subscriptionStatus) }}</b></div><div><span>الخطوة التالية</span><b>{{ application.nextStep || 'تتم المتابعة تلقائيًا من إدارة المنصة.' }}</b></div></div>@if (application.userMessage) {<div class="activation-message" [class.success]="application.canAccessDashboard" [class.danger]="application.provisioningStatus === 5"><i class="pi" [class.pi-check-circle]="application.canAccessDashboard" [class.pi-info-circle]="!application.canAccessDashboard"></i><span>{{ application.userMessage }}</span></div>}</section>
         @if (application.status === Status.NeedsMoreInformation) {
           <div class="information-request"><b>طلب الإدارة:</b><p>{{ application.informationRequest || 'يرجى استكمال البيانات المطلوبة.' }}</p></div>
           <form [formGroup]="form" (ngSubmit)="saveAndResubmit(application)">
@@ -48,6 +56,8 @@ import { ApplicationRequestStatus, ApplicationTrackingStatus } from '../../../..
   `,
   styles: [`
     .status-page h2 { margin:0 0 1rem; color:var(--text-primary); font-size:1.7rem; }.status-card,.information-request { padding:1rem; border:1px solid var(--border-color); border-radius:10px; background:var(--bg-primary); }.status-card.needs-info { border-color:#f59e0b; }.status-card h3 { margin:.55rem 0 .25rem; color:var(--text-primary); }.badge { display:inline-block; padding:.25rem .55rem; border-radius:999px; background:rgba(37,99,235,.1); color:#1d4ed8; font-size:.8rem; font-weight:700; }.muted { color:var(--text-secondary); }.information-request { margin-top:1rem; color:var(--text-primary); line-height:1.7; }.information-request p { margin:.25rem 0 0; } form { display:grid; gap:.85rem; margin-top:1rem; } label { display:grid; gap:.35rem; color:var(--text-primary); font-size:.9rem; font-weight:600; }.form-input { width:100%; box-sizing:border-box; min-height:42px; padding:.65rem .75rem; border:1px solid var(--border-color); border-radius:8px; color:var(--text-primary); background:var(--bg-primary); font:inherit; }.btn { display:inline-flex; align-items:center; justify-content:center; min-height:46px; border:0; border-radius:8px; text-decoration:none; }.w-full { width:100%; }.btn:disabled { opacity:.65; }.error { color:#b91c1c; margin:0; }.status-page > .btn { margin-top:1rem; padding:0 1rem; }
+  `, `
+    .status-heading{display:flex;align-items:center;justify-content:space-between;gap:.6rem}.type-badge,.access-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.28rem .55rem;border-radius:999px;color:#1d4ed8;background:#dbeafe;font-size:.72rem;font-weight:800}.type-badge.freelance{color:#6d28d9;background:#ede9fe}.access-badge{color:#b45309;background:#fef3c7}.access-badge.ready{color:#047857;background:#d1fae5}.activation-card{margin-top:1rem;padding:1rem;border:1px solid var(--border-color);border-radius:10px;background:var(--bg-primary)}.activation-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}.activation-heading h3{margin:0;color:var(--text-primary)}.activation-heading p{margin:.25rem 0 0;color:var(--text-secondary);font-size:.8rem}.activation-timeline{display:grid;grid-template-columns:repeat(6,1fr);gap:.45rem;margin:1rem 0}.activation-step{display:grid;justify-items:center;gap:.35rem;min-width:0;padding:.6rem .35rem;border:1px solid var(--border-color);border-radius:9px;color:var(--text-secondary);background:var(--bg-secondary);text-align:center}.activation-step.done{border-color:#bbf7d0;color:#047857;background:#f0fdf4}.activation-step.current{border-color:#bfdbfe;color:#1d4ed8;background:#eff6ff}.activation-step.blocked{border-color:#fecdd3;color:#b91c1c;background:#fff1f2}.step-marker{display:grid;place-items:center;width:1.8rem;height:1.8rem;border-radius:50%;background:rgba(148,163,184,.14)}.activation-step strong{font-size:.72rem}.activation-step small{font-size:.62rem;line-height:1.4}.activation-facts{display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem}.activation-facts>div{padding:.55rem;border:1px solid var(--border-color);border-radius:8px}.activation-facts span,.activation-facts b{display:block}.activation-facts span{color:var(--text-secondary);font-size:.65rem}.activation-facts b{margin-top:.2rem;color:var(--text-primary);font-size:.72rem;line-height:1.45}.activation-message{display:flex;align-items:flex-start;gap:.45rem;margin-top:.7rem;padding:.7rem;border:1px solid #bfdbfe;border-radius:8px;color:#1d4ed8;background:#eff6ff;font-size:.78rem;line-height:1.5}.activation-message.success{border-color:#bbf7d0;color:#047857;background:#f0fdf4}.activation-message.danger{border-color:#fecdd3;color:#b91c1c;background:#fff1f2}@media(max-width:700px){.activation-timeline{grid-template-columns:repeat(3,1fr)}.activation-facts{grid-template-columns:repeat(2,1fr)}.activation-heading{flex-direction:column}}@media(max-width:420px){.activation-timeline{grid-template-columns:repeat(2,1fr)}}
   `],
 })
 export class ApplicationStatusComponent implements OnInit {
@@ -64,6 +74,28 @@ export class ApplicationStatusComponent implements OnInit {
   });
 
   ngOnInit(): void { this.load(); }
+
+  timeline(application: ApplicationTrackingStatus): ActivationStep[] {
+    const requestDone = application.status >= ApplicationRequestStatus.Submitted;
+    const paymentDone = application.paymentStatus === 2;
+    const reviewDone = application.status === ApplicationRequestStatus.Approved || application.status === ApplicationRequestStatus.Rejected;
+    const provisioningDone = application.provisioningStatus === 4 || application.databaseStatusCode === 'Ready';
+    const subscriptionDone = [2, 3, 8].includes(application.subscriptionStatus ?? 0);
+    const current = (done: boolean, isCurrent: boolean, blocked = false): ActivationStep['state'] => blocked ? 'blocked' : done ? 'done' : isCurrent ? 'current' : 'pending';
+    return [
+      { key: 'request', label: 'الطلب', detail: this.statusLabel(application.status), state: current(requestDone, true) },
+      { key: 'payment', label: 'الدفع', detail: this.paymentLabel(application.paymentStatus), state: current(paymentDone, requestDone && !paymentDone, application.paymentStatus === 3) },
+      { key: 'review', label: 'المراجعة', detail: this.statusLabel(application.status), state: current(reviewDone, application.status === ApplicationRequestStatus.UnderReview, application.status === ApplicationRequestStatus.Rejected) },
+      { key: 'provisioning', label: 'التجهيز', detail: this.provisioningLabel(application.provisioningStatus), state: current(provisioningDone, [2, 3].includes(application.provisioningStatus ?? 0), application.provisioningStatus === 5 || application.databaseStatusCode === 'Failed') },
+      { key: 'subscription', label: 'الاشتراك', detail: this.subscriptionLabel(application.subscriptionStatus), state: current(subscriptionDone, [1, 9].includes(application.subscriptionStatus ?? 0), [5, 7, 6].includes(application.subscriptionStatus ?? 0)) },
+      { key: 'access', label: 'الوصول', detail: application.canAccessDashboard ? 'يمكن الدخول' : 'محمي حتى الجاهزية', state: application.canAccessDashboard ? 'done' : application.provisioningStatus === 5 || application.databaseStatusCode === 'Failed' ? 'blocked' : 'pending' },
+    ];
+  }
+
+  paymentLabel(status: number | null | undefined): string { return ({ 1: 'قيد المراجعة', 2: 'تم استلامه واعتماده', 3: 'مرفوض', 4: 'ملغى', 5: 'منتهٍ' } as Record<number, string>)[status ?? 0] || 'غير مسجل'; }
+  databaseLabel(status: string | null | undefined): string { return ({ Unassigned: 'غير مخصصة', Provisioning: 'جاري التجهيز', Ready: 'جاهزة', Unavailable: 'غير متاحة', Failed: 'فشل', Released: 'محررة' } as Record<string, string>)[status || 'Unassigned'] || 'غير مكتملة'; }
+  subscriptionLabel(status: number | null | undefined): string { return ({ 1: 'بانتظار الدفع', 2: 'تجريبي', 3: 'نشط', 4: 'متأخر', 5: 'موقوف', 6: 'ملغى', 7: 'منتهٍ', 8: 'فترة سماح', 9: 'بانتظار التفعيل' } as Record<number, string>)[status ?? 0] || 'غير مسجل'; }
+  provisioningLabel(status: number | null | undefined): string { return ({ 1: 'بانتظار البدء', 2: 'بانتظار السعة', 3: 'جاري التجهيز', 4: 'مكتمل', 5: 'فشل' } as Record<number, string>)[status ?? 0] || 'لم يبدأ'; }
 
   load(): void {
     if (!this.onboarding.getTrackingToken()) { this.recoverTrackingSession(); return; }

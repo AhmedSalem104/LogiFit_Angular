@@ -956,6 +956,7 @@ export class SidebarComponent {
       permission: 'ManageEmployees',
       items: [
         { label: 'الموظفين', icon: 'pi-users', route: '/owner/employees', roles: [UserRole.Owner], permission: 'ManageEmployees' },
+        { label: 'حسابات الفريق والصلاحيات', icon: 'pi-key', route: '/owner/workspace-access', roles: [UserRole.Owner], permission: 'ManageEmployees' },
         { label: 'الورديات', icon: 'pi-clock', route: '/owner/shifts', roles: [UserRole.Owner], permission: 'ManageEmployees' },
         { label: 'الإجازات', icon: 'pi-calendar-minus', route: '/owner/leaves', roles: [UserRole.Owner], permission: 'ManageEmployees' },
         { label: 'العمولات', icon: 'pi-percentage', route: '/owner/commissions', roles: [UserRole.Owner], permission: 'ManageFinance' },
