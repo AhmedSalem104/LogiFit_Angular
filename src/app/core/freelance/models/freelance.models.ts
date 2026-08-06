@@ -38,6 +38,18 @@ export interface PendingApplication {
   applicationType: ApplicationType;
   status: ApplicationRequestStatus;
   submittedAt: string | null;
+  workspaceIdentifier?: string | null;
+  workspaceType?: WorkspaceType;
+  paymentStatus?: number | null;
+  workspaceStatus?: number | null;
+  subscriptionStatus?: number | null;
+  databaseStatusCode?: 'Unassigned' | 'Provisioning' | 'Ready' | 'Unavailable' | 'Failed' | 'Released' | null;
+  provisioningStatus?: number | null;
+  canAccessDashboard?: boolean;
+  requiredAction?: string | null;
+  nextStep?: string | null;
+  userMessage?: string | null;
+  lastUpdatedAtUtc?: string | null;
 }
 
 export interface IdentitySignInResponse {
@@ -64,6 +76,19 @@ export interface ApplicationTrackingStatus {
   requestedFields: string[];
   submittedAt: string | null;
   reviewedAt: string | null;
+  workspaceType?: WorkspaceType | null;
+  paymentStatus?: number | null;
+  workspaceStatus?: number | null;
+  subscriptionStatus?: number | null;
+  databaseStatus?: number | null;
+  databaseStatusCode?: 'Unassigned' | 'Provisioning' | 'Ready' | 'Unavailable' | 'Failed' | 'Released' | null;
+  provisioningStatus?: number | null;
+  canAccessDashboard?: boolean;
+  requiredAction?: string | null;
+  nextStep?: string | null;
+  userMessage?: string | null;
+  lastUpdatedAtUtc?: string | null;
+  provisioningErrorCode?: string | null;
   editableValues: Record<string, unknown>;
 }
 

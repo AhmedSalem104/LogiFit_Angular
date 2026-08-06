@@ -1,5 +1,9 @@
 # LogicFit — Project Reference (مرجع المشروع)
 
+> **Issue #64 — local implementation, not merged or deployed:** عقد حالة التفعيل وTimeline
+> وتوجيه كلمة المرور الأولى موجودة على فرع المهمة فقط. فحص Production الحالي لا يثبت نشر هذا
+> التغيير؛ لا تعتبر الوثيقة إعلان إصدار.
+
 ## Freelance workspace and identity-first authentication (2026-07-29)
 
 ### Unified entry update (2026-07-30)
@@ -25,6 +29,8 @@
 
 - `WorkspaceType.FreelanceCoach` remains tenant-isolated but has an independent public identity and branding profile.
 - `/identity/login` proves the global identity before issuing a tenant JWT. It returns active workspaces and pending applications together; selecting one workspace exchanges a short-lived selection token for the existing JWT and HttpOnly refresh-cookie contract.
+- Pending applications now include a safe activation snapshot (`paymentStatus`, `workspaceStatus`, `subscriptionStatus`, `provisioningStatus`, `databaseStatusCode`, `requiredAction`, `nextStep`, and `userMessage`). The login context shows the current stage and routes the user to tracking instead of opening an unready tenant.
+- `mustChangePassword` is honored after identity workspace selection: owners go to `/owner/profile`, coaches to `/coach/profile`, and clients to `/client/profile`; the auth guard keeps protected routes on the profile until the change succeeds.
 - Public requests use opaque, short-lived tracking tokens held in `sessionStorage`. They are not refresh tokens and no normal tenant session is issued before Platform approval.
 - New routes are `/auth/register-freelance`, `/identity/login`, and `/identity/application-status`.
   Workspace creation and membership activation remain server-approved flows.
@@ -324,6 +330,13 @@ Vercel: Build = `npm run build`, Output = `dist/logicfit-app/browser`.
 - **وضع الأونبوردنج**: بانر في `my-subscription.component.ts` عند `TENANT_PENDING_APPROVAL` (endpoints مسموحة فقط تحت `/api/tenant/*`).
 
 ---
+
+### 9.7 حسابات الفريق والصلاحيات (Issue #65)
+
+`WorkspaceAccessService` يستهلك `/api/workspace-members`، وواجهة `/owner/workspace-access` تعرض
+حالات العضوية وإجراءات الإنشاء والإيقاف والتفعيل والإزالة وإعادة تعيين كلمة المرور. الشاشة لا تخزن
+كلمة المرور المؤقتة وتعرضها مرة واحدة فقط. الوصول محمي بـ`ManageEmployees`، والهوية العامة يمكن أن
+تملك عضويات في أكثر من جيم دون تكرار.
 
 ## 10. نقاط تستحق الانتباه (Tech-debt / مخاطر)
 

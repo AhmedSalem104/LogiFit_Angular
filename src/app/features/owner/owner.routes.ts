@@ -47,6 +47,7 @@ export const ownerRoutes: Routes = [
   { path: 'suppliers', loadComponent: () => import('./suppliers/suppliers-list.component').then(m => m.SuppliersListComponent), title: 'الموردين' },
 
   // HR / Payroll
+  { path: 'workspace-access', canActivate: [permissionGuard(Permissions.ManageEmployees)], loadComponent: () => import('./workspace-access/workspace-access.component').then(m => m.WorkspaceAccessComponent), title: 'حسابات الفريق - LogicFit' },
   { path: 'employees', loadComponent: () => import('./employees/employees-list.component').then(m => m.EmployeesListComponent), title: 'الموظفين' },
   { path: 'shifts', loadComponent: () => import('./shifts/shifts.component').then(m => m.ShiftsComponent), title: 'الورديات' },
   { path: 'leaves', loadComponent: () => import('./leaves/leaves-list.component').then(m => m.LeavesListComponent), title: 'الإجازات' },

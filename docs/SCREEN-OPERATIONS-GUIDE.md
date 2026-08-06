@@ -9,7 +9,7 @@
 | الشاشة | الغرض والصلاحية | البيانات والإجراءات | حالات التشغيل |
 |---|---|---|---|
 | `/auth/register-freelance` | زائر غير مسجل | يرسل طلب مساحة مدرب حر فقط. يجمع الاسم والبريد وكلمة المرور ومعرّف المساحة والهوية الاختيارية. | تحقق الحقول، إرسال، خطأ API. لا يمنح صلاحية أو ينشئ جلسة عمل. |
-| `/identity/login` and `/` | Any global identity | One centered RTL card with Email + Password or Phone + OTP over a uniform blue background. The card does not expose password-recovery or new-account links; onboarding remains available through the explicit workspace entry actions when no workspace exists. The OTP phase shows masked phone, expiry/resend timers, field errors, and the temporary Issue #127 hosted-test `1234` hint. An unexpired pending challenge is restored after refresh from safe metadata in `sessionStorage`; cancel/success/expiry clears it. Both methods lead to the same active-workspace/pending-application cards; a single active workspace enters directly. | Challenge, expiry, attempts, identity existence, membership, and destination are backend decisions. The hint grants nothing without a valid server challenge tied to an identity and expires with the server-side exception. The browser never stores the OTP code or Refresh Token. Unknown/unlinked phones receive a generic failure and no access. |
+| `/identity/login` and `/` | Any global identity | One centered RTL card with Email + Password. It renders active workspaces and detailed pending-application cards using the server lifecycle snapshot: Gym/FreelanceCoach type, payment, workspace, subscription, provisioning, database readiness, current message, and next step. A pending card opens the tracking screen; it never opens the tenant dashboard. A single active workspace with no pending request enters directly. | Identity, membership, destination, and `canAccessDashboard` are backend decisions. `databaseStatusCode=Unassigned/Provisioning/Ready/Unavailable/Failed/Released` is display-only and contains no connection material. Loading/provisioning/blocked/error states remain explicit. The browser never stores a Refresh Token. |
 | `/identity/register` | Visitor creating a global identity | Full name, unique email, optional phone split into country code and local number, strong password, then a check-email state. The browser submits the optional phone as E.164. | Registration grants no workspace access and no session. The email link must be consumed first; a later successful Phone + OTP verifies the stored phone. Invalid phone format is shown beside the form/API result without storing credentials. |
 | `/identity/phone-security` | Signed-in or workspace-selection identity | Verify the first E.164 phone or change an existing phone using a purpose-bound OTP challenge. | A successful phone change revokes old sessions and requires sign-in again; duplicate/invalid phones and expired/consumed OTPs are shown beside the form. |
 | `/identity/reset-password` | Visitor with an email or verified phone | Choose one-use email link or Phone + OTP, then set a strong new password. | The response does not reveal account existence. Success revokes all existing sessions and returns to unified sign-in. |
@@ -148,6 +148,15 @@
 | `/owner/leaves` — الإجازات | صلاحية الموظفين. | طلب ومراجعة حالة غياب الموظف لإبقاء الجداول صحيحة. | قائمة، إنشاء طلب أو مراجعة/اعتماد/رفض بحسب الدور، التاريخ والسبب والحالة. | انتقالات الحالة مقيدة؛ لا تقبل أو ترفض طلباً ليس ضمن نطاق صلاحيتك. |
 | `/owner/commissions` — العمولات | صلاحية مالية/موارد بشرية. | احتساب ومراجعة مستحقات مرتبطة بالبيع أو الأداء. | عرض السجلات، فلترة بالفترة/الموظف، تنفيذ أو مراجعة إجراء مسموح. | يرتبط الحساب ببيانات المصدر وسياسة الاعتماد؛ لا تعدل قيمة معتمدة دون عملية تصحيح. |
 | `/owner/payroll` — الرواتب | مدير مالي مخول. | إعداد ومراجعة دورة رواتب الموظفين. | اختيار الفترة، عرض بنود الراتب والعمولات/الاستقطاعات المتاحة، إنشاء أو اعتماد أو تصدير ضمن الصلاحية. | دورة الرواتب المعتمدة تعامل كوثيقة مالية؛ تمنع التعديلات غير المصرح بها وتحتفظ بأثر المراجعة. |
+
+### 4.8.1 حسابات الفريق والصلاحيات
+
+| الشاشة | المستخدم/الصلاحية | الغرض والفائدة | البيانات والإجراءات | الضوابط والنتيجة |
+|---|---|---|---|---|
+| `/owner/workspace-access` — حسابات الفريق | المالك أو من يملك `ManageEmployees`. | إنشاء وصول الموظف أو المدرب للمساحة دون ربطه بهوية مكررة. | إنشاء الاسم والبريد والهاتف والدور، عرض أعضاء الفريق، تصفية الحالات، إيقاف/تفعيل/إزالة، وإصدار كلمة مرور مؤقتة. | الهوية والعضوية والدور تُنشأ مترابطة في الخادم؛ كلمة المرور المؤقتة تظهر مرة واحدة ويُفرض تغييرها، والإزالة لا تحذف الهوية العامة. |
+
+حالات الشاشة هي `PendingSetup`, `PasswordChangeRequired`, `Active`, `Suspended`, `Locked`, و`Removed`.
+تظهر حالات التحميل والفراغ والخطأ بوضوح ولا تُستبدل بصفحة بيضاء.
 
 ### 4.9 التقارير، اشتراك الصالة، والإعدادات
 

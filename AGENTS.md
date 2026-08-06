@@ -18,6 +18,11 @@ production verification; never describe one state as another.
 - For authentication, identity, OTP, session, invitation, join, workspace-selection, or access-gate changes, update this repository's `PROJECT_REFERENCE`, `WORKSPACE-FLOWS`, screen catalog/operations guide, the Backend canonical auth flow, and the Platform documentation when that surface is affected.
 - List the documentation impact for all three repositories in every cross-repository Pull Request, including required merge and deployment order.
 - Never put secrets, tokens, production credentials, or publish profiles in docs, commits, screenshots, or logs.
+- After every modification, verify the affected server health before continuing: call the applicable
+  `/health` endpoint and require HTTP 200 with the expected healthy response, never HTTP 500/503 or
+  `Unhealthy`. For local-only UI changes, run the local health check when the API can be started and
+  record the exact verification or environment blocker in the Issue; a build or test pass alone
+  never proves server health.
 
 ## Responsive and security baseline
 
