@@ -52,10 +52,10 @@ export interface PersonFormInitial extends Omit<PersonFormValue, 'password'> {}
             </div>
 
             <div class="pfd-field">
-              <label>البريد الإلكتروني <span class="opt">(اختياري)</span></label>
+              <label>البريد الإلكتروني <span class="opt">({{ emailRequired ? 'مطلوب' : 'اختياري' }})</span></label>
               <input type="email" formControlName="email" placeholder="name@example.com"
                 [class.invalid]="invalid('email')" />
-              <span class="err" *ngIf="invalid('email')">صيغة البريد غير صحيحة</span>
+              <span class="err" *ngIf="invalid('email')">{{ emailRequired ? 'البريد الإلكتروني مطلوب وبصيغة صحيحة' : 'صيغة البريد غير صحيحة' }}</span>
             </div>
 
             @if (mode === 'add') {
@@ -146,6 +146,7 @@ export class PersonFormDialogComponent implements OnChanges {
   @Input() entityLabel = 'عميل';
   @Input() initial: PersonFormInitial | null = null;
   @Input() saving = false;
+  @Input() emailRequired = false;
 
   @Output() save = new EventEmitter<PersonFormValue>();
   @Output() cancel = new EventEmitter<void>();
@@ -155,7 +156,7 @@ export class PersonFormDialogComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     // Rebuild when the dialog opens or switches mode/target so validators and
     // prefilled values match the current context.
-    if (changes['open'] || changes['mode'] || changes['initial']) {
+    if (changes['open'] || changes['mode'] || changes['initial'] || changes['emailRequired']) {
       if (this.open) this.reset();
     }
   }
@@ -173,6 +174,9 @@ export class PersonFormDialogComponent implements OnChanges {
 
   private reset(): void {
     const pw = this.form.get('password');
+    const email = this.form.get('email');
+    email?.setValidators(this.emailRequired ? [Validators.required, Validators.email] : [Validators.email]);
+    email?.updateValueAndValidity({ emitEvent: false });
     if (this.mode === 'edit') {
       pw?.clearValidators();
     } else {
