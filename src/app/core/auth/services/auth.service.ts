@@ -172,7 +172,23 @@ export class AuthService {
    * 401 if the current password is wrong.
    */
   changePassword(currentPassword: string, newPassword: string): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/change-password`, { currentPassword, newPassword });
+    return this.http.post<void>(`${this.apiUrl}/change-password`, { currentPassword, newPassword }).pipe(
+      tap(() => {
+        const user = this.currentUser();
+        if (!user) return;
+        const updated = { ...user, mustChangePassword: false };
+        this.storage.setItem(environment.userKey, updated);
+        this.currentUser.set(updated);
+      })
+    );
+  }
+
+  /** Route used for the mandatory first-login password replacement. */
+  getPasswordChangeUrlForRole(role: string | number): string {
+    const mapped = this.mapRoleToEnum(role);
+    if (COACH_ROLES.includes(mapped)) return '/coach/profile';
+    if (mapped === UserRole.Client) return '/client/profile';
+    return '/owner/profile';
   }
 
   /**

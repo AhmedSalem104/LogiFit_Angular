@@ -2,7 +2,7 @@
 
 > **Source of truth:** this document is generated from the API controllers by `Scripts/Export-ApiEndpointCatalog.ps1`. Do not edit endpoint rows manually; change the controller, rerun the script, and include the refreshed catalog in the same Pull Request.
 
-Generated: `2026-08-03 09:08 UTC`  |  Total endpoints: **379**
+Generated: `2026-08-06 15:10 UTC`  |  Total endpoints: **386**
 
 ## Contract rules
 
@@ -461,6 +461,36 @@ Generated: `2026-08-03 09:08 UTC`  |  Total endpoints: **379**
 - **Inputs:** Handler signature: `Guid id`
 - **Declared response:** typeof(PlatformTenantDto), StatusCodes.Status200OK
 
+#### `GET /api/platform/tenants/{id:guid}/credentials` - `Credentials`
+
+- **Access:** JWT + Policy: `Permissions.ManageTenants`
+- **Inputs:** Handler signature: `Guid id`
+- **Declared response:** typeof(PlatformTenantCredentialsDto), StatusCodes.Status200OK
+
+#### `POST /api/platform/tenants/{id:guid}/credentials/reset` - `ResetCredentials`
+
+- **Access:** JWT + Policy: `Permissions.ManageTenants`
+- **Inputs:** Handler signature: `Guid id`
+- **Declared response:** typeof(PlatformTenantPasswordResetDto), StatusCodes.Status202Accepted
+
+#### `POST /api/platform/tenants/{id:guid}/permanent-delete` - `PermanentDelete`
+
+- **Access:** JWT + Policy: `Permissions.ManageTenants`
+- **Inputs:** Body `request`: `PlatformTenantDeleteRequest`<br>Handler signature: `Guid id, [FromBody] PlatformTenantDeleteRequest request`
+- **Declared response:** typeof(PlatformTenantPermanentDeleteDto), StatusCodes.Status200OK
+
+#### `POST /api/platform/tenants/{id:guid}/restore` - `Restore`
+
+- **Access:** JWT + Policy: `Permissions.ManageTenants`
+- **Inputs:** Handler signature: `Guid id`
+- **Declared response:** typeof(PlatformTenantDto), StatusCodes.Status200OK
+
+#### `POST /api/platform/tenants/{id:guid}/soft-delete` - `SoftDelete`
+
+- **Access:** JWT + Policy: `Permissions.ManageTenants`
+- **Inputs:** Handler signature: `Guid id`
+- **Declared response:** typeof(PlatformTenantDto), StatusCodes.Status200OK
+
 #### `POST /api/platform/tenants/{id:guid}/suspend` - `Suspend`
 
 - **Access:** JWT + Policy: `Permissions.ManageTenants`
@@ -472,8 +502,14 @@ Generated: `2026-08-03 09:08 UTC`  |  Total endpoints: **379**
 #### `GET /api/platform/workspace-applications` - `List`
 
 - **Access:** JWT + Policy: `Permissions.ManageTenants`
-- **Inputs:** Query `applicationType`: `ApplicationType?`<br>Query `status`: `ApplicationRequestStatus?`<br>Query `page`: `int`<br>Query `pageSize`: `int`<br>Handler signature: `[FromQuery] ApplicationType? applicationType, [FromQuery] ApplicationRequestStatus? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 20`
+- **Inputs:** Query `applicationType`: `ApplicationType?`<br>Query `status`: `ApplicationRequestStatus?`<br>Query `paymentStatus`: `PaymentRequestStatus?`<br>Query `workspaceStatus`: `TenantStatus?`<br>Query `subscriptionStatus`: `TenantSubscriptionStatus?`<br>Query `provisioningStatus`: `ProvisioningJobStatus?`<br>Query `page`: `int`<br>Query `pageSize`: `int`<br>Handler signature: `[FromQuery] ApplicationType? applicationType, [FromQuery] ApplicationRequestStatus? status, [FromQuery] PaymentRequestStatus? paymentStatus, [FromQuery] TenantStatus? workspaceStatus, [FromQuery] TenantSubscriptionStatus? subscriptionStatus, [FromQuery] ProvisioningJobStatus? provisioningStatus, [FromQuery] int page = 1, [FromQuery] int pageSize = 20`
 - **Declared response:** typeof(PagedResult<PlatformApplicationDto>), StatusCodes.Status200OK
+
+#### `POST /api/platform/workspace-applications` - `Create`
+
+- **Access:** JWT + Policy: `Permissions.ManageTenants`
+- **Inputs:** Body `command`: `CreatePlatformWorkspaceApplicationCommand` { `WorkspaceType`: WorkspaceType; `WorkspaceName`: string; `WorkspaceIdentifier`: string; `OwnerFullName`: string; `OwnerEmail`: string; `OwnerPhoneNumber`: string?; `PlanId`: Guid; `BillingCycle`: BillingCycle; `BrandName`: string?; `Description`: string?; `Address`: string?; `Specialization`: string?; `DeliveryMode`: string? }<br>Handler signature: `[FromBody] CreatePlatformWorkspaceApplicationCommand command`
+- **Declared response:** typeof(PlatformWorkspaceApplicationCreatedDto), StatusCodes.Status201Created
 
 #### `POST /api/platform/workspace-applications/{id:guid}/approve-freelance` - `ApproveFreelance`
 
@@ -482,6 +518,12 @@ Generated: `2026-08-03 09:08 UTC`  |  Total endpoints: **379**
 - **Declared response:** Task<ActionResult<PlatformApplicationDto>>
 
 #### `POST /api/platform/workspace-applications/{id:guid}/approve-membership` - `ApproveMembership`
+
+- **Access:** JWT + Policy: `Permissions.ManageTenants`
+- **Inputs:** Body `request`: `ConcurrencyRequest`<br>Handler signature: `Guid id, [FromBody] ConcurrencyRequest request`
+- **Declared response:** Task<ActionResult<PlatformApplicationDto>>
+
+#### `POST /api/platform/workspace-applications/{id:guid}/approve-workspace` - `ApproveWorkspace`
 
 - **Access:** JWT + Policy: `Permissions.ManageTenants`
 - **Inputs:** Body `request`: `ConcurrencyRequest`<br>Handler signature: `Guid id, [FromBody] ConcurrencyRequest request`

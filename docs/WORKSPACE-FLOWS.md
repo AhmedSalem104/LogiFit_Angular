@@ -20,6 +20,20 @@
 7. Refresh Token is never stored by Angular. The backend sets an HttpOnly cookie; interceptors
    send credentials, rotate on `401`, and retain only the Access Token in JavaScript storage.
 
+### Activation state and first-login password
+
+The identity response includes a safe lifecycle snapshot for every pending application: workspace
+type, payment, workspace, subscription, provisioning, and database status code, plus
+`requiredAction`, `nextStep`, and `userMessage`. The context screen renders these values as a
+visible Gym/FreelanceCoach card; it never treats `Active` alone as proof that a tenant database or
+membership is ready. A pending application is tracked through `/identity/application-status`, not
+opened as a tenant dashboard, so loading/provisioning/failure states cannot become a blank screen.
+
+When workspace selection returns `mustChangePassword`, the user is routed to the profile for the
+actual role (`/owner/profile`, `/coach/profile`, or `/client/profile`). `authGuard` redirects any
+other protected route back to that profile until the password change succeeds; the local flag is
+cleared only after `POST /api/auth/change-password` succeeds.
+
 ### Existing freelance application flow
 
 1. المدرب الحر يفتح `/auth/register-freelance` ويرسل هوية المالك، معرّف المساحة، والهوية البصرية الأساسية. لا يُنشأ JWT ولا مساحة تشغيلية في هذه المرحلة.
@@ -28,6 +42,15 @@
 4. بعد اعتماد المنصة يختار المدرب المساحة من `/identity/login`، ويستلم عندها Access JWT
    بينما يضع الخادم Refresh Token في HttpOnly Cookie، ثم يصل إلى لوحة المالك.
 5. المدرب أو المساعد المدعو ينشئ هوية عامة من `/identity/register` بالبريد الذي سيستخدمه مالك مساحة المدرب الحر. يرسل المالك طلب انضمام من `/owner/freelance-team`، ولا يصبح العضو نشطًا قبل موافقة Platform Admin وفحص حد الباقة مرة أخرى.
+
+### شاشة حالة التفعيل
+
+`/identity/application-status` تعرض Timeline موحدًا من ست مراحل: الطلب، الدفع، المراجعة،
+التجهيز، الاشتراك، والوصول. كل مرحلة لها حالة `done/current/blocked/pending`، مع نوع المساحة
+بلون وأيقونة منفصلين (`Gym` أزرق، `FreelanceCoach` بنفسجي)، وآخر تحديث، والرسالة الحالية،
+والخطوة التالية. الدفع أو `Active` وحدهما لا يفتحان لوحة الإدارة؛ الوصول يحتاج جاهزية قاعدة
+البيانات والاشتراك والعضوية من الخادم. حالات الفشل أو عدم التوفر تظهر كرسالة مفهومة مع بقاء
+الصفحة قابلة للتحميل، ولا تُعرض صفحة بيضاء أو Connection Material.
 
 ## الحدود بين الواجهات
 
