@@ -8,7 +8,7 @@
 
 | الشاشة | الغرض والصلاحية | البيانات والإجراءات | حالات التشغيل |
 |---|---|---|---|
-| `/auth/register-freelance` | زائر غير مسجل | يرسل طلب مساحة مدرب حر فقط. يجمع الاسم والبريد وكلمة المرور ومعرّف المساحة والهوية الاختيارية. | تحقق الحقول، إرسال، خطأ API. لا يمنح صلاحية أو ينشئ جلسة عمل. |
+| `/auth/register-workspace` (وكذلك `/auth/register-gym` و`/auth/register-freelance`) | زائر غير مسجل | نموذج موحد يختار Gym أو FreelanceCoach، يجلب الباقة، يجمع البيانات الأساسية وإثبات الدفع، ثم يرسل الطلب مرة واحدة. | Loading/validation/success/blocked/error واضحة؛ لا Tenant JWT ولا Dashboard قبل اكتمال بوابة التفعيل. |
 | `/identity/login` and `/` | Any global identity | One centered RTL card with Email + Password. It renders active workspaces and detailed pending-application cards using the server lifecycle snapshot: Gym/FreelanceCoach type, payment, workspace, subscription, provisioning, database readiness, current message, and next step. A pending card opens the tracking screen; it never opens the tenant dashboard. A single active workspace with no pending request enters directly. | Identity, membership, destination, and `canAccessDashboard` are backend decisions. `databaseStatusCode=Unassigned/Provisioning/Ready/Unavailable/Failed/Released` is display-only and contains no connection material. Loading/provisioning/blocked/error states remain explicit. The browser never stores a Refresh Token. |
 | `/identity/register` | Visitor creating a global identity | Full name, unique email, optional phone split into country code and local number, strong password, then a check-email state. The browser submits the optional phone as E.164. | Registration grants no workspace access and no session. The email link must be consumed first; a later successful Phone + OTP verifies the stored phone. Invalid phone format is shown beside the form/API result without storing credentials. |
 | `/identity/phone-security` | Signed-in or workspace-selection identity | Verify the first E.164 phone or change an existing phone using a purpose-bound OTP challenge. | A successful phone change revokes old sessions and requires sign-in again; duplicate/invalid phones and expired/consumed OTPs are shown beside the form. |
@@ -24,6 +24,13 @@
 > الخادم مساحة نشطة واحدة بلا طلب معلّق، تنتقل الواجهة مباشرة إلى `POST /api/identity/select-workspace`
 > حتى لو كانت قيمة `requiresWorkspaceSelection` قديمة أو غير متزامنة. وعند وجود أكثر من مساحة أو طلب
 > معلّق، تبقى شاشة اختيار السياق وبطاقات الطلبات ظاهرة بشكل طبيعي.
+
+## Issue #248 — شاشة حالة الاشتراك الموحد
+
+تستخدم شاشة `/identity/application-status` `userJourneyStage` لعرض Submitted أو UnderReview أو
+MoreInformation أو Preparing أو Ready بدل عرض تفاصيل تقنية مربكة. في حالة طلب المعلومات يظهر كل
+حقل طلبته الإدارة فقط. عند `Preparing` تظهر رسالة انتظار ولا تستدعى APIs الخاصة بالـTenant. عند
+الفشل تظهر حالة Blocked مع رسالة وإجراء واضح، ولا تظهر صفحة فارغة أو stack trace.
 
 ## 1. طريقة قراءة الدليل وحدود الصلاحيات
 

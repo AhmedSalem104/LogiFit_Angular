@@ -11,6 +11,8 @@ import {
   WorkspaceInvitePreview,
   WorkspaceClientJoinPreview,
   ClientJoinResult,
+  PublicWorkspacePlan,
+  SubmitWorkspaceApplication,
 } from '../models/freelance.models';
 
 /** Public identity and application calls. No tenant JWT is attached to these endpoints. */
@@ -74,6 +76,38 @@ export class FreelanceOnboardingService {
 
   submitFreelanceWorkspace(data: SubmitFreelanceWorkspaceApplication): Observable<ApplicationTrackingSession> {
     return this.http.post<ApplicationTrackingSession>(`${this.applicationsBase}/freelance`, data).pipe(
+      tap(session => this.saveTrackingToken(session.trackingToken))
+    );
+  }
+
+  getPublicPlans(): Observable<PublicWorkspacePlan[]> {
+    return this.http.get<PublicWorkspacePlan[]>(`${this.applicationsBase}/plans`);
+  }
+
+  /** Sends the complete public onboarding flow as one multipart request. */
+  submitWorkspace(data: SubmitWorkspaceApplication, proof: File): Observable<ApplicationTrackingSession> {
+    const form = new FormData();
+    form.append('workspaceType', String(data.workspaceType));
+    form.append('planId', data.planId);
+    form.append('email', data.email.trim());
+    form.append('phoneNumber', data.phoneNumber?.trim() || '');
+    form.append('password', data.password);
+    form.append('workspaceName', data.workspaceName.trim());
+    form.append('workspaceIdentifier', data.workspaceIdentifier.trim().toLowerCase());
+    form.append('ownerFullName', data.ownerFullName.trim());
+    form.append('brandName', data.brandName?.trim() || '');
+    form.append('specialization', data.specialization?.trim() || '');
+    form.append('deliveryMode', data.deliveryMode?.trim() || '');
+    form.append('description', data.description?.trim() || '');
+    form.append('bio', data.bio?.trim() || '');
+    form.append('welcomeMessage', data.welcomeMessage?.trim() || '');
+    form.append('billingCycle', String(data.billingCycle));
+    form.append('paymentTransactionNumber', data.paymentTransactionNumber?.trim() || '');
+    form.append('paymentDate', data.paymentDate || new Date().toISOString());
+    form.append('idempotencyKey', data.idempotencyKey);
+    form.append('proof', proof, proof.name);
+
+    return this.http.post<ApplicationTrackingSession>(this.applicationsBase, form).pipe(
       tap(session => this.saveTrackingToken(session.trackingToken))
     );
   }

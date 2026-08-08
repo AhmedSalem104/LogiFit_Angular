@@ -317,6 +317,14 @@ Vercel: Build = `npm run build`, Output = `dist/logicfit-app/browser`.
 
 ## 9.6 بوابات حالة الجيم (مُنفّذ من `FRONTEND_TENANT_ACCESS_GUIDE.md`)
 
+### Issue #248 — التسجيل الموحد Gym/FreelanceCoach
+
+`register-workspace` هو المكوّن الموحد الذي تعرضه مسارات `register-gym` و`register-freelance`.
+يجلب الباقات من الخادم، يرسل البيانات الأساسية وإثبات الدفع إلى
+`POST /api/workspace-applications`، ويحفظ tracking session فقط. شاشة الحالة تعرض رحلة بسيطة ولا
+تستدعي APIs الخاصة بالمساحة قبل جاهزية الخادم. حالات `MoreInformation` تسمح بتعديل الحقول التي
+طلبتها الإدارة فقط ثم إعادة الإرسال، وحالة `Ready` وحدها تنقل المستخدم إلى اختيار المساحة.
+
 كل طلب محمي قد يرجّع كود مُصنّف `TENANT_*` في `error.error.code` (العقد = `code` مش الرسالة) لو الجيم موقوف/منتهٍ/مؤرشف/بانتظار موافقة.
 
 **الطبقة المركزية** (`core/tenant/`):
