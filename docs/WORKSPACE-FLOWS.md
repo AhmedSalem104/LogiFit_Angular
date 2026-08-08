@@ -90,14 +90,25 @@ flowchart LR
 
 ## تدفق الدخول
 
-1. يبدأ المستخدم من `/auth/login` أو `/auth/register`.
-2. يرسل `AuthService` الطلب إلى Tenant API ويخزّن Access Token فقط؛ Refresh Token في
-   HttpOnly Cookie لا يقرأها JavaScript.
-   مفاتيح البيئة فقط.
-3. يختار الـguard مساحة العمل وفق الدور، ثم يمرر JWT في interceptor.
-4. عند `401` تتم محاولة refresh واحدة مشتركة للطلبات المتوازية؛ فشلها يخرج المستخدم.
-5. عند `402` أو حالة tenant غير متاحة تُعرض تجربة اشتراك/صالة مناسبة؛ لا يحاول
-   العميل تجاوز القرار محليًا.
+1. يبدأ المستخدم من `/auth/login` أو `/auth/register-workspace`.
+2. التسجيل الموحد يجمع نوع `Gym` أو `FreelanceCoach`، الباقة، البيانات الأساسية، وإثبات الدفع
+   ثم يرسل `POST /api/workspace-applications` مرة واحدة.
+3. بعد الإرسال تظهر `/identity/application-status` برسائل Submitted/UnderReview/Preparing/Ready؛
+   لا تفتح الواجهة Dashboard ولا تستدعي APIs الخاصة بالـTenant قبل أن يعيد الخادم `canAccessDashboard=true`.
+4. عند طلب معلومات إضافية تعدل الواجهة الحقول المطلوبة فقط ثم ترسل `PATCH .../tracking/fields`
+   و`POST .../tracking/resubmit` دون إعادة التسجيل.
+5. بعد `POST /api/identity/login` يعرض النظام المساحات الفعالة والطلبات المعلقة. اختيار Workspace
+   عبر `POST /api/identity/select-workspace` هو الذي يصدر JWT؛ لا يعتمد الحارس على حالة قديمة في المتصفح.
+6. عند `401` تتم محاولة refresh واحدة مشتركة للطلبات المتوازية؛ فشلها يخرج المستخدم. عند `402` أو
+   حالة Tenant غير متاحة تُعرض تجربة اشتراك/حالة تجهيز واضحة بدل صفحة فارغة.
+
+## رحلة الاشتراك الموحدة (Issue #248)
+
+المستخدم لا ينفذ خطوات تقنية بعد الإرسال. الخادم والمنصة ينشئان أو يربطان Identity، وينشئان Tenant
+والاشتراك، يراجعان الدفع، يحجزان DatabaseResource من الـPool، يشغلان migrations وCanConnect وhealth
+check، ثم ينشئان Owner membership ويفعلان المساحة. نوع Gym يظهر بعلامة زرقاء وأيقونة مبنى، ونوع
+FreelanceCoach بعلامة بنفسجية وأيقونة مدرب في شاشة المنصة. أي نقص يظهر كحقل مطلوب فقط، وأي فشل يظهر
+كـBlocked/Error واضح مع إجراء Retry آمن.
 
 ## Owner / إدارة الصالة
 

@@ -5,6 +5,12 @@ export enum WorkspaceType {
   FreelanceCoach = 2,
 }
 
+export enum BillingCycle {
+  Monthly = 1,
+  SemiAnnual = 2,
+  Annual = 3,
+}
+
 export enum ApplicationType {
   GymWorkspaceCreation = 1,
   FreelanceWorkspaceCreation = 2,
@@ -45,6 +51,7 @@ export interface PendingApplication {
   subscriptionStatus?: number | null;
   databaseStatusCode?: 'Unassigned' | 'Provisioning' | 'Ready' | 'Unavailable' | 'Failed' | 'Released' | null;
   provisioningStatus?: number | null;
+  userJourneyStage?: 'Submitted' | 'UnderReview' | 'MoreInformation' | 'Preparing' | 'PaymentRejected' | 'Rejected' | 'Ready' | string;
   canAccessDashboard?: boolean;
   requiredAction?: string | null;
   nextStep?: string | null;
@@ -83,6 +90,7 @@ export interface ApplicationTrackingStatus {
   databaseStatus?: number | null;
   databaseStatusCode?: 'Unassigned' | 'Provisioning' | 'Ready' | 'Unavailable' | 'Failed' | 'Released' | null;
   provisioningStatus?: number | null;
+  userJourneyStage?: 'Submitted' | 'UnderReview' | 'MoreInformation' | 'Preparing' | 'PaymentRejected' | 'Rejected' | 'Ready' | string;
   canAccessDashboard?: boolean;
   requiredAction?: string | null;
   nextStep?: string | null;
@@ -93,6 +101,7 @@ export interface ApplicationTrackingStatus {
 }
 
 export interface SubmitFreelanceWorkspaceApplication {
+  workspaceType?: WorkspaceType;
   email: string;
   phoneNumber?: string;
   password: string;
@@ -106,6 +115,51 @@ export interface SubmitFreelanceWorkspaceApplication {
   specialties?: string[];
   certifications?: string[];
   welcomeMessage?: string;
+  deliveryMode?: string;
+  planId?: string;
+  billingCycle?: BillingCycle;
+  paymentAmount?: number;
+  paymentTransactionNumber?: string;
+  paymentDate?: string;
+  idempotencyKey?: string;
+  proofStorageKey?: string;
+  proofOriginalFileName?: string;
+  proofContentType?: string;
+  proofSizeBytes?: number;
+  proofSha256?: string;
+}
+
+export interface PublicWorkspacePlan {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  currency: string;
+  billingCycle: BillingCycle;
+  durationInDays: number;
+  features: string[];
+  displayOrder: number;
+}
+
+export interface SubmitWorkspaceApplication {
+  workspaceType: WorkspaceType;
+  planId: string;
+  email: string;
+  phoneNumber?: string;
+  password: string;
+  workspaceName: string;
+  workspaceIdentifier: string;
+  ownerFullName: string;
+  brandName?: string;
+  specialization?: string;
+  deliveryMode?: string;
+  description?: string;
+  bio?: string;
+  welcomeMessage?: string;
+  billingCycle: BillingCycle;
+  paymentTransactionNumber?: string;
+  paymentDate?: string;
+  idempotencyKey: string;
 }
 
 export type WorkspaceAuthResponse = AuthResponse;
