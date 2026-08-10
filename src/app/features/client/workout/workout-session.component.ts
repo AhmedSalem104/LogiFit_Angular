@@ -43,6 +43,10 @@ import { ClientService, WorkoutDay, WorkoutExercise, CompletedSet } from '../ser
         <p-progressBar [value]="sessionProgress()" [showValue]="false"></p-progressBar>
       </div>
 
+      @if (errorMessage(); as error) {
+        <div class="session-error" role="alert">{{ error }}</div>
+      }
+
       <!-- Current Exercise -->
       <div class="current-exercise" *ngIf="currentExercise()">
         <div class="exercise-card">
@@ -123,7 +127,7 @@ import { ClientService, WorkoutDay, WorkoutExercise, CompletedSet } from '../ser
                       ></p-inputNumber>
                     </div>
                   </div>
-                  <button class="complete-set-btn" (click)="completeSet(set)">
+                  <button class="complete-set-btn" (click)="completeSet(set)" [disabled]="!sessionId() || isSetPending(set.number)">
                     <i class="pi pi-check"></i>
                     إكمال المجموعة
                   </button>
@@ -168,7 +172,7 @@ import { ClientService, WorkoutDay, WorkoutExercise, CompletedSet } from '../ser
             <i class="pi pi-arrow-left"></i>
           </button>
         } @else {
-          <button class="nav-btn complete" (click)="completeSession()">
+          <button class="nav-btn complete" (click)="completeSession()" [disabled]="!sessionId() || endingSession()">
             <i class="pi pi-check-circle"></i>
             إنهاء التمرين
           </button>
@@ -231,6 +235,7 @@ import { ClientService, WorkoutDay, WorkoutExercise, CompletedSet } from '../ser
     .video-box iframe, .video-box video { width: 100%; aspect-ratio: 16 / 9; display: block; border: 0; background: #000; }
     .video-close { position: absolute; top: .6rem; inset-inline-end: .6rem; z-index: 2; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(0,0,0,.55); color: #fff; cursor: pointer; font-size: 1rem; }
     .video-close:hover { background: rgba(0,0,0,.8); }
+    .session-error { margin: 1rem 1.5rem 0; padding: .85rem 1rem; border-radius: 12px; background: #fef2f2; color: #b91c1c; }
   `, `
     .workout-session {
       min-height: 100vh;
@@ -659,7 +664,12 @@ export class WorkoutSessionComponent implements OnInit {
   isResting = signal(false);
   restTimeRemaining = signal(0);
   showCompletionDialog = false;
+  sessionId = signal<string | null>(null);
+  errorMessage = signal<string | null>(null);
+  endingSession = signal(false);
   completedSetsData: { [exerciseId: string]: CompletedSet[] } = {};
+  private setInputs: { [exerciseId: string]: { number: number; reps: number; weight: number }[] } = {};
+  private pendingSetKeys = new Set<string>();
 
   private timerInterval: any;
   private restInterval: any;
@@ -698,7 +708,6 @@ export class WorkoutSessionComponent implements OnInit {
     const routineId = this.route.snapshot.queryParamMap.get('routineId') ||
                       this.route.snapshot.queryParamMap.get('dayId');
     this.loadDay(routineId);
-    this.startTimer();
   }
 
   ngOnDestroy(): void {
@@ -708,21 +717,40 @@ export class WorkoutSessionComponent implements OnInit {
 
   loadDay(routineId: string | null): void {
     if (!routineId) {
-      console.error('No routine ID provided for workout session');
+      this.errorMessage.set('تعذر بدء التمرين: لم يتم تحديد يوم التمرين.');
       return;
     }
 
     this.clientService.getWorkoutDay(routineId).subscribe({
       next: (data) => {
         this.currentDay.set(data);
+        this.clientService.startWorkoutSession(data.id).subscribe({
+          next: (sessionId) => {
+            this.sessionId.set(sessionId);
+            this.clientService.getWorkoutSessionById(sessionId).subscribe({
+              next: (session) => {
+                this.hydrateExistingSession(session);
+                this.errorMessage.set(null);
+                this.startTimer();
+              },
+              error: () => {
+                this.errorMessage.set('تم بدء الجلسة، لكن تعذر تحميل التقدم السابق. يمكنك المتابعة وسيتم حفظ المجموعات الجديدة.');
+                this.startTimer();
+              }
+            });
+          },
+          error: () => this.errorMessage.set('تعذر بدء جلسة التمرين. تحقق من أن هذا التمرين معين لحسابك.')
+        });
       },
       error: (err) => {
         console.error('Error loading workout day:', err);
+        this.errorMessage.set('تعذر تحميل التمرين. حاول مرة أخرى أو ارجع إلى البرنامج.');
       }
     });
   }
 
   startTimer(): void {
+    if (this.timerInterval) return;
     this.timerInterval = setInterval(() => {
       this.sessionTime.update(t => t + 1);
     }, 1000);
@@ -738,11 +766,60 @@ export class WorkoutSessionComponent implements OnInit {
     const exercise = this.currentExercise();
     if (!exercise) return [];
 
-    return Array.from({ length: exercise.sets }, (_, i) => ({
-      number: i + 1,
-      reps: exercise.reps,
-      weight: 0
-    }));
+    const existing = this.setInputs[exercise.id];
+    if (!existing || existing.length !== exercise.sets) {
+      this.setInputs[exercise.id] = Array.from({ length: exercise.sets }, (_, i) => ({
+        number: i + 1,
+        reps: Number(exercise.reps) || 1,
+        weight: 0
+      }));
+    }
+    return this.setInputs[exercise.id];
+  }
+
+  private hydrateExistingSession(session: {
+    sets?: { exerciseId: number; setNumber: number; reps: number; weightKg: number }[];
+  }): void {
+    const day = this.currentDay();
+    if (!day) return;
+
+    this.completedSetsData = {};
+    for (const exercise of day.exercises) {
+      const loggedSets = (session.sets ?? [])
+        .filter(set => Number(set.exerciseId) === Number(exercise.exerciseId))
+        .sort((a, b) => a.setNumber - b.setNumber)
+        .map(set => ({ setNumber: set.setNumber, reps: set.reps, weight: set.weightKg }));
+
+      if (loggedSets.length === 0) continue;
+      this.completedSetsData[exercise.id] = loggedSets;
+      this.setInputs[exercise.id] = Array.from({ length: exercise.sets }, (_, index) => {
+        const logged = loggedSets.find(set => set.setNumber === index + 1);
+        return logged ? {
+          number: logged.setNumber,
+          reps: logged.reps,
+          weight: logged.weight
+        } : {
+          number: index + 1,
+          reps: Number(exercise.reps) || 1,
+          weight: 0
+        };
+      });
+      exercise.isCompleted = loggedSets.length >= exercise.sets;
+    }
+
+    const firstIncomplete = day.exercises.findIndex(exercise => !exercise.isCompleted);
+    if (firstIncomplete >= 0) {
+      this.currentExerciseIndex.set(firstIncomplete);
+      this.currentSetNumber.set((this.completedSetsData[day.exercises[firstIncomplete].id]?.length ?? 0) + 1);
+    } else {
+      this.currentExerciseIndex.set(Math.max(0, day.exercises.length - 1));
+      this.currentSetNumber.set(1);
+    }
+  }
+
+  isSetPending(setNumber: number): boolean {
+    const exercise = this.currentExercise();
+    return !!exercise && this.pendingSetKeys.has(`${exercise.id}:${setNumber}`);
   }
 
   isSetCompleted(setNumber: number): boolean {
@@ -755,25 +832,35 @@ export class WorkoutSessionComponent implements OnInit {
 
   completeSet(set: { number: number; reps: number; weight: number }): void {
     const exercise = this.currentExercise();
-    if (!exercise) return;
+    const sessionId = this.sessionId();
+    if (!exercise || !sessionId || this.isSetCompleted(set.number)) return;
 
-    if (!this.completedSetsData[exercise.id]) {
-      this.completedSetsData[exercise.id] = [];
-    }
+    const key = `${exercise.id}:${set.number}`;
+    if (this.pendingSetKeys.has(key)) return;
+    this.pendingSetKeys.add(key);
 
-    this.completedSetsData[exercise.id].push({
+    this.clientService.logSet(sessionId, {
+      exerciseId: Number(exercise.exerciseId),
       setNumber: set.number,
-      reps: set.reps,
-      weight: set.weight
+      weightKg: Number(set.weight || 0),
+      reps: Number(set.reps || 0)
+    }).subscribe({
+      next: () => {
+        if (!this.completedSetsData[exercise.id]) this.completedSetsData[exercise.id] = [];
+        this.completedSetsData[exercise.id].push({ setNumber: set.number, reps: set.reps, weight: set.weight });
+        this.pendingSetKeys.delete(key);
+        if (this.completedSetsData[exercise.id].length >= exercise.sets) {
+          exercise.isCompleted = true;
+        } else {
+          this.currentSetNumber.update(n => n + 1);
+          this.startRestTimer(exercise.restSeconds);
+        }
+      },
+      error: () => {
+        this.pendingSetKeys.delete(key);
+        this.errorMessage.set('تعذر حفظ المجموعة. لم يتم تسجيلها محليا، حاول مرة أخرى.');
+      }
     });
-
-    // Check if all sets completed
-    if (this.completedSetsData[exercise.id].length >= exercise.sets) {
-      exercise.isCompleted = true;
-    } else {
-      this.currentSetNumber.update(n => n + 1);
-      this.startRestTimer(exercise.restSeconds);
-    }
   }
 
   startRestTimer(seconds: number): void {
@@ -811,8 +898,20 @@ export class WorkoutSessionComponent implements OnInit {
   }
 
   completeSession(): void {
-    if (this.timerInterval) clearInterval(this.timerInterval);
-    this.showCompletionDialog = true;
+    const sessionId = this.sessionId();
+    if (!sessionId || this.endingSession()) return;
+    this.endingSession.set(true);
+    this.clientService.endWorkoutSession(sessionId).subscribe({
+      next: () => {
+        this.endingSession.set(false);
+        if (this.timerInterval) clearInterval(this.timerInterval);
+        this.showCompletionDialog = true;
+      },
+      error: () => {
+        this.endingSession.set(false);
+        this.errorMessage.set('تعذر إنهاء جلسة التمرين. حاول مرة أخرى.');
+      }
+    });
   }
 
   finishSession(): void {

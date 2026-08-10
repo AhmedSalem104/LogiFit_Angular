@@ -2719,6 +2719,7 @@ export class DietPlanBuilderComponent implements OnInit {
 
   isEditMode = false;
   planId: string | null = null;
+  private presetClientId: string | null = null;
   saving = signal(false);
   foods = signal<Food[]>([]);
   trainees = signal<Trainee[]>([]);
@@ -2793,7 +2794,7 @@ export class DietPlanBuilderComponent implements OnInit {
     clientId: ['', Validators.required],
     startDate: [new Date(), Validators.required],
     endDate: [null],
-    status: [1], // DietPlanStatus: Draft=0, Active=1, Archived=2 (new plans default to Active)
+    status: [1], // Backend: Active=1, Archived=2, Draft=3
     name: ['', Validators.required],
     description: [''],
     totalCalories: [2500, Validators.required],
@@ -3115,6 +3116,7 @@ export class DietPlanBuilderComponent implements OnInit {
 
   ngOnInit(): void {
     this.planId = this.route.snapshot.paramMap.get('id');
+    this.presetClientId = this.route.snapshot.queryParamMap.get('clientId');
     this.isEditMode = !!this.planId;
 
     // Load foods and trainees first, then load plan if in edit mode
@@ -3138,6 +3140,11 @@ export class DietPlanBuilderComponent implements OnInit {
           value: t.clientId || t.id,
           trainee: t
         }));
+
+        if (!this.isEditMode && this.presetClientId
+          && this.traineeOptions.some(option => option.value === this.presetClientId)) {
+          this.form.patchValue({ clientId: this.presetClientId });
+        }
 
         // Now load plan if in edit mode
         if (this.isEditMode && this.planId) {
@@ -3268,7 +3275,7 @@ export class DietPlanBuilderComponent implements OnInit {
           clientId: plan.clientId || '',
           startDate: plan.startDate ? new Date(plan.startDate) : new Date(),
           endDate: plan.endDate ? new Date(plan.endDate) : null,
-          status: plan.status ?? 0,
+          status: plan.status ?? 1,
           name: plan.name,
           description: plan.description,
           totalCalories: plan.targetCalories ?? plan.totalCalories ?? 0,
@@ -3317,9 +3324,12 @@ export class DietPlanBuilderComponent implements OnInit {
   }
 
   addMeal(name: string = '', time: string = ''): void {
+    const orderIndex = this.mealsArray.length;
     const mealGroup = this.fb.group({
+      id: [''],
       name: [name],
       time: [time],
+      orderIndex: [orderIndex],
       foods: this.fb.array([])
     });
     this.mealsArray.push(mealGroup);
@@ -3332,6 +3342,7 @@ export class DietPlanBuilderComponent implements OnInit {
       id: [mealData.id || ''],
       name: [mealData.mealName || mealData.name || ''],
       time: [mealData.time || ''],
+      orderIndex: [mealData.orderIndex ?? this.mealsArray.length],
       foods: this.fb.array([])
     });
 
@@ -3379,6 +3390,7 @@ export class DietPlanBuilderComponent implements OnInit {
     }
 
     const foodGroup = this.fb.group({
+      id: [''],
       foodId: ['', Validators.required],
       quantity: [100, Validators.required],
       unit: ['g'],
@@ -4105,6 +4117,71 @@ export class DietPlanBuilderComponent implements OnInit {
   }
 
   onSubmit(): void {
+    if (!this.canSave()) {
+      this.form.markAllAsTouched();
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'تنبيه',
+        detail: 'اختر المتدرب وأضف وجبة تحتوي على عنصر غذائي واحد على الأقل'
+      });
+      return;
+    }
+
+    this.saving.set(true);
+    const value = this.form.getRawValue();
+    const toDate = (date: unknown): string | null => {
+      if (!date) return null;
+      const parsed = date instanceof Date ? date : new Date(String(date));
+      return Number.isFinite(parsed.getTime()) ? parsed.toISOString().split('T')[0] : null;
+    };
+    const payload = {
+      clientId: value.clientId,
+      name: value.name,
+      description: value.description || undefined,
+      startDate: toDate(value.startDate) || new Date().toISOString().split('T')[0],
+      endDate: toDate(value.endDate) || undefined,
+      status: Number(value.status ?? 1),
+      mealsPerDay: Number(value.mealsPerDay || value.meals?.length || 0),
+      targetCalories: Number(value.totalCalories || 0),
+      targetProtein: Number(value.proteinGrams || 0),
+      targetCarbs: Number(value.carbsGrams || 0),
+      targetFats: Number(value.fatGrams || 0),
+      meals: (value.meals || []).map((meal: any, mealIndex: number) => ({
+        ...(meal.id ? { id: meal.id } : {}),
+        name: meal.name || `وجبة ${mealIndex + 1}`,
+        orderIndex: Number(meal.orderIndex ?? mealIndex),
+        time: meal.time || undefined,
+        items: (meal.foods || []).map((food: any) => ({
+          ...(food.id ? { id: food.id } : {}),
+          foodId: Number(food.foodId),
+          assignedQuantity: Number(food.quantity || 0)
+        }))
+      }))
+    };
+
+    const request$ = this.isEditMode && this.planId
+      ? this.coachService.updateDietPlan(this.planId, payload)
+      : this.coachService.createDietPlan(payload);
+
+    request$.subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'تم بنجاح',
+          detail: this.isEditMode ? 'تم تحديث الخطة بكل وجباتها' : 'تم إنشاء الخطة بكل عناصرها'
+        });
+        setTimeout(() => this.router.navigate(['/coach/diet-plans']), 500);
+      },
+      error: (err: any) => {
+        this.saving.set(false);
+        const errorMessage = err?.translatedMessage || err?.error?.message || 'تعذر حفظ الخطة. لم يتم ترك بيانات جزئية.';
+        this.messageService.add({ severity: 'error', summary: 'تعذر الحفظ', detail: errorMessage });
+      }
+    });
+  }
+
+  private onSubmitLegacy(): void {
     if (this.form.invalid) {
       this.messageService.add({
         severity: 'warn',

@@ -80,18 +80,16 @@ import { ClientService, MealLog } from '../services/client.service';
         @for (log of mealLogs(); track log.id) {
           <div class="meal-log-card">
             <div class="meal-time">
-              <span class="time">{{ getTime(log.date) }}</span>
+              <span class="time">{{ getTime(log.consumedAt) }}</span>
             </div>
             <div class="meal-content">
-              <h4>{{ log.mealName }}</h4>
+              <h4>{{ log.mealName || log.foodName }}</h4>
               <div class="foods-list">
-                @for (food of log.foods; track food.foodName) {
-                  <div class="food-item">
-                    <span class="food-name">{{ food.foodName }}</span>
-                    <span class="food-details">{{ food.quantity }} {{ food.unit }}</span>
-                    <span class="food-calories">{{ food.calories }} kcal</span>
-                  </div>
-                }
+                <div class="food-item">
+                  <span class="food-name">{{ log.foodName }}</span>
+                  <span class="food-details">{{ log.consumedQuantity }} {{ log.unit || 'g' }}</span>
+                  <span class="food-calories">{{ log.calories }} kcal</span>
+                </div>
               </div>
               <div class="meal-totals">
                 <span class="total calories">{{ log.totalCalories }} kcal</span>
@@ -404,10 +402,10 @@ export class MealLogComponent implements OnInit {
   calculateTotals(logs: MealLog[]): void {
     const totals = logs.reduce(
       (acc, log) => ({
-        calories: acc.calories + log.totalCalories,
-        protein: acc.protein + log.totalProtein,
-        carbs: acc.carbs + log.totalCarbs,
-        fat: acc.fat + log.totalFat
+        calories: acc.calories + (log.calories || 0),
+        protein: acc.protein + (log.protein || 0),
+        carbs: acc.carbs + (log.carbs || 0),
+        fat: acc.fat + (log.fats || 0)
       }),
       { calories: 0, protein: 0, carbs: 0, fat: 0 }
     );

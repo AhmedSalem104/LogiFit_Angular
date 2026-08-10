@@ -6,6 +6,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { ClientService, DietPlan, DietMeal, MealFood } from '../services/client.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { catchError, forkJoin, of } from 'rxjs';
 
 @Component({
   selector: 'app-my-diet',
@@ -131,7 +132,7 @@ import { NotificationService } from '../../../core/services/notification.service
                       تم
                     </div>
                   } @else {
-                    <button class="meal-status pending" (click)="completeMeal(meal)">
+                    <button class="meal-status pending" (click)="completeMeal(meal)" [disabled]="isMealSaving(meal)">
                       <i class="pi pi-circle"></i>
                       تسجيل
                     </button>
@@ -477,6 +478,7 @@ export class MyDietComponent implements OnInit {
 
   loading = signal(true);
   dietPlan = signal<DietPlan | null>(null);
+  savingMealIds = signal<string[]>([]);
 
   today = new Date().toLocaleDateString('ar-EG', {
     weekday: 'long',
@@ -541,12 +543,17 @@ export class MyDietComponent implements OnInit {
   loadDietPlan(): void {
     this.loading.set(true);
 
-    this.clientService.getMyDietPlan().subscribe({
-      next: (data) => {
+    forkJoin({
+      plans: this.clientService.getMyDietPlan(),
+      // A disabled meal-log feature must not turn an otherwise valid plan into a blank page.
+      logs: this.clientService.getMealLogs(new Date()).pipe(catchError(() => of([])))
+    }).subscribe({
+      next: ({ plans, logs }) => {
         // API returns array, get first active plan
-        const plans = Array.isArray(data) ? data : [data];
-        if (plans.length > 0) {
-          const plan = this.mapDietPlanToLegacy(plans[0]);
+        const activePlans = Array.isArray(plans) ? plans : [plans];
+        if (activePlans.length > 0) {
+          const plan = this.mapDietPlanToLegacy(activePlans[0]);
+          this.markLoggedMeals(plan, logs as any[]);
           this.dietPlan.set(plan);
         } else {
           this.dietPlan.set(null);
@@ -579,8 +586,36 @@ export class MyDietComponent implements OnInit {
   }
 
   completeMeal(meal: DietMeal): void {
-    meal.isCompleted = true;
-    // Note: completeMeal API endpoint doesn't exist yet - UI only
+    const mealId = meal.id;
+    const items = (meal.foods ?? []).filter(item => !!item.id);
+    if (!mealId || items.length === 0 || this.isMealSaving(meal)) return;
+
+    this.savingMealIds.update(ids => [...ids, mealId]);
+    forkJoin(items.map(item => this.clientService.logMeal({
+      mealItemId: item.id,
+      consumedQuantity: item.quantity
+    }))).subscribe({
+      next: () => {
+        meal.isCompleted = true;
+        this.savingMealIds.update(ids => ids.filter(id => id !== mealId));
+      },
+      error: () => {
+        this.savingMealIds.update(ids => ids.filter(id => id !== mealId));
+        this.notificationService.error('تعذر تسجيل الوجبة. لم يتم احتسابها، حاول مرة أخرى.');
+      }
+    });
+  }
+
+  isMealSaving(meal: DietMeal): boolean {
+    return !!meal.id && this.savingMealIds().includes(meal.id);
+  }
+
+  private markLoggedMeals(plan: DietPlan, logs: any[]): void {
+    const loggedItems = new Set((logs ?? []).map(log => String(log.mealItemId)));
+    for (const meal of plan.meals ?? []) {
+      const itemIds = (meal.foods ?? []).map(item => String(item.id));
+      meal.isCompleted = itemIds.length > 0 && itemIds.every(id => loggedItems.has(id));
+    }
   }
 
   /**

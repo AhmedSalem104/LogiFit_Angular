@@ -725,8 +725,14 @@ export class ProgramsListComponent implements OnInit {
 
     this.coachService.getWorkoutPrograms().subscribe({
       next: (data) => {
-        this.programs.set(data);
-        this.filteredPrograms.set(data);
+        const mapped = data.map(program => ({
+          ...program,
+          isActive: program.status === 1 || (program.status === undefined && program.isActive !== false),
+          durationWeeks: program.durationWeeks || this.calculateDurationWeeks(program),
+          daysPerWeek: program.daysPerWeek || 0
+        }));
+        this.programs.set(mapped);
+        this.filteredPrograms.set(mapped);
         this.loading.set(false);
       },
       error: (err) => {
@@ -791,11 +797,12 @@ export class ProgramsListComponent implements OnInit {
 
   toggleProgram(program: WorkoutProgram): void {
     const newActiveState = !program.isActive;
-    this.coachService.updateWorkoutProgram(program.id, { isActive: newActiveState }).subscribe({
+    const newStatus = newActiveState ? 1 : 2;
+    this.coachService.updateWorkoutProgram(program.id, { status: newStatus }).subscribe({
       next: () => {
         // Update local state
         const updatedPrograms = this.programs().map(p =>
-          p.id === program.id ? { ...p, isActive: newActiveState } : p
+          p.id === program.id ? { ...p, isActive: newActiveState, status: newStatus } : p
         );
         this.programs.set(updatedPrograms);
         this.filterPrograms();

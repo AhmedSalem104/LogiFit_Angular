@@ -1,6 +1,6 @@
 import { Component, signal, OnInit, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgxChartsModule, Color, ScaleType } from '@swimlane/ngx-charts';
 import { TabViewModule } from 'primeng/tabview';
 import { TagModule } from 'primeng/tag';
@@ -228,7 +228,7 @@ interface TraineeProgress {
                   <h4>برنامج التمرين الحالي</h4>
                   <p>برنامج تضخيم العضلات - المستوى المتوسط</p>
                 </div>
-                <button class="btn btn-outline">تغيير</button>
+                <button class="btn btn-outline" (click)="openWorkoutBuilder()">تغيير</button>
               </div>
 
               <div class="program-card" *ngIf="trainee()?.currentDietPlanId">
@@ -239,13 +239,13 @@ interface TraineeProgress {
                   <h4>خطة التغذية الحالية</h4>
                   <p>خطة بناء العضلات - 2500 سعرة</p>
                 </div>
-                <button class="btn btn-outline">تغيير</button>
+                <button class="btn btn-outline" (click)="openDietBuilder()">تغيير</button>
               </div>
 
               <div class="assign-program" *ngIf="!trainee()?.currentWorkoutProgramId || !trainee()?.currentDietPlanId">
                 <i class="pi pi-plus-circle"></i>
                 <p>تعيين برنامج جديد</p>
-                <button class="btn btn-primary">تعيين</button>
+                <button class="btn btn-primary" (click)="openWorkoutBuilder()">تعيين</button>
               </div>
             </div>
           </p-tabPanel>
@@ -682,6 +682,7 @@ interface TraineeProgress {
 })
 export class TraineeDetailsComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private coachService = inject(CoachService);
   private notificationService = inject(NotificationService);
 
@@ -689,6 +690,7 @@ export class TraineeDetailsComponent implements OnInit {
   trainee = signal<Trainee | null>(null);
   measurements = signal<BodyMeasurement[]>([]);
   workoutHistory = signal<{ date: string; workout: string; duration: number }[]>([]);
+  sessions = signal<any[]>([]);
   measurementDialogOpen = signal(false);
   savingMeasurement = signal(false);
 
@@ -730,12 +732,17 @@ export class TraineeDetailsComponent implements OnInit {
   });
 
   sessionsChartData = computed(() => {
-    return [
-      { name: 'يناير', value: 8 },
-      { name: 'فبراير', value: 12 },
-      { name: 'مارس', value: 10 },
-      { name: 'أبريل', value: 15 }
-    ];
+    const byMonth = new Map<string, number>();
+    for (const session of this.sessions()) {
+      const date = new Date(session.startedAt);
+      if (!Number.isFinite(date.getTime())) continue;
+      const key = date.toLocaleDateString('ar-EG', { month: 'short' });
+      byMonth.set(key, (byMonth.get(key) || 0) + 1);
+    }
+    if (byMonth.size > 0) {
+      return Array.from(byMonth.entries()).map(([name, value]) => ({ name, value }));
+    }
+    return [];
   });
 
   ngOnInit(): void {
@@ -753,7 +760,9 @@ export class TraineeDetailsComponent implements OnInit {
         this.trainee.set(data);
         this.loading.set(false);
         // Load this trainee's measurements (keyed by client id).
-        this.loadMeasurements(data.clientId || data.id || id);
+        const clientId = data.clientId || id;
+        this.loadMeasurements(clientId);
+        this.loadSessions(clientId);
       },
       error: (err) => {
         console.error('Error loading trainee data:', err);
@@ -770,6 +779,25 @@ export class TraineeDetailsComponent implements OnInit {
     this.coachService.getMeasurements(clientId).subscribe({
       next: (list) => this.measurements.set(list || []),
       error: () => this.measurements.set([])
+    });
+  }
+
+  private loadSessions(clientId: string): void {
+    this.coachService.getWorkoutSessions(clientId).subscribe({
+      next: (sessions) => {
+        this.sessions.set(sessions || []);
+        this.workoutHistory.set((sessions || []).map(session => ({
+          date: session.startedAt,
+          workout: session.routineName || 'جلسة تمرين',
+          duration: session.endedAt
+            ? Math.max(0, Math.round((new Date(session.endedAt).getTime() - new Date(session.startedAt).getTime()) / 60000))
+            : 0
+        })));
+      },
+      error: () => {
+        this.sessions.set([]);
+        this.workoutHistory.set([]);
+      }
     });
   }
 
@@ -808,12 +836,34 @@ export class TraineeDetailsComponent implements OnInit {
     return months[new Date(dateStr).getMonth()];
   }
 
+  private getClientId(): string | null {
+    return this.trainee()?.clientId || null;
+  }
+
+  openWorkoutBuilder(): void {
+    const clientId = this.getClientId();
+    if (!clientId) {
+      this.notificationService.error('تعذر تحديد المتدرب لإنشاء البرنامج');
+      return;
+    }
+    this.router.navigate(['/coach/workout-programs/create'], { queryParams: { clientId } });
+  }
+
+  openDietBuilder(): void {
+    const clientId = this.getClientId();
+    if (!clientId) {
+      this.notificationService.error('تعذر تحديد المتدرب لإنشاء الخطة');
+      return;
+    }
+    this.router.navigate(['/coach/diet-plans/create'], { queryParams: { clientId } });
+  }
+
   addMeasurement(): void {
     this.measurementDialogOpen.set(true);
   }
 
   onSaveMeasurement(value: MeasurementValue): void {
-    const clientId = this.trainee()?.id || this.route.snapshot.paramMap.get('id') || undefined;
+    const clientId = this.trainee()?.clientId || this.route.snapshot.paramMap.get('id') || undefined;
     if (!clientId) { this.notificationService.error('تعذّر تحديد المتدرب'); return; }
 
     this.savingMeasurement.set(true);

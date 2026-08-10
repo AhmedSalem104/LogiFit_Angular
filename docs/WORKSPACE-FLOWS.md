@@ -151,3 +151,15 @@ FreelanceCoach بعلامة بنفسجية وأيقونة مدرب في شاشة
 بمفرده: يرفع مالك الصالة إثباتًا، ثم يراجع Platform Admin الطلب ويوافق أو يرفض.
 حالات الاشتراك والـinvoice والـpayment request تحفظ في الخادم، والواجهة تعرضها ولا
 تسمح بتحويل حالة غير مسموح بها.
+
+## Coach-to-client plan flow (Issue #69, task branch)
+
+1. The coach opens a client relation or the plans list. The client identifier is passed to the
+   builder as a query parameter and is preselected after the assigned-client list loads.
+2. The coach builds the workout or diet aggregate and saves once. The UI keeps the save button busy,
+   surfaces API validation errors, and does not navigate as if a partial child save succeeded.
+3. The backend checks tenant scope and the active `CoachClient` relation before writing the plan.
+4. The client reads only active plans. The workout screen resumes an active session when present;
+   set completion and session completion are reflected locally only after the API confirms success.
+5. The diet screen reads the day's meal logs, logs every item on completion, and keeps the meal
+   pending if any item fails. Unsupported/failed meal-log loading does not blank a valid plan.
