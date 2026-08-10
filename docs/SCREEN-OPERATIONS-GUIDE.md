@@ -243,3 +243,13 @@ MoreInformation أو Preparing أو Ready بدل عرض تفاصيل تقنية 
 2. حدّث [كتالوج الـAPI](API-ENDPOINT-CATALOG.md) من مشروع الخادم إذا تغير أي عقد.
 3. حدّث [PROJECT_REFERENCE.md](PROJECT_REFERENCE.md) عند تغير البنية أو المسارات، و[RESPONSIVE-DESIGN.md](RESPONSIVE-DESIGN.md) عند تغير السلوك المرئي.
 4. اختبر الدور المصرح له، والدور غير المصرح له، والهاتف، وحالات التحميل/الفراغ/الفشل قبل الدمج.
+
+## Coach plan and execution screen behavior (Issues #69/#272, task branches)
+
+| Screen | Implemented behavior | Failure/empty behavior |
+|---|---|---|
+| `/coach/trainees/:id` | Loads the relation, measurements, assigned sessions, real session history, and links to the workout/diet builders with the client preselected. | Relation/API failure clears the view and shows a notification; no fabricated session chart is shown. |
+| `/coach/workout-programs/create` and edit | Saves the full nested workout aggregate with plan metadata and exercise instructions in one API call. | Validation marks the form; API errors leave the form open and do not claim success. |
+| `/coach/diet-plans/create` and edit | Saves the full nested diet aggregate with meals, foods, quantities, targets, and times in one API call. | Invalid food/quantity or API failure leaves the form open without partial-save messaging. |
+| `/client/workout-session` | Starts/resumes a server session, posts each set, and completes the session only after the API confirms it. | Loading/blocked/error messaging stays visible; failed sets remain uncompleted for retry. |
+| `/client/my-diet` and `/client/meal-log` | Reads active plan and server meal logs, calculates totals from real log macros, and writes meal items through `/api/meal-logs`. | A missing plan is an explicit empty state; meal-log feature failure does not erase a valid plan. |

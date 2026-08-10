@@ -117,6 +117,7 @@ export interface WorkoutProgram {
   daysPerWeek?: number;
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
   goal?: string;
+  status?: number; // Backend: Active=1, Archived=2, Draft=3
   isActive?: boolean;
   assignedTraineesCount?: number;
   // Routines (API structure)
@@ -154,6 +155,32 @@ export interface CreateWorkoutProgramRequest {
   name: string;
   startDate: string;
   endDate?: string;
+  description?: string;
+  goal?: string;
+  difficulty?: string;
+  daysPerWeek?: number;
+  status?: number;
+  routines?: WorkoutRoutineInput[];
+}
+
+export interface WorkoutRoutineInput {
+  id?: string;
+  name: string;
+  dayOfWeek: number;
+  exercises: WorkoutRoutineExerciseInput[];
+}
+
+export interface WorkoutRoutineExerciseInput {
+  id?: string;
+  exerciseId: number;
+  sets: number;
+  repsMin: number;
+  repsMax: number;
+  restSec: number;
+  targetWeightKg?: number;
+  notes?: string;
+  tempo?: string;
+  supersetGroupId?: string | null;
 }
 
 export interface CreateRoutineRequest {
@@ -167,6 +194,7 @@ export interface CreateRoutineExerciseRequest {
   repsMin: number;
   repsMax: number;
   restSec: number;
+  targetWeightKg?: number;
   notes?: string;
   tempo?: string;
   supersetGroupId?: string | null;
@@ -185,7 +213,7 @@ export interface DietPlan {
   description?: string;
   startDate?: string;
   endDate?: string;
-  status?: number; // 0=Active, 1=Draft, 2=Archived
+  status?: number; // Backend: Active=1, Archived=2, Draft=3
   // Target values (API naming)
   targetCalories?: number;
   targetProtein?: number;
@@ -656,20 +684,21 @@ export class CoachService {
   }
 
   // Workout Programs
-  getWorkoutPrograms(): Observable<WorkoutProgram[]> {
-    return this.http.get<WorkoutProgram[]>(`${this.apiUrl}/workoutprograms`);
+  getWorkoutPrograms(status?: number): Observable<WorkoutProgram[]> {
+    const query = status === undefined ? '' : `?status=${status}`;
+    return this.http.get<WorkoutProgram[]>(`${this.apiUrl}/workoutprograms${query}`);
   }
 
   getWorkoutProgramById(id: string): Observable<WorkoutProgram> {
     return this.http.get<WorkoutProgram>(`${this.apiUrl}/workoutprograms/${id}`);
   }
 
-  createWorkoutProgram(program: Partial<WorkoutProgram>): Observable<WorkoutProgram> {
-    return this.http.post<WorkoutProgram>(`${this.apiUrl}/workoutprograms`, program);
+  createWorkoutProgram(program: CreateWorkoutProgramRequest): Observable<unknown> {
+    return this.http.post<unknown>(`${this.apiUrl}/workoutprograms`, program);
   }
 
-  updateWorkoutProgram(id: string, program: Partial<WorkoutProgram>): Observable<WorkoutProgram> {
-    return this.http.put<WorkoutProgram>(`${this.apiUrl}/workoutprograms/${id}`, program);
+  updateWorkoutProgram(id: string, program: Partial<CreateWorkoutProgramRequest>): Observable<unknown> {
+    return this.http.put<unknown>(`${this.apiUrl}/workoutprograms/${id}`, program);
   }
 
   deleteWorkoutProgram(id: string): Observable<void> {
@@ -688,6 +717,7 @@ export class CoachService {
     repsMin: number;
     repsMax: number;
     restSec: number;
+    targetWeightKg?: number;
     notes?: string;
     tempo?: string;
     supersetGroupId?: string;
@@ -717,6 +747,7 @@ export class CoachService {
     repsMin: number;
     repsMax: number;
     restSec: number;
+    targetWeightKg?: number;
     notes?: string;
     tempo?: string;
     supersetGroupId?: string;
@@ -730,20 +761,21 @@ export class CoachService {
   }
 
   // Diet Plans
-  getDietPlans(): Observable<DietPlan[]> {
-    return this.http.get<DietPlan[]>(`${this.apiUrl}/dietplans`);
+  getDietPlans(status?: number): Observable<DietPlan[]> {
+    const query = status === undefined ? '' : `?status=${status}`;
+    return this.http.get<DietPlan[]>(`${this.apiUrl}/dietplans${query}`);
   }
 
   getDietPlanById(id: string): Observable<DietPlan> {
     return this.http.get<DietPlan>(`${this.apiUrl}/dietplans/${id}`);
   }
 
-  createDietPlan(plan: Partial<DietPlan>): Observable<DietPlan> {
-    return this.http.post<DietPlan>(`${this.apiUrl}/dietplans`, plan);
+  createDietPlan(plan: Partial<DietPlan> & { meals?: DietMeal[] }): Observable<unknown> {
+    return this.http.post<unknown>(`${this.apiUrl}/dietplans`, plan);
   }
 
-  updateDietPlan(id: string, plan: Partial<DietPlan>): Observable<DietPlan> {
-    return this.http.put<DietPlan>(`${this.apiUrl}/dietplans/${id}`, plan);
+  updateDietPlan(id: string, plan: Partial<DietPlan> & { meals?: DietMeal[] }): Observable<unknown> {
+    return this.http.put<unknown>(`${this.apiUrl}/dietplans/${id}`, plan);
   }
 
   deleteDietPlan(id: string): Observable<void> {

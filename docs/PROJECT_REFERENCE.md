@@ -355,3 +355,17 @@ Vercel: Build = `npm run build`, Output = `dist/logicfit-app/browser`.
 - لا يوجد ملفات test فعلية بارزة رغم إعداد Karma/Jasmine.
 - تعارض بدايات الـ enums (0 مقابل 1) بين الملفين.
 ```
+
+## Coach plan execution update (Issue #69, task branch)
+
+The coach builders now submit one complete aggregate to the backend: a workout payload contains
+client metadata, plan status, routines, exercises, repetitions, rest, target weight, notes, and
+tempo; a diet payload contains client metadata, status, targets, meals, meal times, foods, and
+quantities. Edit mode sends existing child IDs so the server can reconcile additions, updates, and
+removals atomically.
+
+The client service requests active plans explicitly (`status=1`). Workout execution starts/resumes a
+server session, records sets only after a successful response, and ends the session through the API.
+The diet screen loads today's meal logs and marks a meal complete only after all item logs succeed.
+The task branch is not deployed or production-verified until the backend migration and both releases
+are merged and health-checked.

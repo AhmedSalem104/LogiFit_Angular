@@ -2316,6 +2316,7 @@ export class ProgramBuilderComponent implements OnInit {
 
   isEditMode = false;
   programId: string | null = null;
+  private presetClientId: string | null = null;
   saving = signal(false);
   exercises = signal<Exercise[]>([]);
   trainees = signal<Trainee[]>([]);
@@ -2358,6 +2359,7 @@ export class ProgramBuilderComponent implements OnInit {
     description: [''],
     goal: ['muscle_building', Validators.required],
     difficulty: ['intermediate', Validators.required],
+    status: [1],
     durationWeeks: [8, [Validators.required, Validators.min(1)]],
     daysPerWeek: [4, [Validators.required, Validators.min(1), Validators.max(7)]],
     days: this.fb.array([])
@@ -2552,6 +2554,7 @@ export class ProgramBuilderComponent implements OnInit {
 
   ngOnInit(): void {
     this.programId = this.route.snapshot.paramMap.get('id');
+    this.presetClientId = this.route.snapshot.queryParamMap.get('clientId');
     this.isEditMode = !!this.programId;
 
     // Load exercises and trainees first, then load program if in edit mode
@@ -2574,6 +2577,11 @@ export class ProgramBuilderComponent implements OnInit {
           value: t.clientId || t.id,
           trainee: t
         }));
+
+        if (!this.isEditMode && this.presetClientId
+          && this.traineeOptions.some(option => option.value === this.presetClientId)) {
+          this.form.patchValue({ clientId: this.presetClientId });
+        }
 
         // Now load program if in edit mode
         if (this.isEditMode && this.programId) {
@@ -2675,7 +2683,9 @@ export class ProgramBuilderComponent implements OnInit {
           description: program.description,
           goal: program.goal || 'muscle_building',
           difficulty: program.difficulty || 'intermediate',
-          durationWeeks: program.durationWeeks,
+          status: program.status ?? 1,
+          durationWeeks: program.durationWeeks
+            ?? this.calculateDurationWeeks(startDate, program.endDate),
           daysPerWeek: program.routines?.length ?? program.daysPerWeek ?? 4
         });
 
@@ -2740,8 +2750,11 @@ export class ProgramBuilderComponent implements OnInit {
   }
 
   addDay(name: string = ''): void {
+    const dayOfWeek = this.daysArray.length;
     const dayGroup = this.fb.group({
+      id: [''],
       name: [name],
+      dayOfWeek: [dayOfWeek],
       exercises: this.fb.array([])
     });
     this.daysArray.push(dayGroup);
@@ -2778,6 +2791,8 @@ export class ProgramBuilderComponent implements OnInit {
           reps: [reps, Validators.required],
           weight: [ex.weight || 20],
           restSeconds: [ex.restSec ?? ex.restSeconds ?? 60],
+          notes: [ex.notes || ''],
+          tempo: [ex.tempo || ''],
           supersetGroupId: [ex.supersetGroupId || '']
         });
         (dayGroup.get('exercises') as FormArray).push(exerciseGroup);
@@ -2798,11 +2813,15 @@ export class ProgramBuilderComponent implements OnInit {
 
   addExercise(dayIndex: number): void {
     const exerciseGroup = this.fb.group({
+      id: [''],
       exerciseId: ['', Validators.required],
       sets: [3, Validators.required],
       reps: [12, Validators.required],
       weight: [20, Validators.required],
-      restSeconds: ['60']
+      restSeconds: ['60'],
+      notes: [''],
+      tempo: [''],
+      supersetGroupId: ['']
     });
     this.getExercisesArray(dayIndex).push(exerciseGroup);
   }
@@ -3723,11 +3742,98 @@ export class ProgramBuilderComponent implements OnInit {
     return end.toLocaleDateString('ar-EG');
   }
 
+  calculateDurationWeeks(startDate: Date | string, endDate?: Date | string): number {
+    if (!startDate || !endDate) return 8;
+    const start = new Date(startDate).getTime();
+    const end = new Date(endDate).getTime();
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 8;
+    return Math.max(1, Math.ceil((end - start) / (7 * 24 * 60 * 60 * 1000)));
+  }
+
   printProgram(): void {
     this.previewProgram();
   }
 
   onSubmit(): void {
+    if (!this.canSave()) {
+      this.form.markAllAsTouched();
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'تنبيه',
+        detail: 'اختر المتدرب وأضف تمرينا واحدا على الأقل قبل الحفظ'
+      });
+      return;
+    }
+
+    this.saving.set(true);
+    const value = this.form.getRawValue();
+    const startDate = value.startDate instanceof Date ? value.startDate : new Date(value.startDate);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + (Number(value.durationWeeks || 1) * 7));
+    const parseReps = (reps: unknown): { repsMin: number; repsMax: number } => {
+      if (typeof reps === 'string' && reps.includes('-')) {
+        const [min, max] = reps.split('-').map(v => Number.parseInt(v.trim(), 10));
+        return { repsMin: min || 1, repsMax: max || min || 1 };
+      }
+      const numeric = Number.parseInt(String(reps ?? 1), 10) || 1;
+      return { repsMin: numeric, repsMax: numeric };
+    };
+
+    const payload = {
+      clientId: value.clientId,
+      name: value.name,
+      description: value.description || undefined,
+      goal: value.goal || undefined,
+      difficulty: value.difficulty || undefined,
+      daysPerWeek: Number(value.daysPerWeek || value.days?.length || 0),
+      status: Number(value.status ?? 1),
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0],
+      routines: (value.days || []).map((day: any, index: number) => ({
+        ...(day.id ? { id: day.id } : {}),
+        name: day.name || `اليوم ${index + 1}`,
+        dayOfWeek: Number(day.dayOfWeek ?? index),
+        exercises: (day.exercises || []).map((exercise: any) => {
+          const reps = parseReps(exercise.reps);
+          return {
+            ...(exercise.id ? { id: exercise.id } : {}),
+            exerciseId: Number(exercise.exerciseId),
+            sets: Number(exercise.sets || 1),
+            repsMin: reps.repsMin,
+            repsMax: reps.repsMax,
+            restSec: Number(exercise.restSeconds || 0),
+            targetWeightKg: Number(exercise.weight || 0) || undefined,
+            notes: exercise.notes || undefined,
+            tempo: exercise.tempo || undefined,
+            supersetGroupId: exercise.supersetGroupId || undefined
+          };
+        })
+      }))
+    };
+
+    const request$ = this.isEditMode && this.programId
+      ? this.coachService.updateWorkoutProgram(this.programId, payload)
+      : this.coachService.createWorkoutProgram(payload);
+
+    request$.subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'تم بنجاح',
+          detail: this.isEditMode ? 'تم تحديث البرنامج بالكامل' : 'تم إنشاء البرنامج بكل تمارينه'
+        });
+        setTimeout(() => this.router.navigate(['/coach/workout-programs']), 500);
+      },
+      error: (err: any) => {
+        this.saving.set(false);
+        const errorMessage = err?.translatedMessage || err?.error?.message || 'تعذر حفظ البرنامج. لم يتم ترك بيانات جزئية.';
+        this.messageService.add({ severity: 'error', summary: 'تعذر الحفظ', detail: errorMessage });
+      }
+    });
+  }
+
+  private onSubmitLegacy(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.messageService.add({

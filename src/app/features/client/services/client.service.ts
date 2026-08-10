@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/auth/services/auth.service';
 
@@ -93,6 +93,7 @@ export interface WorkoutProgram {
   name?: string;
   startDate?: string;
   endDate?: string;
+  status?: PlanStatus;
   routines?: ProgramRoutine[];
   // Legacy properties for component compatibility
   description?: string;
@@ -120,6 +121,9 @@ export interface RoutineExercise {
   repsMin: number;
   repsMax: number;
   restSec: number;
+  targetWeightKg?: number;
+  notes?: string;
+  tempo?: string;
   supersetGroupId?: string;
 }
 
@@ -202,11 +206,11 @@ export interface MealItem {
   calcFats: number;
 }
 
-// Plan Status enum (0-indexed as per API docs)
+// Plan Status enum — canonical backend values.
 export enum PlanStatus {
-  Active = 0,
-  Archived = 1,
-  Draft = 2
+  Active = 1,
+  Archived = 2,
+  Draft = 3
 }
 
 // Body Measurement - matches BodyMeasurementDto from backend
@@ -294,13 +298,24 @@ export interface MealFood {
 
 export interface MealLog {
   id: string;
-  date: string;
-  mealName: string;
-  foods: LoggedFood[];
-  totalCalories: number;
-  totalProtein: number;
-  totalCarbs: number;
-  totalFat: number;
+  mealItemId: string;
+  mealName?: string;
+  foodName: string;
+  isAlternative: boolean;
+  consumedQuantity: number;
+  consumedAt: string;
+  unit?: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  // Legacy grouped fields kept for older meal-log templates.
+  date?: string;
+  foods?: LoggedFood[];
+  totalCalories?: number;
+  totalProtein?: number;
+  totalCarbs?: number;
+  totalFat?: number;
 }
 
 export interface LoggedFood {
@@ -476,12 +491,16 @@ export class ClientService {
   // Workout Program
   getMyWorkoutProgram(): Observable<WorkoutProgram[]> {
     const userId = this.getCurrentUserId();
-    return this.http.get<WorkoutProgram[]>(`${this.apiUrl}/workoutprograms?clientId=${userId}`);
+    return this.http.get<WorkoutProgram[]>(`${this.apiUrl}/workoutprograms?clientId=${userId}&status=1`);
   }
 
   // Start workout session - uses routineId as per OpenAPI StartWorkoutSessionCommand
   startWorkoutSession(routineId: string): Observable<string> {
     return this.http.post<string>(`${this.apiUrl}/workoutsessions/start`, { routineId });
+  }
+
+  getWorkoutSessionById(id: string): Observable<WorkoutSession> {
+    return this.http.get<WorkoutSession>(`${this.apiUrl}/workoutsessions/${id}`);
   }
 
   // Get workout sessions
@@ -549,15 +568,38 @@ export class ClientService {
 
   // Meal Logs
   getMealLogs(date: Date): Observable<MealLog[]> {
-    const userId = this.getCurrentUserId();
     const dateStr = date.toISOString().split('T')[0];
-    return this.http.get<MealLog[]>(`${this.apiUrl}/meal-logs?clientId=${userId}&date=${dateStr}`);
+    return this.http.get<MealLog[]>(`${this.apiUrl}/meal-logs?date=${dateStr}`).pipe(
+      map(logs => logs.map(log => ({
+        ...log,
+        date: log.consumedAt,
+        foods: [{
+          foodName: log.foodName,
+          quantity: log.consumedQuantity,
+          unit: log.unit || 'g',
+          calories: log.calories
+        }],
+        totalCalories: log.calories,
+        totalProtein: log.protein,
+        totalCarbs: log.carbs,
+        totalFat: log.fats
+      })))
+    );
+  }
+
+  logMeal(data: {
+    mealItemId: string;
+    consumedQuantity: number;
+    consumedAt?: string;
+    alternativeFoodId?: number;
+  }): Observable<string> {
+    return this.http.post<string>(`${this.apiUrl}/meal-logs`, data);
   }
 
   // Diet Plan - status=Active as string per API docs
   getMyDietPlan(): Observable<DietPlan[]> {
     const userId = this.getCurrentUserId();
-    return this.http.get<DietPlan[]>(`${this.apiUrl}/dietplans?clientId=${userId}&status=Active`);
+    return this.http.get<DietPlan[]>(`${this.apiUrl}/dietplans?clientId=${userId}&status=1`);
   }
 
   // Measurements

@@ -253,7 +253,7 @@ import Swal from 'sweetalert2';
               <td>
                 <div class="actions-cell">
                   <a
-                    [routerLink]="['/coach/trainees', trainee.clientId || trainee.id]"
+                    [routerLink]="['/coach/trainees', trainee.id]"
                     class="action-icon view"
                     pTooltip="عرض التفاصيل"
                     tooltipPosition="top"
