@@ -84,7 +84,7 @@ sequenceDiagram
 
 ## شاشات المتدرب (`/client`)
 
-`dashboard`, `my-program`, `workout-session`, `my-diet`, `meal-log`, `my-measurements`, `my-progress`, `my-subscriptions`, `chat`, `challenges`, `profile`.
+`dashboard`, `my-program`, `workout-session`, `my-diet`, `meal-log`, `my-measurements`, `my-progress`, `my-subscriptions`, `appointments`, `chat`, `challenges`, `profile`.
 
 يتم إخفاء الميزات غير الموجودة في الباقة، مع منع الوصول المباشر إليها من الـBackend وعرض رسالة ترقية مفهومة.
 

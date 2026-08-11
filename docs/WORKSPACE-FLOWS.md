@@ -85,6 +85,11 @@ flowchart LR
   والـactions يفلتران بالصلاحيات، وليس لإخفاء الواجهة وحده أي أثر أمني.
 - **Coach / Trainer** يريان عملاءهما ومواردهما المسموح بها فقط.
 - **Client** يرى بياناته الشخصية وخطته واشتراكه فقط.
+- تظهر أدوار `Manager` و`Receptionist` و`Accountant` و`Trainer` بتسميات واضحة داخل الرأس
+  والشريط. عند `workspaceType=2` تظهر تسمية مساحة المدرب الحر بصريًا، مع بقاء الحارس والدور
+  والصلاحيات كما هي.
+- كل شاشة Back-office مرتبطة بحارس Permission على مستوى المسار بالإضافة إلى تصفية الشريط؛
+  فتح الرابط يدويًا لا يحمل مكونًا إداريًا غير مصرح به.
 - الـBackend هو الحد الأمني: الـTenant والـownership وpermission لا تعتمد على
   `TenantId` أو role قادمين من المتصفح.
 
@@ -143,7 +148,7 @@ FreelanceCoach بعلامة بنفسجية وأيقونة مدرب في شاشة
 | `/client/dashboard`, `/client/my-program`, `/client/workout-session` | متابعة البرنامج وتسجيل الجلسة. |
 | `/client/my-diet`, `/client/meal-log` | الخطة الغذائية وسجل الوجبات. |
 | `/client/my-measurements`, `/client/my-progress` | القياسات والتقدم. |
-| `/client/my-subscriptions`, `/client/chat`, `/client/challenges`, `/client/profile` | الاشتراك والتواصل والتحديات والملف الشخصي. |
+| `/client/my-subscriptions`, `/client/appointments`, `/client/chat`, `/client/challenges`, `/client/profile` | الاشتراك والمواعيد والتواصل والتحديات والملف الشخصي. |
 
 ## الدفعات والاشتراك بالمنصة
 

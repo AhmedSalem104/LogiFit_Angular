@@ -442,7 +442,7 @@ export interface MyAppointmentDto {
   endTime: string;
   title?: string;
   notes?: string;
-  status: number; // 1=Pending, 2=Confirmed, 3=Cancelled, 4=Completed
+  status: number | string; // 1=Pending, 2=Confirmed, 3=Cancelled, 4=Completed; string kept for old deployments
 }
 
 @Injectable({

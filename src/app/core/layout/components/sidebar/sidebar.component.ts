@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { AuthService } from '../../../auth/services/auth.service';
 import { ThemeState } from '../../../../state/theme.state';
 import { UserRole, Permission, BACK_OFFICE_ROLES, COACH_ROLES } from '../../../auth/models/auth.models';
+import { getRoleLabel } from '../../../auth/role-labels';
 
 interface NavItem {
   label: string;
@@ -856,13 +857,8 @@ export class SidebarComponent {
   }
 
   getRoleLabel(): string {
-    const role = this.authService.userRole();
-    switch (role) {
-      case 'Owner': return 'مالك الصالة';
-      case 'Coach': return 'مدرب';
-      case 'Client': return 'عميل';
-      default: return '';
-    }
+    const user = this.authService.user();
+    return getRoleLabel(user?.role, user?.workspaceType);
   }
 
   getInitials(): string {
@@ -1013,6 +1009,7 @@ export class SidebarComponent {
         { label: 'قياساتي', icon: 'pi-chart-line', route: '/client/my-measurements', roles: [UserRole.Client] },
         { label: 'تقدمي', icon: 'pi-chart-bar', route: '/client/my-progress', roles: [UserRole.Client] },
         { label: 'اشتراكاتي', icon: 'pi-wallet', route: '/client/my-subscriptions', roles: [UserRole.Client] },
+        { label: 'مواعيدي', icon: 'pi-calendar-plus', route: '/client/appointments', roles: [UserRole.Client] },
       ]
     },
     {
