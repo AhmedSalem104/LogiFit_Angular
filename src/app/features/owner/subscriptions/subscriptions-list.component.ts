@@ -65,7 +65,7 @@ import Swal from 'sweetalert2';
       </app-page-header>
 
       <!-- Stats Row -->
-      <div class="stats-row">
+      <div class="stats-row" *ngIf="!errorMessage()">
         <div class="stat-card" [class.active-stat]="selectedStatus === null" (click)="filterByStatus(null)">
           <div class="stat-icon blue"><i class="pi pi-credit-card"></i></div>
           <div class="stat-info">
@@ -120,6 +120,14 @@ import Swal from 'sweetalert2';
       <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
         <i class="pi pi-exclamation-triangle"></i>
         <div><strong>تعذر تحميل الاشتراكات</strong><p>{{ errorMessage() }}</p><button class="btn btn-outline" type="button" (click)="loadSubscriptions()">إعادة المحاولة</button></div>
+      </div>
+      <div class="state-card warning-state" *ngIf="!errorMessage() && (plansError() || clientsError())" role="status">
+        <i class="pi pi-info-circle"></i>
+        <div>
+          <strong>بعض بيانات نموذج الاشتراك غير متاحة</strong>
+          <p>{{ plansError() || clientsError() }}</p>
+          <button type="button" class="btn btn-outline" (click)="loadData()">إعادة تحميل البيانات</button>
+        </div>
       </div>
 
       <!-- Subscriptions Table -->
@@ -304,7 +312,7 @@ import Swal from 'sweetalert2';
             <div class="form-row"><div class="form-group"><label>الهاتف *</label><input type="text" pInputText [(ngModel)]="newClient.phoneNumber" /></div><div class="form-group"><label>البريد</label><input type="email" pInputText [(ngModel)]="newClient.email" /></div></div>
             <div class="form-group"><label>كلمة المرور *</label><app-password-field [(ngModel)]="newClient.password" placeholder="أدخل كلمة المرور"></app-password-field></div>
           </div>
-          <div class="form-group">
+          <div class="form-group" *ngIf="!newClientMode">
             <label>العميل <span class="required">*</span></label>
             <p-dropdown
               [options]="clientOptions"
@@ -628,6 +636,9 @@ import Swal from 'sweetalert2';
         [style]="{width: '650px'}"
         [contentStyle]="{'overflow-y': 'auto', 'max-height': '75vh'}"
       >
+        <div class="state-card warning-state" *ngIf="detailError()" role="status">
+          <i class="pi pi-info-circle"></i><span>{{ detailError() }}</span>
+        </div>
         @if (detailSubscription) {
           <div class="detail-content">
             <!-- Client Info -->
@@ -893,6 +904,8 @@ import Swal from 'sweetalert2';
 
     .state-card { display:flex; align-items:center; gap:.75rem; min-height:150px; padding:1.25rem; margin-bottom:1rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
     .state-card p { margin:.35rem 0 .65rem; color:#7f1d1d; }
+    .warning-state { border-color:#fde68a; color:#92400e; background:#fffbeb; }
+    .warning-state i { color:#d97706; }
 
     .table-toolbar {
       padding: 1.25rem;
@@ -1371,6 +1384,9 @@ export class SubscriptionsListComponent implements OnInit {
 
   loading = signal(true);
   errorMessage = signal('');
+  plansError = signal<string | null>(null);
+  clientsError = signal<string | null>(null);
+  detailError = signal<string | null>(null);
   saving = signal(false);
   subscriptions = signal<ClientSubscription[]>([]);
   plans = signal<SubscriptionPlan[]>([]);
@@ -1490,17 +1506,23 @@ export class SubscriptionsListComponent implements OnInit {
   }
 
   private loadPlans(): void {
+    this.plansError.set(null);
     this.ownerService.getSubscriptionPlans(true).subscribe({
       next: (data) => {
         this.plans.set(data);
         this.planOptions = data.map(p => ({ label: `${p.name} - ${p.price} جنيه`, value: p.id }));
         this.planFilterOptions = data.map(p => ({ label: p.name, value: p.id }));
       },
-      error: () => this.notificationService.error('تعذر تحميل باقات الاشتراك')
+      error: (err) => {
+        const message = err?.translatedMessage || err?.error?.detail || err?.error?.message || 'تعذر تحميل باقات الاشتراك';
+        this.plansError.set(message);
+        this.notificationService.error(message);
+      }
     });
   }
 
   private loadClients(): void {
+    this.clientsError.set(null);
     this.ownerService.getClients().subscribe({
       next: (data) => {
         this.clients.set(data);
@@ -1509,7 +1531,11 @@ export class SubscriptionsListComponent implements OnInit {
           value: c.id
         }));
       },
-      error: () => this.notificationService.error('تعذر تحميل قائمة العملاء')
+      error: (err) => {
+        const message = err?.translatedMessage || err?.error?.detail || err?.error?.message || 'تعذر تحميل قائمة العملاء';
+        this.clientsError.set(message);
+        this.notificationService.error(message);
+      }
     });
   }
 
@@ -1571,6 +1597,14 @@ export class SubscriptionsListComponent implements OnInit {
 
   // ==================== Subscription Dialog ====================
   openSubscriptionDialog(): void {
+    if (!this.plans().length) {
+      this.notificationService.warn('لا يمكن إنشاء اشتراك قبل تحميل باقات الاشتراك');
+      return;
+    }
+    if (!this.createOnly && !this.clients().length) {
+      this.notificationService.warn('لا يمكن إنشاء اشتراك قبل تحميل قائمة العملاء');
+      return;
+    }
     this.newClientMode = this.createOnly;
     this.showNewClientPassword = false;
     this.newClient = { fullName: '', phoneNumber: '', email: '', password: '' };
@@ -1641,7 +1675,10 @@ export class SubscriptionsListComponent implements OnInit {
   }
 
   savePayment(): void {
-    if (!this.selectedSubscription || !this.paymentForm.amount) return;
+    if (!this.selectedSubscription || !this.paymentForm.amount || this.paymentForm.amount <= 0) {
+      this.notificationService.warn('أدخل مبلغاً صحيحاً أكبر من صفر');
+      return;
+    }
 
     this.saving.set(true);
     this.ownerService.addPayment(this.selectedSubscription.id, {
@@ -1720,6 +1757,10 @@ export class SubscriptionsListComponent implements OnInit {
       this.notificationService.warn('يرجى تحديد تاريخ البداية والنهاية');
       return;
     }
+    if (new Date(this.freezeForm.endDate).getTime() < new Date(this.freezeForm.startDate).getTime()) {
+      this.notificationService.warn('يجب أن يكون تاريخ نهاية التجميد بعد تاريخ البداية');
+      return;
+    }
 
     this.saving.set(true);
     const startDate = this.freezeForm.startDate instanceof Date
@@ -1783,6 +1824,10 @@ export class SubscriptionsListComponent implements OnInit {
 
   confirmCancel(): void {
     if (!this.selectedSubscription) return;
+    if (this.cancelForm.refundToWallet && (this.cancelForm.refundAmount === null || this.cancelForm.refundAmount < 0)) {
+      this.notificationService.warn('أدخل قيمة استرداد صحيحة أو ألغِ خيار الاسترداد');
+      return;
+    }
 
     this.saving.set(true);
     this.ownerService.cancelSubscription(this.selectedSubscription.id, {
@@ -1804,6 +1849,7 @@ export class SubscriptionsListComponent implements OnInit {
 
   // ==================== Detail Dialog ====================
   viewDetails(sub: ClientSubscription): void {
+    this.detailError.set(null);
     this.ownerService.getSubscriptionById(sub.id).subscribe({
       next: (data) => {
         this.detailSubscription = data;
@@ -1812,6 +1858,7 @@ export class SubscriptionsListComponent implements OnInit {
       error: () => {
         this.detailSubscription = sub;
         this.detailDialogVisible = true;
+        this.detailError.set('تعذر تحميل التفاصيل الكاملة؛ المعروض هو ملخص القائمة.');
       }
     });
   }
