@@ -45,7 +45,16 @@ import {
         subtitle="نظرة شاملة على أداء الصالة"
       ></app-page-header>
 
+      @if (dashboardError()) {
+        <section class="dashboard-error" role="alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <div><strong>تعذر تحميل مؤشرات لوحة التحكم</strong><p>{{ dashboardError() }}</p></div>
+          <button type="button" class="dashboard-retry" (click)="loadDashboardReport()">إعادة المحاولة</button>
+        </section>
+      }
+
       <!-- Stats Cards -->
+      @if (!dashboardError()) {
       <div class="stats-grid">
         <app-stat-card
           title="إجمالي العملاء"
@@ -82,6 +91,7 @@ import {
           [loading]="loadingDashboard()"
         ></app-stat-card>
       </div>
+      }
 
       <!-- Charts Row 1 -->
       <div class="charts-grid">
@@ -213,6 +223,7 @@ import {
           title="طرق الدفع"
           [height]="250"
           [loading]="loadingFinancial()"
+          [error]="financialError()"
           [isEmpty]="!paymentMethodsData().length"
           (refresh)="loadFinancialReport()"
         >
@@ -233,6 +244,11 @@ import {
     .dashboard {
       max-width: 1400px;
     }
+
+    .dashboard-error { display:flex; align-items:center; gap:.75rem; margin-bottom:1rem; padding:.85rem 1rem; border:1px solid #fecaca; border-radius:14px; color:#991b1b; background:#fff7f7; }
+    .dashboard-error p { margin:.25rem 0 0; color:#7f1d1d; }
+    .dashboard-error > div { flex:1; }
+    .dashboard-retry { border:0; border-radius:8px; padding:.55rem .8rem; color:#fff; background:#dc2626; cursor:pointer; font:inherit; font-weight:700; }
 
     .tenant-hero {
       min-height: 150px;
@@ -389,6 +405,7 @@ export class OwnerDashboardComponent implements OnInit {
   loadingFinancial = signal(true);
   loadingClients = signal(true);
   loadingSubscriptions = signal(true);
+  dashboardError = signal<string | undefined>(undefined);
 
   // Error signals
   financialError = signal<string | undefined>(undefined);
@@ -439,13 +456,15 @@ export class OwnerDashboardComponent implements OnInit {
 
   loadDashboardReport(): void {
     this.loadingDashboard.set(true);
+    this.dashboardError.set(undefined);
     this.reportsService.getDashboardReport().subscribe({
       next: (data) => {
         this.dashboard.set(data);
         this.loadingDashboard.set(false);
       },
-      error: () => {
+      error: (err) => {
         this.loadingDashboard.set(false);
+        this.dashboardError.set(err?.translatedMessage || 'تحقق من الاتصال والصلاحيات ثم أعد المحاولة.');
       }
     });
   }

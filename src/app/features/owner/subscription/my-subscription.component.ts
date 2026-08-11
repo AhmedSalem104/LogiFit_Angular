@@ -43,6 +43,13 @@ type View = 'overview' | 'plans' | 'payment';
 
       @if (loading()) {
         <div class="loading"><i class="pi pi-spin pi-spinner"></i> جاري التحميل...</div>
+      } @else if (errorMessage()) {
+        <div class="error-state" role="alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <strong>تعذر تحميل بيانات الاشتراك</strong>
+          <p>{{ errorMessage() }}</p>
+          <button class="btn btn-primary" type="button" (click)="retry()">إعادة المحاولة</button>
+        </div>
       } @else {
 
         <!-- ============ OVERVIEW ============ -->
@@ -234,6 +241,9 @@ type View = 'overview' | 'plans' | 'payment';
     .muted { color:var(--text-secondary); }
     .small { font-size:.8rem; }
     .loading { text-align:center; padding:3rem; color:var(--text-secondary); }
+    .error-state { display:flex; flex-direction:column; align-items:center; gap:.45rem; padding:2.5rem 1rem; text-align:center; border:1px solid #fecaca; border-radius:14px; color:#991b1b; background:#fff7f7; }
+    .error-state i { font-size:2rem; color:#dc2626; }
+    .error-state p { margin:0 0 .5rem; color:#7f1d1d; }
     .card { background:var(--bg-primary); border:1px solid var(--border-color); border-radius:14px; padding:1.5rem; margin-bottom:1.25rem; }
     .status-head { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; }
     .price-block .price { font-size:1.75rem; font-weight:800; color:var(--accent-color); }
@@ -295,6 +305,7 @@ export class MySubscriptionComponent implements OnInit {
     this.tenantStatus.onboarding() || !!this.route.snapshot.queryParamMap.get('onboarding'));
 
   loading = signal(true);
+  errorMessage = signal('');
   submitting = signal(false);
   view = signal<View>('overview');
   sub = signal<MySubscription | null>(null);
@@ -313,8 +324,9 @@ export class MySubscriptionComponent implements OnInit {
     }
   }
 
-  private load(): void {
+  load(): void {
     this.loading.set(true);
+    this.errorMessage.set('');
     forkJoin({
       sub: this.billing.getMySubscription(),
       plans: this.billing.getPlans(),
@@ -329,9 +341,14 @@ export class MySubscriptionComponent implements OnInit {
         }
         this.loading.set(false);
       },
-      error: () => this.loading.set(false)
+      error: () => {
+        this.loading.set(false);
+        this.errorMessage.set('تحقق من الاتصال والصلاحيات ثم أعد المحاولة.');
+      }
     });
   }
+
+  retry(): void { this.load(); }
 
   goToPlans(): void { this.view.set('plans'); }
 

@@ -876,8 +876,8 @@ export class SidebarComponent {
     {
       title: 'الرئيسية',
       items: [
-        { label: 'لوحة التحكم', icon: 'pi-th-large', route: '/owner/dashboard', roles: [UserRole.Owner] },
-        { label: 'لوحة التشغيل', icon: 'pi-chart-pie', route: '/owner/operations', roles: [UserRole.Owner] },
+        { label: 'لوحة التحكم', icon: 'pi-th-large', route: '/owner/dashboard', roles: [UserRole.Owner], permission: 'ViewReports' },
+        { label: 'لوحة التشغيل', icon: 'pi-chart-pie', route: '/owner/operations', roles: [UserRole.Owner], permission: 'ViewReports' },
         { label: 'لوحة التحكم', icon: 'pi-th-large', route: '/coach/dashboard', roles: [UserRole.Coach] },
         { label: 'لوحة التحكم', icon: 'pi-th-large', route: '/client/dashboard', roles: [UserRole.Client] },
       ]

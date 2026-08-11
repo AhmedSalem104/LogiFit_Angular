@@ -19,6 +19,7 @@ import {
   UserRole,
   UserRoleValues,
   Permission,
+  Permissions,
   BACK_OFFICE_ROLES,
   COACH_ROLES,
   DecodedToken
@@ -299,6 +300,11 @@ export class AuthService {
   private panelHomeForRole(role: UserRole | null): string {
     if (role && COACH_ROLES.includes(role)) return '/coach/dashboard';
     if (role === UserRole.Client) return '/client/dashboard';
+    if (role && BACK_OFFICE_ROLES.includes(role) && role !== UserRole.Owner && !this.hasPermission(Permissions.ViewReports)) {
+      if (this.hasPermission(Permissions.ViewMembers)) return '/owner/clients';
+      if (this.hasPermission(Permissions.ManageAttendance)) return '/owner/attendance';
+      return '/owner/profile';
+    }
     // Owner / Manager / Receptionist / Accountant → back-office
     return '/owner/dashboard';
   }

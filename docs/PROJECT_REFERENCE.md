@@ -293,6 +293,9 @@ Vercel: Build = `npm run build`, Output = `dist/logicfit-app/browser`.
 **الأدوار (7 الآن):** `Owner=1, Coach=2, Client=3, Manager=4, Receptionist=5, Accountant=6, Trainer=7`.
 - `BACK_OFFICE_ROLES` = Owner/Manager/Receptionist/Accountant → لوحة `/owner` (يفصلها الصلاحيات).
 - `COACH_ROLES` = Coach/Trainer → لوحة `/coach`. (محدّثة في `role.guard.ts`.)
+- لوحة المالك ولوحة التشغيل تستخدمان `ViewReports` على مستوى المسار، لذلك ينتقل موظف
+  الاستقبال إلى أول شاشة مسموحة له بدل استدعاء تقرير يعيد `403`. شاشة `freelance-team` تتحقق
+  أيضًا من `workspaceType=2` عند فتح الرابط مباشرة.
 
 **RBAC (الصلاحيات):** كتالوج 14 صلاحية في `auth.models.ts` (`Permission`). الأدوات:
 - `AuthService.hasPermission() / hasAnyPermission() / hasAllPermissions()`.

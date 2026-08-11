@@ -37,7 +37,17 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
         <button class="btn btn-secondary" (click)="refreshAll()"><i class="pi pi-refresh"></i><span>تحديث</span></button>
       </div>
 
-      <p-tabView>
+      @if (errorMessage()) {
+        <div class="state-banner" role="alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <span>{{ errorMessage() }}</span>
+          <button class="btn btn-secondary" type="button" (click)="refreshAll()">إعادة المحاولة</button>
+        </div>
+      }
+
+      <app-loading-skeleton *ngIf="loading()" type="stats"></app-loading-skeleton>
+
+      <p-tabView *ngIf="!loading()">
         <!-- Expenses -->
         <p-tabPanel header="المصروفات" (click)="loadExpenses()">
           <div *ngIf="expenses()" class="stats-row">
@@ -242,6 +252,8 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
   `,
   styles: [GYM_PAGE_STYLES + `
     .rep-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1rem; }
+    .state-banner { display:flex; align-items:center; gap:.65rem; margin-bottom:1rem; padding:.8rem 1rem; border:1px solid #fecaca; border-radius:10px; color:#991b1b; background:#fff7f7; }
+    .state-banner span { flex:1; }
     .section-title { padding: 1rem; margin: 0; }
     .text-green { color:#10b981; }
     .text-red { color:#ef4444; }
@@ -267,50 +279,79 @@ export class OperationsReportsComponent implements OnInit {
   branchId: string | null = null;
   payrollYear = new Date().getFullYear();
   payrollMonth = new Date().getMonth() + 1;
+  loading = signal(false);
+  errorMessage = signal('');
+  private pendingLoads = 0;
 
   get branchOptions() { return () => this.branches().map(b => ({ label: b.name, value: b.id })); }
 
   ngOnInit() {
-    this.branchesSvc.list().subscribe(b => this.branches.set(b || []));
+    this.branchesSvc.list().subscribe({
+      next: b => this.branches.set(b || []),
+      error: () => this.reportError('الفروع')
+    });
     this.refreshAll();
   }
 
   refreshAll() {
+    this.errorMessage.set('');
     this.loadExpenses(); this.loadPosSales(); this.loadStock();
     this.loadPayroll(); this.loadClassAttendance(); this.loadEquipment();
     this.loadBranchComp(); this.loadCommissions();
   }
 
   loadExpenses() {
+    this.beginLoad();
     this.svc.expenses({ fromDate: this.fromDate, toDate: this.toDate, branchId: this.branchId ?? undefined })
-      .subscribe({ next: d => this.expenses.set(d), error: () => {} });
+      .subscribe({ next: d => { this.expenses.set(d); this.completeLoad(); }, error: () => { this.reportError('المصروفات'); this.completeLoad(); } });
   }
   loadPosSales() {
+    this.beginLoad();
     this.svc.posSales({ fromDate: this.fromDate, toDate: this.toDate, branchId: this.branchId ?? undefined })
-      .subscribe({ next: d => this.posSales.set(d), error: () => {} });
+      .subscribe({ next: d => { this.posSales.set(d); this.completeLoad(); }, error: () => { this.reportError('مبيعات المتجر'); this.completeLoad(); } });
   }
   loadStock() {
+    this.beginLoad();
     this.svc.stockValuation(this.branchId ?? undefined)
-      .subscribe({ next: d => this.stock.set(d), error: () => {} });
+      .subscribe({ next: d => { this.stock.set(d); this.completeLoad(); }, error: () => { this.reportError('تقييم المخزون'); this.completeLoad(); } });
   }
   loadPayroll() {
+    this.beginLoad();
     this.svc.payrollSummary({ year: this.payrollYear, month: this.payrollMonth })
-      .subscribe({ next: d => this.payroll.set(d), error: () => {} });
+      .subscribe({ next: d => { this.payroll.set(d); this.completeLoad(); }, error: () => { this.reportError('ملخص الرواتب'); this.completeLoad(); } });
   }
   loadClassAttendance() {
+    this.beginLoad();
     this.svc.classAttendance({ fromDate: this.fromDate, toDate: this.toDate, branchId: this.branchId ?? undefined })
-      .subscribe({ next: d => this.classAtt.set(d), error: () => {} });
+      .subscribe({ next: d => { this.classAtt.set(d); this.completeLoad(); }, error: () => { this.reportError('حضور الحصص'); this.completeLoad(); } });
   }
   loadEquipment() {
+    this.beginLoad();
     this.svc.equipmentUtilization(this.branchId ?? undefined)
-      .subscribe({ next: d => this.equipment.set(d), error: () => {} });
+      .subscribe({ next: d => { this.equipment.set(d); this.completeLoad(); }, error: () => { this.reportError('استخدام الأجهزة'); this.completeLoad(); } });
   }
   loadBranchComp() {
+    this.beginLoad();
     this.svc.branchComparison({ fromDate: this.fromDate, toDate: this.toDate })
-      .subscribe({ next: d => this.branchComp.set(d), error: () => {} });
+      .subscribe({ next: d => { this.branchComp.set(d); this.completeLoad(); }, error: () => { this.reportError('مقارنة الفروع'); this.completeLoad(); } });
   }
   loadCommissions() {
+    this.beginLoad();
     this.svc.commissions({ fromDate: this.fromDate, toDate: this.toDate })
-      .subscribe({ next: d => this.commissions.set(d), error: () => {} });
+      .subscribe({ next: d => { this.commissions.set(d); this.completeLoad(); }, error: () => { this.reportError('العمولات'); this.completeLoad(); } });
+  }
+
+  private beginLoad(): void {
+    this.pendingLoads++;
+    this.loading.set(true);
+  }
+
+  private completeLoad(): void {
+    this.pendingLoads = Math.max(0, this.pendingLoads - 1);
+    if (this.pendingLoads === 0) this.loading.set(false);
+  }
+
+  private reportError(label: string): void {
+    this.errorMessage.set(`تعذر تحميل ${label}. تحقق من الاتصال والصلاحيات ثم أعد المحاولة.`);
   }
 }

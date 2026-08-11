@@ -2,17 +2,18 @@ import { Routes } from '@angular/router';
 import { featureGuard } from '../../core/auth/guards/feature.guard';
 import { permissionGuard } from '../../core/auth/guards/permission.guard';
 import { Permissions } from '../../core/auth/models/auth.models';
+import { freelanceWorkspaceGuard } from '../../core/auth/guards/freelance-workspace.guard';
 
 export const ownerRoutes: Routes = [
   // Main
-  { path: 'dashboard', loadComponent: () => import('./dashboard/owner-dashboard.component').then(m => m.OwnerDashboardComponent), title: 'لوحة التحكم - LogicFit' },
+  { path: 'dashboard', canActivate: [permissionGuard(Permissions.ViewReports)], loadComponent: () => import('./dashboard/owner-dashboard.component').then(m => m.OwnerDashboardComponent), title: 'لوحة التحكم - LogicFit' },
   { path: 'profile', loadComponent: () => import('./profile/owner-profile.component').then(m => m.OwnerProfileComponent), title: 'الملف الشخصي - LogicFit' },
-  { path: 'operations', loadComponent: () => import('./operations-dashboard/operations-dashboard.component').then(m => m.OperationsDashboardComponent), title: 'لوحة التشغيل - LogicFit' },
+  { path: 'operations', canActivate: [permissionGuard(Permissions.ViewReports)], loadComponent: () => import('./operations-dashboard/operations-dashboard.component').then(m => m.OperationsDashboardComponent), title: 'لوحة التشغيل - LogicFit' },
 
   // Members
   { path: 'clients', canActivate: [permissionGuard(Permissions.ViewMembers)], loadComponent: () => import('./clients/clients-list.component').then(m => m.ClientsListComponent), title: 'العملاء - LogicFit' },
   { path: 'coaches', canActivate: [permissionGuard(Permissions.ManageCoaches)], loadComponent: () => import('./coaches/coaches-list.component').then(m => m.CoachesListComponent), title: 'المدربين - LogicFit' },
-  { path: 'freelance-team', canActivate: [permissionGuard(Permissions.ManageCoaches)], loadComponent: () => import('./freelance-team/freelance-team.component').then(m => m.FreelanceTeamComponent), title: 'فريق المدرب الحر - LogicFit' },
+  { path: 'freelance-team', canActivate: [freelanceWorkspaceGuard, permissionGuard(Permissions.ManageCoaches)], loadComponent: () => import('./freelance-team/freelance-team.component').then(m => m.FreelanceTeamComponent), title: 'فريق المدرب الحر - LogicFit' },
   { path: 'membership-cards', canActivate: [permissionGuard(Permissions.ManageMembers)], loadComponent: () => import('./membership-cards/membership-cards.component').then(m => m.MembershipCardsComponent), title: 'بطاقات العضوية' },
   { path: 'gate-access', canActivate: [permissionGuard(Permissions.ManageAttendance)], loadComponent: () => import('./gate-access/gate-access.component').then(m => m.GateAccessComponent), title: 'البوابة' },
 

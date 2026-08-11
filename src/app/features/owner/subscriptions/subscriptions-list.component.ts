@@ -117,8 +117,13 @@ import Swal from 'sweetalert2';
       <!-- Loading State -->
       <app-loading-skeleton *ngIf="loading()" type="table" [rows]="5"></app-loading-skeleton>
 
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div><strong>تعذر تحميل الاشتراكات</strong><p>{{ errorMessage() }}</p><button class="btn btn-outline" type="button" (click)="loadSubscriptions()">إعادة المحاولة</button></div>
+      </div>
+
       <!-- Subscriptions Table -->
-      <div class="table-card" *ngIf="!loading()">
+      <div class="table-card" *ngIf="!loading() && !errorMessage()">
         <div class="table-toolbar">
           <div class="search-box">
             <i class="pi pi-search"></i>
@@ -886,6 +891,9 @@ import Swal from 'sweetalert2';
       overflow: hidden;
     }
 
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:150px; padding:1.25rem; margin-bottom:1rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card p { margin:.35rem 0 .65rem; color:#7f1d1d; }
+
     .table-toolbar {
       padding: 1.25rem;
       border-bottom: 1px solid var(--border-color);
@@ -1362,6 +1370,7 @@ export class SubscriptionsListComponent implements OnInit {
   private route = inject(ActivatedRoute);
 
   loading = signal(true);
+  errorMessage = signal('');
   saving = signal(false);
   subscriptions = signal<ClientSubscription[]>([]);
   plans = signal<SubscriptionPlan[]>([]);
@@ -1453,12 +1462,14 @@ export class SubscriptionsListComponent implements OnInit {
 
   loadData(): void {
     this.loading.set(true);
+    this.errorMessage.set('');
     this.loadSubscriptions();
     this.loadPlans();
     this.loadClients();
   }
 
   loadSubscriptions(): void {
+    this.errorMessage.set('');
     const params: any = {};
     if (this.selectedStatus !== null) params.status = this.selectedStatus;
     if (this.selectedPlanFilter) params.planId = this.selectedPlanFilter;
@@ -1473,6 +1484,7 @@ export class SubscriptionsListComponent implements OnInit {
         console.error('Error loading subscriptions:', err);
         this.subscriptions.set([]);
         this.loading.set(false);
+        this.errorMessage.set(err?.translatedMessage || 'تحقق من الاتصال والصلاحيات ثم أعد المحاولة.');
       }
     });
   }
@@ -1484,7 +1496,7 @@ export class SubscriptionsListComponent implements OnInit {
         this.planOptions = data.map(p => ({ label: `${p.name} - ${p.price} جنيه`, value: p.id }));
         this.planFilterOptions = data.map(p => ({ label: p.name, value: p.id }));
       },
-      error: () => {}
+      error: () => this.notificationService.error('تعذر تحميل باقات الاشتراك')
     });
   }
 
@@ -1497,7 +1509,7 @@ export class SubscriptionsListComponent implements OnInit {
           value: c.id
         }));
       },
-      error: () => {}
+      error: () => this.notificationService.error('تعذر تحميل قائمة العملاء')
     });
   }
 
