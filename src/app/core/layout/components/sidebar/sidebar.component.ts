@@ -917,8 +917,8 @@ export class SidebarComponent {
       title: 'الحصص الجماعية',
       roles: [UserRole.Owner],
       items: [
-        { label: 'أنواع الحصص', icon: 'pi-calendar', route: '/owner/group-classes', roles: [UserRole.Owner] },
-        { label: 'الجدولة', icon: 'pi-calendar-plus', route: '/owner/class-schedules', roles: [UserRole.Owner] },
+        { label: 'أنواع الحصص', icon: 'pi-calendar', route: '/owner/group-classes', roles: [UserRole.Owner], permission: 'ManageBranches' },
+        { label: 'الجدولة', icon: 'pi-calendar-plus', route: '/owner/class-schedules', roles: [UserRole.Owner], permission: 'ManageBranches' },
       ]
     },
     {

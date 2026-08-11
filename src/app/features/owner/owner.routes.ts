@@ -29,8 +29,8 @@ export const ownerRoutes: Routes = [
   { path: 'maintenance', canActivate: [permissionGuard(Permissions.ManageBranches)], loadComponent: () => import('./maintenance/maintenance-list.component').then(m => m.MaintenanceListComponent), title: 'الصيانة' },
 
   // Classes
-  { path: 'group-classes', loadComponent: () => import('./group-classes/group-classes.component').then(m => m.GroupClassesComponent), title: 'الحصص الجماعية' },
-  { path: 'class-schedules', loadComponent: () => import('./class-schedules/class-schedules.component').then(m => m.ClassSchedulesComponent), title: 'جدولة الحصص' },
+  { path: 'group-classes', canActivate: [permissionGuard(Permissions.ManageBranches)], loadComponent: () => import('./group-classes/group-classes.component').then(m => m.GroupClassesComponent), title: 'الحصص الجماعية' },
+  { path: 'class-schedules', canActivate: [permissionGuard(Permissions.ManageBranches)], loadComponent: () => import('./class-schedules/class-schedules.component').then(m => m.ClassSchedulesComponent), title: 'جدولة الحصص' },
 
   // Finance
   { path: 'invoices', canActivate: [permissionGuard(Permissions.ManageFinance)], loadComponent: () => import('./invoices/invoices-list.component').then(m => m.InvoicesListComponent), title: 'الفواتير' },
