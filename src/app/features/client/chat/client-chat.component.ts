@@ -26,6 +26,13 @@ import { AuthService } from '../../../core/auth/services/auth.service';
               <span>جاري تحميل المحادثات...</span>
             </div>
           }
+          @if (!conversationsLoading() && conversationsError(); as message) {
+            <div class="error-state" role="alert">
+              <i class="pi pi-exclamation-triangle"></i>
+              <span>{{ message }}</span>
+              <button type="button" (click)="loadConversations()">إعادة المحاولة</button>
+            </div>
+          }
           @for (conv of conversations(); track conv.id) {
             <div
               class="conversation-item"
@@ -50,7 +57,7 @@ import { AuthService } from '../../../core/auth/services/auth.service';
           }
 
           <!-- No Conversations + Start Chat -->
-          @if (!conversationsLoading() && conversations().length === 0) {
+          @if (!conversationsLoading() && !conversationsError() && conversations().length === 0) {
             <div class="empty-state">
               <i class="pi pi-inbox"></i>
               <p>لا توجد محادثات</p>
@@ -59,6 +66,9 @@ import { AuthService } from '../../../core/auth/services/auth.service';
                   <i class="pi pi-send"></i>
                   ابدأ محادثة مع مدربك
                 </button>
+              } @else if (coachError()) {
+                <span class="no-coach-text">{{ coachError() }}</span>
+                <button type="button" class="btn-start-chat" (click)="loadCoachInfo()">إعادة المحاولة</button>
               } @else if (!coachLoading()) {
                 <span class="no-coach-text">لم يتم تعيين مدرب لك بعد</span>
               }
@@ -90,6 +100,13 @@ import { AuthService } from '../../../core/auth/services/auth.service';
                 <span>جاري تحميل الرسائل...</span>
               </div>
             }
+            @if (!messagesLoading() && messagesError(); as message) {
+              <div class="error-state" role="alert">
+                <i class="pi pi-exclamation-triangle"></i>
+                <span>{{ message }}</span>
+                <button type="button" (click)="loadMessages(selectedConversation()!.id, true)">إعادة المحاولة</button>
+              </div>
+            }
             @for (msg of messages(); track msg.id) {
               <div class="message-bubble" [class.sent]="msg.senderId === currentUserId()" [class.received]="msg.senderId !== currentUserId()">
                 <div class="bubble-content">
@@ -107,6 +124,9 @@ import { AuthService } from '../../../core/auth/services/auth.service';
 
           <!-- Message Input -->
           <div class="message-input-area">
+            @if (sendError(); as message) {
+              <div class="send-error" role="alert">{{ message }}</div>
+            }
             <input
               type="text"
               class="message-input"
@@ -592,6 +612,35 @@ import { AuthService } from '../../../core/auth/services/auth.service';
       font-size: 1.2rem;
     }
 
+    .error-state {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: 1rem;
+      color: #b91c1c;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 12px;
+      font-size: .85rem;
+    }
+
+    .error-state button {
+      margin-inline-start: auto;
+      border: 0;
+      border-radius: 8px;
+      padding: .4rem .65rem;
+      color: #fff;
+      background: #b91c1c;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .send-error {
+      flex-basis: 100%;
+      color: #b91c1c;
+      font-size: .78rem;
+    }
+
     /* ==================== Mobile Responsive ==================== */
 
     @media (max-width: 768px) {
@@ -640,10 +689,14 @@ export class ClientChatComponent implements OnInit, OnDestroy {
   messages = signal<ChatMessageDto[]>([]);
   selectedConversation = signal<ConversationDto | null>(null);
   conversationsLoading = signal(false);
+  conversationsError = signal<string | null>(null);
   messagesLoading = signal(false);
+  messagesError = signal<string | null>(null);
   sending = signal(false);
+  sendError = signal<string | null>(null);
   coachInfo = signal<MyCoachInfo | null>(null);
   coachLoading = signal(false);
+  coachError = signal<string | null>(null);
 
   // Form
   newMessage = '';
@@ -676,6 +729,7 @@ export class ClientChatComponent implements OnInit, OnDestroy {
       if (this.conversations().length === 0) {
         this.conversationsLoading.set(true);
       }
+      this.conversationsError.set(null);
       this.chatService.getConversations().subscribe({
         next: (convs) => {
           this.conversations.set(convs);
@@ -689,19 +743,26 @@ export class ClientChatComponent implements OnInit, OnDestroy {
             }
           }
         },
-        error: () => this.conversationsLoading.set(false)
+        error: () => {
+          this.conversationsLoading.set(false);
+          this.conversationsError.set('تعذر تحميل المحادثات. تحقق من الاتصال ثم أعد المحاولة.');
+        }
       });
     }
   }
 
   loadCoachInfo(): void {
     this.coachLoading.set(true);
+    this.coachError.set(null);
     this.clientService.getMyCoach().subscribe({
       next: (coach) => {
         this.coachInfo.set(coach);
         this.coachLoading.set(false);
       },
-      error: () => this.coachLoading.set(false)
+      error: () => {
+        this.coachLoading.set(false);
+        this.coachError.set('تعذر تحميل بيانات المدرب.');
+      }
     });
   }
 
@@ -724,13 +785,17 @@ export class ClientChatComponent implements OnInit, OnDestroy {
     if (showLoading) {
       this.messagesLoading.set(true);
     }
+    this.messagesError.set(null);
     this.chatService.getMessages(conversationId).subscribe({
       next: (msgs) => {
         this.messages.set(msgs);
         this.messagesLoading.set(false);
         setTimeout(() => this.scrollToBottom(), 50);
       },
-      error: () => this.messagesLoading.set(false)
+      error: () => {
+        this.messagesLoading.set(false);
+        this.messagesError.set('تعذر تحميل الرسائل. تحقق من الاتصال ثم أعد المحاولة.');
+      }
     });
   }
 
@@ -742,6 +807,7 @@ export class ClientChatComponent implements OnInit, OnDestroy {
     if (!conv) return;
 
     this.sending.set(true);
+    this.sendError.set(null);
     const command: SendMessageCommand = {
       conversationId: conv.id,
       content
@@ -754,7 +820,10 @@ export class ClientChatComponent implements OnInit, OnDestroy {
         this.loadMessages(conv.id, false);
         this.loadConversations();
       },
-      error: () => this.sending.set(false)
+      error: () => {
+        this.sending.set(false);
+        this.sendError.set('تعذر إرسال الرسالة. حاول مرة أخرى.');
+      }
     });
   }
 
@@ -763,6 +832,7 @@ export class ClientChatComponent implements OnInit, OnDestroy {
     if (!coach) return;
 
     this.sending.set(true);
+    this.sendError.set(null);
     const command: SendMessageCommand = {
       recipientId: coach.id,
       content: 'مرحبا مدرب!'
@@ -773,7 +843,10 @@ export class ClientChatComponent implements OnInit, OnDestroy {
         this.sending.set(false);
         this.loadConversations();
       },
-      error: () => this.sending.set(false)
+      error: () => {
+        this.sending.set(false);
+        this.sendError.set('تعذر بدء المحادثة. حاول مرة أخرى.');
+      }
     });
   }
 

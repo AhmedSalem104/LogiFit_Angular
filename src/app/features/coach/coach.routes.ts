@@ -1,4 +1,6 @@
 import { Routes } from '@angular/router';
+import { permissionGuard } from '../../core/auth/guards/permission.guard';
+import { Permissions } from '../../core/auth/models/auth.models';
 
 export const COACH_ROUTES: Routes = [
   {
@@ -23,8 +25,9 @@ export const COACH_ROUTES: Routes = [
   },
   {
     path: 'subscriptions',
+    canActivate: [permissionGuard(Permissions.ManageClientSubscriptions)],
     loadComponent: () => import('../owner/subscriptions/subscriptions-list.component').then(m => m.SubscriptionsListComponent),
-    title: 'Create client and subscription'
+    title: 'اشتراكات العملاء'
   },
   {
     path: 'workout-programs',

@@ -47,6 +47,11 @@ export const clientRoutes: Routes = [
     title: 'اشتراكاتي'
   },
   {
+    path: 'appointments',
+    loadComponent: () => import('./appointments/client-appointments.component').then(m => m.ClientAppointmentsComponent),
+    title: 'مواعيدي'
+  },
+  {
     path: 'chat',
     loadComponent: () => import('./chat/client-chat.component').then(m => m.ClientChatComponent),
     title: 'المحادثات'

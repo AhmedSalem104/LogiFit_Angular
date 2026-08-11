@@ -51,6 +51,15 @@ interface TraineeProgress {
         </button>
       </app-page-header>
 
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div>
+          <strong>تعذر تحميل بيانات المتدرب</strong>
+          <p>{{ errorMessage() }}</p>
+          <button type="button" class="btn btn-secondary" (click)="retryLoad()">إعادة المحاولة</button>
+        </div>
+      </div>
+
       <app-loading-skeleton *ngIf="loading()" type="stats"></app-loading-skeleton>
 
       <div class="content" *ngIf="!loading() && trainee()">
@@ -288,6 +297,9 @@ interface TraineeProgress {
     </div>
   `,
   styles: [`
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
     .trainee-details {
       max-width: 1400px;
     }
@@ -687,6 +699,7 @@ export class TraineeDetailsComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   loading = signal(true);
+  errorMessage = signal<string | null>(null);
   trainee = signal<Trainee | null>(null);
   measurements = signal<BodyMeasurement[]>([]);
   workoutHistory = signal<{ date: string; workout: string; duration: number }[]>([]);
@@ -754,6 +767,7 @@ export class TraineeDetailsComponent implements OnInit {
 
   loadTraineeData(id: string): void {
     this.loading.set(true);
+    this.errorMessage.set(null);
 
     this.coachService.getTraineeById(id).subscribe({
       next: (data) => {
@@ -767,12 +781,18 @@ export class TraineeDetailsComponent implements OnInit {
       error: (err) => {
         console.error('Error loading trainee data:', err);
         this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.errorMessage.set('تعذر الاتصال بالخادم أو لم يعد هذا المتدرب متاحاً.');
         this.trainee.set(null);
         this.measurements.set([]);
         this.workoutHistory.set([]);
         this.loading.set(false);
       }
     });
+  }
+
+  retryLoad(): void {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) this.loadTraineeData(id);
   }
 
   private loadMeasurements(clientId: string): void {

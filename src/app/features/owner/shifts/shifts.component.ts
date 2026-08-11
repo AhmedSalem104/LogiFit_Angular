@@ -32,6 +32,9 @@ import Swal from 'sweetalert2';
     <div class="gym-page">
       <app-page-header title="الورديات" subtitle="إدارة ورديات الموظفين وتعييناتها"
         [breadcrumbs]="[{label:'لوحة التحكم', route:'/owner/dashboard'},{label:'الورديات'}]"></app-page-header>
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل قوالب الورديات</strong><p>{{ errorMessage() }}</p><button class="btn btn-secondary" type="button" (click)="load()">إعادة المحاولة</button></div>
+      </div>
 
       <p-tabView>
         <p-tabPanel header="قوالب الورديات">
@@ -39,7 +42,7 @@ import Swal from 'sweetalert2';
             <button class="btn btn-primary" (click)="openAddShift()"><i class="pi pi-plus"></i><span>وردية جديدة</span></button>
           </div>
           <app-loading-skeleton *ngIf="loading()" type="table"></app-loading-skeleton>
-          <div class="data-card" *ngIf="!loading()">
+          <div class="data-card" *ngIf="!loading() && !errorMessage()">
             <p-table [value]="shifts()">
               <ng-template pTemplate="header">
                 <tr><th>الاسم</th><th>الفرع</th><th>البداية</th><th>النهاية</th><th>اللون</th><th>الحالة</th><th style="width:120px">إجراءات</th></tr>
@@ -71,7 +74,11 @@ import Swal from 'sweetalert2';
             <input type="date" class="form-input" [(ngModel)]="assignFrom" (change)="loadAssignments()"/>
             <input type="date" class="form-input" [(ngModel)]="assignTo" (change)="loadAssignments()"/>
           </div>
-          <div class="data-card">
+          <app-loading-skeleton *ngIf="assignmentsLoading()" type="table"></app-loading-skeleton>
+          <div class="state-card error-state" *ngIf="!assignmentsLoading() && assignmentsError()" role="alert">
+            <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل التعيينات اليومية</strong><p>{{ assignmentsError() }}</p><button class="btn btn-secondary" type="button" (click)="loadAssignments()">إعادة المحاولة</button></div>
+          </div>
+          <div class="data-card" *ngIf="!assignmentsLoading() && !assignmentsError()">
             <p-table [value]="assignments()" [paginator]="true" [rows]="15">
               <ng-template pTemplate="header">
                 <tr><th>التاريخ</th><th>الموظف</th><th>الوردية</th><th>ملاحظات</th></tr>
@@ -145,7 +152,10 @@ export class ShiftsComponent implements OnInit {
   branches = signal<Branch[]>([]);
   employees = signal<Employee[]>([]);
   loading = signal(false);
+  assignmentsLoading = signal(false);
   saving = signal(false);
+  errorMessage = signal<string | null>(null);
+  assignmentsError = signal<string | null>(null);
   shiftDialog = false; isEdit=false; editingId: string | null = null;
   shiftForm: CreateShiftRequest = this.emptyShift();
   assignDialog = false;
@@ -163,17 +173,20 @@ export class ShiftsComponent implements OnInit {
   }
   load() {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.svc.listShifts().subscribe({
       next: d => { this.shifts.set(d || []); this.loading.set(false); },
-      error: () => { this.toast.error('فشل التحميل'); this.loading.set(false); }
+      error: () => { this.errorMessage.set('تعذر الاتصال بخدمة الورديات. تحقق من اتصال الخادم ثم أعد المحاولة.'); this.loading.set(false); }
     });
   }
   loadAssignments() {
+    this.assignmentsLoading.set(true);
+    this.assignmentsError.set(null);
     this.svc.listShiftAssignments({
       fromDate: this.assignFrom || undefined, toDate: this.assignTo || undefined
     }).subscribe({
-      next: d => this.assignments.set(d || []),
-      error: () => this.toast.error('فشل تحميل التعيينات')
+      next: d => { this.assignments.set(d || []); this.assignmentsLoading.set(false); },
+      error: () => { this.assignmentsError.set('تعذر الاتصال بخدمة التعيينات. تحقق من اتصال الخادم ثم أعد المحاولة.'); this.assignmentsLoading.set(false); }
     });
   }
   emptyShift(): CreateShiftRequest {
@@ -187,6 +200,8 @@ export class ShiftsComponent implements OnInit {
   }
   saveShift() {
     if (!this.shiftForm.name) { this.toast.error('الاسم مطلوب'); return; }
+    if (!/^\d{2}:\d{2}:\d{2}$/.test(this.shiftForm.startTime) || !/^\d{2}:\d{2}:\d{2}$/.test(this.shiftForm.endTime)) { this.toast.error('أدخل وقت البداية والنهاية بصيغة HH:mm:ss'); return; }
+    if (this.shiftForm.startTime === this.shiftForm.endTime) { this.toast.error('يجب أن يختلف وقت البداية عن النهاية'); return; }
     this.saving.set(true);
     const obs: any = this.isEdit && this.editingId
       ? this.svc.updateShift(this.editingId, this.shiftForm)

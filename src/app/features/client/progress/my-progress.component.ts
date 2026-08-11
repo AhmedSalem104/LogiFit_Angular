@@ -30,7 +30,16 @@ import { NotificationService } from '../../../core/services/notification.service
       <!-- Loading State -->
       <app-loading-skeleton *ngIf="loading()" type="stats"></app-loading-skeleton>
 
-      <div class="progress-content" *ngIf="!loading()">
+      @if (!loading() && error(); as message) {
+        <div class="screen-state error-state" role="alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <h2>تعذر تحميل تقدمك</h2>
+          <p>{{ message }}</p>
+          <button type="button" class="btn btn-primary" (click)="loadProgress()">إعادة المحاولة</button>
+        </div>
+      }
+
+      <div class="progress-content" *ngIf="!loading() && !error()">
         <!-- Streak Card -->
         <div class="streak-card">
           <div class="streak-icon">
@@ -177,6 +186,24 @@ import { NotificationService } from '../../../core/services/notification.service
       max-width: 1000px;
       padding-bottom: 2rem;
     }
+
+    .screen-state {
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .7rem;
+      padding: 2rem;
+      text-align: center;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+    }
+
+    .screen-state i { font-size: 2.5rem; color: #dc2626; }
+    .screen-state h2, .screen-state p { margin: 0; color: var(--text-primary); }
+    .screen-state p { color: var(--text-secondary); }
 
     .streak-card {
       display: flex;
@@ -430,6 +457,7 @@ export class MyProgressComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   loading = signal(true);
+  error = signal<string | null>(null);
   progressData = signal<ProgressData | null>(null);
 
   weightColorScheme: Color = {
@@ -490,6 +518,7 @@ export class MyProgressComponent implements OnInit {
 
   loadProgress(): void {
     this.loading.set(true);
+    this.error.set(null);
 
     this.clientService.getMyProgress().subscribe({
       next: (data) => {
@@ -502,6 +531,7 @@ export class MyProgressComponent implements OnInit {
         console.error('Error loading progress data:', err);
         this.notificationService.error('حدث خطأ في تحميل البيانات');
         this.progressData.set(null);
+        this.error.set('تحقق من الاتصال ثم أعد المحاولة.');
         this.loading.set(false);
       }
     });

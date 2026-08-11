@@ -48,7 +48,13 @@ import Swal from 'sweetalert2';
       </div>
 
       <app-loading-skeleton *ngIf="loading()" type="table"></app-loading-skeleton>
-      <div class="data-card" *ngIf="!loading()">
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div><strong>تعذر تحميل الكوبونات</strong><p>{{ errorMessage() }}</p>
+          <button class="btn btn-secondary" (click)="load()"><i class="pi pi-refresh"></i><span>إعادة المحاولة</span></button>
+        </div>
+      </div>
+      <div class="data-card" *ngIf="!loading() && !errorMessage()">
         <p-table [value]="items()" [paginator]="true" [rows]="10">
           <ng-template pTemplate="header">
             <tr><th>الكود</th><th>النوع</th><th>القيمة</th><th>ينطبق على</th>
@@ -151,6 +157,7 @@ export class CouponsListComponent implements OnInit {
   loading = signal(false);
   saving = signal(false);
   validating = signal(false);
+  errorMessage = signal<string | null>(null);
   search = '';
   activeFilter: boolean | null = null;
   activeOptions = [{ label:'نشط', value:true },{ label:'متوقف', value:false }];
@@ -169,9 +176,13 @@ export class CouponsListComponent implements OnInit {
   ngOnInit() { this.load(); }
   load() {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.svc.listCoupons({ isActive: this.activeFilter ?? undefined, search: this.search || undefined }).subscribe({
       next: d => { this.items.set(d || []); this.loading.set(false); },
-      error: () => { this.toast.error('فشل التحميل'); this.loading.set(false); }
+      error: () => {
+        this.errorMessage.set('تعذر الاتصال بخدمة الكوبونات. تحقق من اتصال الخادم ثم أعد المحاولة.');
+        this.loading.set(false);
+      }
     });
   }
   emptyForm(): CreateCouponRequest {

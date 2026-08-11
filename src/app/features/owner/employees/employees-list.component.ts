@@ -38,7 +38,10 @@ import QRCode from 'qrcode';
         <button class="btn btn-primary" (click)="openAdd()"><i class="pi pi-plus"></i><span>موظف جديد</span></button>
       </app-page-header>
 
-      <div class="stats-row">
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل الموظفين</strong><p>{{ errorMessage() }}</p><button class="btn btn-secondary" type="button" (click)="load()">إعادة المحاولة</button></div>
+      </div>
+      <div class="stats-row" *ngIf="!errorMessage()">
         <div class="mini-stat"><div class="mini-stat__icon blue"><i class="pi pi-users"></i></div>
           <div class="mini-stat__content"><span class="mini-stat__value">{{ items().length }}</span>
             <span class="mini-stat__label">إجمالي الموظفين</span></div></div>
@@ -57,7 +60,7 @@ import QRCode from 'qrcode';
       </div>
 
       <app-loading-skeleton *ngIf="loading()" type="table"></app-loading-skeleton>
-      <div class="data-card" *ngIf="!loading()">
+      <div class="data-card" *ngIf="!loading() && !errorMessage()">
         <p-table [value]="items()" [paginator]="true" [rows]="10">
           <ng-template pTemplate="header">
             <tr><th>الكود</th><th>الاسم</th><th>الدور</th><th>المسمى</th><th>القسم</th>
@@ -138,6 +141,7 @@ export class EmployeesListComponent implements OnInit {
   branches = signal<Branch[]>([]);
   loading = signal(false);
   saving = signal(false);
+  errorMessage = signal<string | null>(null);
   search = '';
   branchFilter: string | null = null;
   dialog = false; isEdit = false; editingId: string | null = null;
@@ -156,12 +160,13 @@ export class EmployeesListComponent implements OnInit {
   }
   load() {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.svc.listEmployees({
       branchId: this.branchFilter ?? undefined,
       searchTerm: this.search || undefined
     }).subscribe({
       next: d => { this.items.set(d || []); this.loading.set(false); },
-      error: () => { this.toast.error('فشل التحميل'); this.loading.set(false); }
+      error: () => { this.errorMessage.set('تعذر الاتصال بخدمة الموظفين. تحقق من اتصال الخادم ثم أعد المحاولة.'); this.loading.set(false); }
     });
   }
   emptyForm(): CreateEmployeeRequest {
@@ -184,7 +189,7 @@ export class EmployeesListComponent implements OnInit {
     this.dialog=true;
   }
   save() {
-    if (!this.form.employeeCode || !this.form.jobTitle) { this.toast.error('الكود والمسمى مطلوبان'); return; }
+    if (!this.form.employeeCode || !this.form.jobTitle || !this.form.joinDate) { this.toast.error('الكود والمسمى وتاريخ الالتحاق مطلوبة'); return; }
     if (!this.isEdit && !this.form.userId) { this.toast.error('User Id مطلوب للإضافة'); return; }
     this.saving.set(true);
     const obs: any = this.isEdit && this.editingId

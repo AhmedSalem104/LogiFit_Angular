@@ -46,8 +46,15 @@ import Swal from 'sweetalert2';
         </button>
       </app-page-header>
 
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل المواعيد</strong><p>{{ errorMessage() }}</p><button type="button" class="btn btn-secondary" (click)="loadAppointments()">إعادة المحاولة</button></div>
+      </div>
+      <div class="state-card warning-state" *ngIf="!errorMessage() && referenceError()" role="status">
+        <i class="pi pi-info-circle"></i><div><strong>لا يمكن اختيار المتدرب حالياً</strong><p>{{ referenceError() }}</p><button type="button" class="btn btn-secondary" (click)="loadTrainees()">إعادة تحميل المتدربين</button></div>
+      </div>
+
       <!-- Stats Row -->
-      <div class="stats-row">
+      <div class="stats-row" *ngIf="!errorMessage()">
         <div class="mini-stat">
           <div class="mini-stat__icon total-icon">
             <i class="pi pi-calendar"></i>
@@ -132,7 +139,7 @@ import Swal from 'sweetalert2';
       <app-loading-skeleton *ngIf="loading()" type="table" [rows]="5"></app-loading-skeleton>
 
       <!-- Appointments Table -->
-      <div class="table-container" *ngIf="!loading()">
+      <div class="table-container" *ngIf="!loading() && !errorMessage()">
         <div class="table-header">
           <div class="table-title">
             <h3>قائمة المواعيد</h3>
@@ -339,6 +346,12 @@ import Swal from 'sweetalert2';
     </div>
   `,
   styles: [`
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
+    .state-card.warning-state { border-color:#fde68a; color:#92400e; background:#fffbeb; }
+    .state-card.warning-state i { color:#d97706; }
+    .state-card.warning-state p { color:#92400e; }
     .appointments-page {
       max-width: 1400px;
     }
@@ -778,6 +791,8 @@ export class AppointmentsComponent implements OnInit {
 
   loading = signal(true);
   saving = signal(false);
+  errorMessage = signal<string | null>(null);
+  referenceError = signal<string | null>(null);
   appointments = signal<AppointmentDto[]>([]);
   filteredAppointments = signal<AppointmentDto[]>([]);
 
@@ -829,6 +844,7 @@ export class AppointmentsComponent implements OnInit {
   loadTrainees(): void {
     this.coachService.getTrainees().subscribe({
       next: (data) => {
+        this.referenceError.set(null);
         this.traineeOptions = data.map(t => ({
           label: t.clientName || t.fullName || t.profile?.fullName || '',
           value: t.clientId || t.id
@@ -836,12 +852,14 @@ export class AppointmentsComponent implements OnInit {
       },
       error: () => {
         this.traineeOptions = [];
+        this.referenceError.set('تعذر تحميل قائمة المتدربين المطلوبة لإنشاء موعد.');
       }
     });
   }
 
   loadAppointments(): void {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.appointmentsService.getAppointments().subscribe({
       next: (data) => {
         this.appointments.set(data);
@@ -851,6 +869,7 @@ export class AppointmentsComponent implements OnInit {
       error: () => {
         this.appointments.set([]);
         this.filteredAppointments.set([]);
+        this.errorMessage.set('تعذر الاتصال بخدمة المواعيد. تحقق من اتصال الخادم ثم أعد المحاولة.');
         this.loading.set(false);
       }
     });

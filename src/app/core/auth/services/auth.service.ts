@@ -19,6 +19,7 @@ import {
   UserRole,
   UserRoleValues,
   Permission,
+  Permissions,
   BACK_OFFICE_ROLES,
   COACH_ROLES,
   DecodedToken
@@ -243,18 +244,23 @@ export class AuthService {
 
   /** Returns true if the user has the given permission. */
   hasPermission(permission: Permission): boolean {
-    return this.permissionsSig().includes(permission);
+    // Owner is the existing full-access tenant role. Keep the UI guard in
+    // sync with the sidebar and backend RBAC even when an older session was
+    // created before permissions[] was persisted in local storage.
+    return this.isOwner() || this.permissionsSig().includes(permission);
   }
 
   /** Returns true if the user has at least one of the given permissions. */
   hasAnyPermission(...permissions: Permission[]): boolean {
     if (!permissions.length) return true;
+    if (this.isOwner()) return true;
     const owned = this.permissionsSig();
     return permissions.some(p => owned.includes(p));
   }
 
   /** Returns true if the user has all of the given permissions. */
   hasAllPermissions(...permissions: Permission[]): boolean {
+    if (this.isOwner()) return true;
     const owned = this.permissionsSig();
     return permissions.every(p => owned.includes(p));
   }
@@ -294,6 +300,11 @@ export class AuthService {
   private panelHomeForRole(role: UserRole | null): string {
     if (role && COACH_ROLES.includes(role)) return '/coach/dashboard';
     if (role === UserRole.Client) return '/client/dashboard';
+    if (role && BACK_OFFICE_ROLES.includes(role) && role !== UserRole.Owner && !this.hasPermission(Permissions.ViewReports)) {
+      if (this.hasPermission(Permissions.ViewMembers)) return '/owner/clients';
+      if (this.hasPermission(Permissions.ManageAttendance)) return '/owner/attendance';
+      return '/owner/profile';
+    }
     // Owner / Manager / Receptionist / Accountant → back-office
     return '/owner/dashboard';
   }

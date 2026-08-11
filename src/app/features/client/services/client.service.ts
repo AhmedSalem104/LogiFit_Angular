@@ -442,7 +442,7 @@ export interface MyAppointmentDto {
   endTime: string;
   title?: string;
   notes?: string;
-  status: number; // 1=Pending, 2=Confirmed, 3=Cancelled, 4=Completed
+  status: number | string; // 1=Pending, 2=Confirmed, 3=Cancelled, 4=Completed; string kept for old deployments
 }
 
 @Injectable({
@@ -466,13 +466,11 @@ export class ClientService {
 
   // Profile
   getProfile(): Observable<ClientProfile> {
-    const userId = this.getCurrentUserId();
-    return this.http.get<ClientProfile>(`${this.apiUrl}/clients/${userId}`);
+    return this.http.get<ClientProfile>(`${this.apiUrl}/profile`);
   }
 
-  updateProfile(data: Partial<ClientProfile>): Observable<ClientProfile> {
-    const userId = this.getCurrentUserId();
-    return this.http.put<ClientProfile>(`${this.apiUrl}/clients/${userId}`, data);
+  updateProfile(data: Partial<ClientProfile>): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/profile`, data);
   }
 
   /** Upload the authenticated user's avatar (self, multipart field `file`). */
@@ -610,8 +608,7 @@ export class ClientService {
 
   // Progress - uses TraineeProgressReportDto from /api/Reports/coach/trainee/{clientId}
   getMyProgress(): Observable<ProgressData> {
-    const userId = this.getCurrentUserId();
-    return this.http.get<ProgressData>(`${this.apiUrl}/reports/coach/trainee/${userId}`);
+    return this.http.get<ProgressData>(`${this.apiUrl}/client/my-progress`);
   }
 
   // ==================== NEW CLIENT DASHBOARD ENDPOINTS ====================

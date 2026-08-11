@@ -62,10 +62,28 @@ import Swal from 'sweetalert2';
       <!-- Loading State -->
       <app-loading-skeleton *ngIf="loading()" type="stats" [rows]="3"></app-loading-skeleton>
 
+      @if (!loading() && myError(); as message) {
+        <div class="screen-state error-state" role="alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <h2>تعذر تحميل تحدياتك</h2>
+          <p>{{ message }}</p>
+          <button type="button" class="btn btn-primary" (click)="loadData()">إعادة المحاولة</button>
+        </div>
+      }
+
+      @if (!loading() && activeTab() === 'available' && availableError(); as message) {
+        <div class="screen-state error-state" role="alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <h2>التحديات المتاحة غير متاحة حالياً</h2>
+          <p>{{ message }}</p>
+          <button type="button" class="btn btn-primary" (click)="loadAvailableChallenges()">إعادة المحاولة</button>
+        </div>
+      }
+
       <!-- ==========================================
            My Challenges Tab
            ========================================== -->
-      <div *ngIf="!loading() && activeTab() === 'my'">
+      <div *ngIf="!loading() && !myError() && activeTab() === 'my'">
         <div class="challenges-grid" *ngIf="myChallenges().length > 0">
           <div
             class="challenge-card"
@@ -169,7 +187,9 @@ import Swal from 'sweetalert2';
       <!-- ==========================================
            Available Challenges Tab
            ========================================== -->
-      <div *ngIf="!loading() && activeTab() === 'available'">
+      <app-loading-skeleton *ngIf="activeTab() === 'available' && availableLoading()" type="stats" [rows]="3"></app-loading-skeleton>
+
+      <div *ngIf="!loading() && !availableLoading() && !availableError() && activeTab() === 'available'">
         <div class="challenges-grid" *ngIf="availableChallenges().length > 0">
           <div class="challenge-card available-card" *ngFor="let challenge of availableChallenges()">
             <div class="challenge-card__header">
@@ -288,6 +308,24 @@ import Swal from 'sweetalert2';
     .my-challenges-page {
       max-width: 1400px;
     }
+
+    .screen-state {
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .7rem;
+      padding: 2rem;
+      text-align: center;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+    }
+
+    .screen-state i { font-size: 2.5rem; color: #dc2626; }
+    .screen-state h2, .screen-state p { margin: 0; color: var(--text-primary); }
+    .screen-state p { color: var(--text-secondary); }
 
     /* ==========================================
        Tabs
@@ -836,6 +874,9 @@ export class MyChallengesComponent implements OnInit {
   Math = Math;
 
   loading = signal(true);
+  availableLoading = signal(true);
+  myError = signal<string | null>(null);
+  availableError = signal<string | null>(null);
   activeTab = signal<'my' | 'available'>('my');
   myChallenges = signal<ClientChallengeDto[]>([]);
   availableChallenges = signal<ChallengeDto[]>([]);
@@ -853,6 +894,8 @@ export class MyChallengesComponent implements OnInit {
 
   loadData(): void {
     this.loading.set(true);
+    this.myError.set(null);
+    this.loadAvailableChallenges();
 
     // Load my challenges
     this.challengesService.getMyChallenges().subscribe({
@@ -863,18 +906,25 @@ export class MyChallengesComponent implements OnInit {
       error: (err) => {
         console.error('Error loading my challenges:', err);
         this.myChallenges.set([]);
+        this.myError.set('تحقق من الاتصال ثم أعد المحاولة.');
         this.loading.set(false);
       }
     });
+  }
 
-    // Load available challenges
+  loadAvailableChallenges(): void {
+    this.availableLoading.set(true);
+    this.availableError.set(null);
     this.challengesService.getChallenges(1).subscribe({
       next: (data) => {
         this.availableChallenges.set(data);
+        this.availableLoading.set(false);
       },
       error: (err) => {
         console.error('Error loading available challenges:', err);
         this.availableChallenges.set([]);
+        this.availableError.set('تحقق من الاتصال ثم أعد المحاولة.');
+        this.availableLoading.set(false);
       }
     });
   }
@@ -918,29 +968,9 @@ export class MyChallengesComponent implements OnInit {
         this.challengesService.joinChallenge(challenge.id).subscribe({
           next: (clientChallengeId) => {
             this.notificationService.success('تم الانضمام للتحدي بنجاح');
-            // Add to my challenges
-            const newClientChallenge: ClientChallengeDto = {
-              id: clientChallengeId,
-              challengeId: challenge.id,
-              challengeTitle: challenge.title,
-              challengeDescription: challenge.description,
-              clientId: '',
-              clientName: '',
-              currentProgress: 0,
-              targetValue: challenge.targetValue,
-              targetMetric: challenge.targetMetric,
-              startDate: challenge.startDate,
-              endDate: challenge.endDate,
-              isCompleted: false,
-              completedAt: null,
-              progressPercentage: 0,
-              participantCount: challenge.participantCount + 1
-            };
-            this.myChallenges.update(list => [...list, newClientChallenge]);
-            // Remove from available
-            this.availableChallenges.update(list => list.filter(c => c.id !== challenge.id));
             this.joiningId.set(null);
             this.activeTab.set('my');
+            this.loadData();
           },
           error: (err) => {
             console.error('Error joining challenge:', err);
@@ -960,20 +990,26 @@ export class MyChallengesComponent implements OnInit {
 
   getPreviewPercentage(): number {
     if (!this.selectedChallenge || this.newProgress === null) return 0;
-    return Math.round((this.newProgress / this.selectedChallenge.targetValue) * 100);
+    const target = Number(this.selectedChallenge.targetValue);
+    if (!Number.isFinite(target) || target <= 0) return 0;
+    return Math.min(100, Math.max(0, Math.round((this.newProgress / target) * 100)));
   }
 
   updateProgress(): void {
     if (!this.selectedChallenge || this.newProgress === null) return;
+    const progress = Number(this.newProgress);
+    if (!Number.isFinite(progress) || progress < 0) {
+      this.notificationService.error('أدخل قيمة تقدم صحيحة لا تقل عن صفر.');
+      return;
+    }
 
     this.updatingProgress.set(true);
 
-    this.challengesService.updateProgress(this.selectedChallenge.challengeId, this.newProgress).subscribe({
+    this.challengesService.updateProgress(this.selectedChallenge.challengeId, progress).subscribe({
       next: () => {
         const challengeId = this.selectedChallenge!.id;
-        const progress = this.newProgress!;
         const target = this.selectedChallenge!.targetValue;
-        const percentage = Math.round((progress / target) * 100);
+        const percentage = target > 0 ? Math.min(100, Math.round((progress / target) * 100)) : 0;
         const isCompleted = percentage >= 100;
 
         this.myChallenges.update(list =>

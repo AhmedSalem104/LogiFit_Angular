@@ -86,7 +86,21 @@ interface Meal {
   template: `
     <p-toast position="top-left" dir="rtl"></p-toast>
 
-    <div class="diet-wizard-container">
+    <div class="state-card error-state" *ngIf="dataError()" role="alert">
+      <i class="pi pi-exclamation-triangle"></i>
+      <div>
+        <strong>تعذر تجهيز محرر خطة التغذية</strong>
+        <p>{{ dataError() }}</p>
+        <button type="button" class="btn btn-secondary" (click)="retryLoad()">إعادة المحاولة</button>
+      </div>
+    </div>
+
+    <div class="state-card loading-state" *ngIf="dataLoading() && !dataError()" aria-live="polite">
+      <i class="pi pi-spin pi-spinner"></i>
+      <div><strong>جاري تجهيز محرر خطة التغذية</strong><p>يتم تحميل المتدربين والأطعمة والبيانات المطلوبة.</p></div>
+    </div>
+
+    <div class="diet-wizard-container" *ngIf="!dataLoading() && !dataError()">
       <!-- Floating Background Elements -->
       <div class="bg-effects">
         <div class="glow-orb orb-1"></div>
@@ -740,6 +754,13 @@ interface Meal {
     </div>
   `,
   styles: [`
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:160px; padding:1.5rem; margin:1rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
+    .state-card .btn { border:0; border-radius:9px; padding:.6rem 1rem; color:#fff; background:#dc2626; cursor:pointer; }
+    .state-card.loading-state { border-color:#bfdbfe; color:#1d4ed8; background:#eff6ff; }
+    .state-card.loading-state i { color:#2563eb; }
+    .state-card.loading-state p { color:#1e40af; }
     /* ===== PREMIUM DIET WIZARD - ULTRA MODERN DESIGN ===== */
 
     /* Container & Background */
@@ -2721,6 +2742,8 @@ export class DietPlanBuilderComponent implements OnInit {
   planId: string | null = null;
   private presetClientId: string | null = null;
   saving = signal(false);
+  dataLoading = signal(true);
+  dataError = signal<string | null>(null);
   foods = signal<Food[]>([]);
   trainees = signal<Trainee[]>([]);
   expandedMeal: number | null = 0;
@@ -3118,6 +3141,8 @@ export class DietPlanBuilderComponent implements OnInit {
     this.planId = this.route.snapshot.paramMap.get('id');
     this.presetClientId = this.route.snapshot.queryParamMap.get('clientId');
     this.isEditMode = !!this.planId;
+    this.dataLoading.set(true);
+    this.dataError.set(null);
 
     // Load foods and trainees first, then load plan if in edit mode
     forkJoin({
@@ -3155,6 +3180,7 @@ export class DietPlanBuilderComponent implements OnInit {
           this.addMeal('وجبة خفيفة', '11:00');
           this.addMeal('الغداء', '14:00');
           this.addMeal('العشاء', '20:00');
+          this.dataLoading.set(false);
         }
       },
       error: (err) => {
@@ -3163,14 +3189,8 @@ export class DietPlanBuilderComponent implements OnInit {
         this.foodOptions = [];
         this.trainees.set([]);
         this.traineeOptions = [];
-        if (this.isEditMode && this.planId) {
-          this.loadPlan(this.planId!);
-        } else {
-          this.addMeal('الفطور', '08:00');
-          this.addMeal('وجبة خفيفة', '11:00');
-          this.addMeal('الغداء', '14:00');
-          this.addMeal('العشاء', '20:00');
-        }
+        this.dataLoading.set(false);
+        this.dataError.set('تعذر تحميل المتدربين والأطعمة المطلوبة. تحقق من الاتصال ثم حاول مرة أخرى.');
       }
     });
   }
@@ -3255,6 +3275,7 @@ export class DietPlanBuilderComponent implements OnInit {
   loadPlan(id: string): void {
     this.coachService.getDietPlanById(id).subscribe({
       next: (plan: any) => {
+        this.dataLoading.set(false);
         console.log('=== Diet Plan API Response ===');
         console.log('Full plan:', plan);
         console.log('Meals count:', plan.meals?.length ?? 0);
@@ -3306,6 +3327,8 @@ export class DietPlanBuilderComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading diet plan:', err);
+        this.dataLoading.set(false);
+        this.dataError.set('تعذر تحميل الخطة. تحقق من أنها ما زالت متاحة ثم حاول مرة أخرى.');
         this.messageService.add({
           severity: 'error',
           summary: 'خطأ',
@@ -3313,6 +3336,10 @@ export class DietPlanBuilderComponent implements OnInit {
         });
       }
     });
+  }
+
+  retryLoad(): void {
+    this.ngOnInit();
   }
 
   setMealsPerDay(num: number): void {

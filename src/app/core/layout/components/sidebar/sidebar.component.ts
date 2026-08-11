@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { AuthService } from '../../../auth/services/auth.service';
 import { ThemeState } from '../../../../state/theme.state';
 import { UserRole, Permission, BACK_OFFICE_ROLES, COACH_ROLES } from '../../../auth/models/auth.models';
+import { getRoleLabel } from '../../../auth/role-labels';
 
 interface NavItem {
   label: string;
@@ -856,13 +857,8 @@ export class SidebarComponent {
   }
 
   getRoleLabel(): string {
-    const role = this.authService.userRole();
-    switch (role) {
-      case 'Owner': return 'مالك الصالة';
-      case 'Coach': return 'مدرب';
-      case 'Client': return 'عميل';
-      default: return '';
-    }
+    const user = this.authService.user();
+    return getRoleLabel(user?.role, user?.workspaceType);
   }
 
   getInitials(): string {
@@ -880,8 +876,8 @@ export class SidebarComponent {
     {
       title: 'الرئيسية',
       items: [
-        { label: 'لوحة التحكم', icon: 'pi-th-large', route: '/owner/dashboard', roles: [UserRole.Owner] },
-        { label: 'لوحة التشغيل', icon: 'pi-chart-pie', route: '/owner/operations', roles: [UserRole.Owner] },
+        { label: 'لوحة التحكم', icon: 'pi-th-large', route: '/owner/dashboard', roles: [UserRole.Owner], permission: 'ViewReports' },
+        { label: 'لوحة التشغيل', icon: 'pi-chart-pie', route: '/owner/operations', roles: [UserRole.Owner], permission: 'ViewReports' },
         { label: 'لوحة التحكم', icon: 'pi-th-large', route: '/coach/dashboard', roles: [UserRole.Coach] },
         { label: 'لوحة التحكم', icon: 'pi-th-large', route: '/client/dashboard', roles: [UserRole.Client] },
       ]
@@ -921,8 +917,8 @@ export class SidebarComponent {
       title: 'الحصص الجماعية',
       roles: [UserRole.Owner],
       items: [
-        { label: 'أنواع الحصص', icon: 'pi-calendar', route: '/owner/group-classes', roles: [UserRole.Owner] },
-        { label: 'الجدولة', icon: 'pi-calendar-plus', route: '/owner/class-schedules', roles: [UserRole.Owner] },
+        { label: 'أنواع الحصص', icon: 'pi-calendar', route: '/owner/group-classes', roles: [UserRole.Owner], permission: 'ManageBranches' },
+        { label: 'الجدولة', icon: 'pi-calendar-plus', route: '/owner/class-schedules', roles: [UserRole.Owner], permission: 'ManageBranches' },
       ]
     },
     {
@@ -968,6 +964,7 @@ export class SidebarComponent {
       roles: [UserRole.Coach],
       items: [
         { label: 'متدربيني', icon: 'pi-users', route: '/coach/trainees', roles: [UserRole.Coach] },
+        { label: 'اشتراكات العملاء', icon: 'pi-wallet', route: '/coach/subscriptions', roles: [UserRole.Coach], permission: 'ManageClientSubscriptions' },
         { label: 'برامج التمارين', icon: 'pi-calendar', route: '/coach/workout-programs', roles: [UserRole.Coach] },
         { label: 'الخطط الغذائية', icon: 'pi-heart', route: '/coach/diet-plans', roles: [UserRole.Coach] },
       ]
@@ -1013,6 +1010,7 @@ export class SidebarComponent {
         { label: 'قياساتي', icon: 'pi-chart-line', route: '/client/my-measurements', roles: [UserRole.Client] },
         { label: 'تقدمي', icon: 'pi-chart-bar', route: '/client/my-progress', roles: [UserRole.Client] },
         { label: 'اشتراكاتي', icon: 'pi-wallet', route: '/client/my-subscriptions', roles: [UserRole.Client] },
+        { label: 'مواعيدي', icon: 'pi-calendar-plus', route: '/client/appointments', roles: [UserRole.Client] },
       ]
     },
     {

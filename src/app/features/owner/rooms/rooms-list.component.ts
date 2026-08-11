@@ -42,6 +42,10 @@ import Swal from 'sweetalert2';
         </div>
       </app-page-header>
 
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل القاعات</strong><p>{{ errorMessage() }}</p><button type="button" class="btn btn-primary" (click)="load()">إعادة المحاولة</button></div>
+      </div>
+
       <div class="toolbar">
         <p-dropdown class="flex-fill" [options]="branchOptions()" [(ngModel)]="branchFilter"
           placeholder="كل الفروع" [showClear]="true" (onChange)="load()" appendTo="body"></p-dropdown>
@@ -51,7 +55,7 @@ import Swal from 'sweetalert2';
 
       <app-loading-skeleton *ngIf="loading()" type="table"></app-loading-skeleton>
 
-      <div class="data-card" *ngIf="!loading()">
+      <div class="data-card" *ngIf="!loading() && !errorMessage()">
         <p-table [value]="rooms()" [paginator]="true" [rows]="10">
           <ng-template pTemplate="header">
             <tr>
@@ -124,7 +128,11 @@ import Swal from 'sweetalert2';
       </div>
     </p-dialog>
   `,
-  styles: [GYM_PAGE_STYLES]
+  styles: [GYM_PAGE_STYLES + `
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
+  `]
 })
 export class RoomsListComponent implements OnInit {
   private svc = inject(FacilitiesService);
@@ -134,6 +142,7 @@ export class RoomsListComponent implements OnInit {
   rooms = signal<Room[]>([]);
   branches = signal<Branch[]>([]);
   loading = signal(false);
+  errorMessage = signal<string | null>(null);
   saving = signal(false);
   dialogVisible = false;
   isEdit = false;
@@ -147,18 +156,24 @@ export class RoomsListComponent implements OnInit {
   branchOptions = computed(() => this.branches().map(b => ({ label: b.name, value: b.id })));
 
   ngOnInit() {
-    this.branchesSvc.list().subscribe(b => this.branches.set(b || []));
+    this.branchesSvc.list().subscribe({ next: b => this.branches.set(b || []), error: () => this.toast.error('تعذر تحميل الفروع') });
     this.load();
   }
 
   load() {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.svc.listRooms({
       branchId: this.branchFilter ?? undefined,
       type: this.typeFilter ?? undefined
     }).subscribe({
       next: d => { this.rooms.set(d || []); this.loading.set(false); },
-      error: () => { this.toast.error('فشل تحميل القاعات'); this.loading.set(false); }
+      error: (e) => {
+        const message = e?.translatedMessage || e?.error?.detail || e?.error?.message || 'تعذر تحميل القاعات';
+        this.errorMessage.set(message);
+        this.toast.error(message);
+        this.loading.set(false);
+      }
     });
   }
 

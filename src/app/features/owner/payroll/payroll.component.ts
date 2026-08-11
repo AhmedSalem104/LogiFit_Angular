@@ -46,7 +46,10 @@ import Swal from 'sweetalert2';
       </div>
 
       <app-loading-skeleton *ngIf="loading()" type="table"></app-loading-skeleton>
-      <div class="data-card" *ngIf="!loading()">
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل كشوف الرواتب</strong><p>{{ errorMessage() }}</p><button class="btn btn-secondary" type="button" (click)="load()">إعادة المحاولة</button></div>
+      </div>
+      <div class="data-card" *ngIf="!loading() && !errorMessage()">
         <p-table [value]="runs()">
           <ng-template pTemplate="header">
             <tr><th>السنة / الشهر</th><th>الفرع</th><th>عدد الموظفين</th>
@@ -146,6 +149,7 @@ export class PayrollComponent implements OnInit {
   branches = signal<Branch[]>([]);
   loading = signal(false);
   saving = signal(false);
+  errorMessage = signal<string | null>(null);
   yearFilter: number | null = null;
   monthFilter: number | null = null;
   branchFilter: string | null = null;
@@ -170,13 +174,18 @@ export class PayrollComponent implements OnInit {
   }
   load() {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.svc.listPayrolls({
       year: this.yearFilter ?? undefined,
       month: this.monthFilter ?? undefined,
       branchId: this.branchFilter ?? undefined
     }).subscribe({
-      next: d => { this.runs.set(d || []); this.loading.set(false); },
-      error: () => { this.toast.error('فشل التحميل'); this.loading.set(false); }
+      next: d => {
+        this.runs.set(d || []);
+        if (this.selected) this.selected = (d || []).find(x => x.id === this.selected?.id) || this.selected;
+        this.loading.set(false);
+      },
+      error: () => { this.errorMessage.set('تعذر الاتصال بخدمة الرواتب. تحقق من اتصال الخادم ثم أعد المحاولة.'); this.loading.set(false); }
     });
   }
   openGenerate() {

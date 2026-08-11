@@ -2,6 +2,7 @@ import { Component, inject, OnInit, OnDestroy, signal, HostListener } from '@ang
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../../auth/services/auth.service';
+import { getPanelTitle, getRoleLabel } from '../../../auth/role-labels';
 import { ThemeState } from '../../../../state/theme.state';
 import { NotificationsApiService, NotificationDto, NotificationTypeLabels } from '../../../services/notifications-api.service';
 
@@ -691,13 +692,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   getRoleLabel(): string {
-    const role = this.authService.userRole();
-    switch (role) {
-      case 'Owner': return 'مالك الصالة';
-      case 'Coach': return 'مدرب';
-      case 'Client': return 'عميل';
-      default: return '';
-    }
+    const user = this.authService.user();
+    return getRoleLabel(user?.role, user?.workspaceType);
   }
 
   getInitials(): string {
@@ -711,13 +707,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   getPageTitle(): string {
-    const role = this.authService.userRole();
-    switch (role) {
-      case 'Owner': return 'لوحة تحكم المالك';
-      case 'Coach': return 'لوحة تحكم المدرب';
-      case 'Client': return 'برنامجي التدريبي';
-      default: return 'LogicFit';
-    }
+    const user = this.authService.user();
+    return getPanelTitle(user?.role, user?.workspaceType);
   }
 
   getGreeting(): string {

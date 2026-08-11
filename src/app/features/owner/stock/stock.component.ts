@@ -36,6 +36,9 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
           <button class="btn btn-primary" (click)="openTransfer()"><i class="pi pi-arrow-right-arrow-left"></i><span>نقل بين فرعين</span></button>
         </div>
       </app-page-header>
+      <div class="state-card warning-state" *ngIf="referenceError()" role="status">
+        <i class="pi pi-info-circle"></i><div><strong>بعض البيانات المساعدة غير متاحة</strong><p>{{ referenceError() }}</p><button class="btn btn-secondary" type="button" (click)="loadReferences()">إعادة المحاولة</button></div>
+      </div>
 
       <p-tabView>
         <p-tabPanel header="الرصيد الحالي">
@@ -46,7 +49,10 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
               placeholder="الكل" [showClear]="true" (onChange)="loadStock()" appendTo="body"></p-dropdown>
           </div>
           <app-loading-skeleton *ngIf="loading()" type="table"></app-loading-skeleton>
-          <div class="data-card" *ngIf="!loading()">
+          <div class="state-card error-state" *ngIf="!loading() && stockError()" role="alert">
+            <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل الرصيد الحالي</strong><p>{{ stockError() }}</p><button class="btn btn-secondary" type="button" (click)="loadStock()">إعادة المحاولة</button></div>
+          </div>
+          <div class="data-card" *ngIf="!loading() && !stockError()">
             <p-table [value]="stock()" [paginator]="true" [rows]="10">
               <ng-template pTemplate="header">
                 <tr><th>المنتج</th><th>SKU</th><th>الفرع</th><th>الكمية</th><th>الحد الأدنى</th><th>آخر حركة</th><th>الحالة</th></tr>
@@ -79,7 +85,11 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
             <input type="date" class="form-input" [(ngModel)]="fromDate" (change)="loadMovements()"/>
             <input type="date" class="form-input" [(ngModel)]="toDate" (change)="loadMovements()"/>
           </div>
-          <div class="data-card">
+          <app-loading-skeleton *ngIf="movementsLoading()" type="table"></app-loading-skeleton>
+          <div class="state-card error-state" *ngIf="!movementsLoading() && movementsError()" role="alert">
+            <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل حركات المخزون</strong><p>{{ movementsError() }}</p><button class="btn btn-secondary" type="button" (click)="loadMovements()">إعادة المحاولة</button></div>
+          </div>
+          <div class="data-card" *ngIf="!movementsLoading() && !movementsError()">
             <p-table [value]="movements()" [paginator]="true" [rows]="15">
               <ng-template pTemplate="header">
                 <tr><th>التاريخ</th><th>المنتج</th><th>الفرع</th><th>النوع</th><th>الكمية</th><th>السبب</th><th>المنشئ</th></tr>
@@ -155,7 +165,11 @@ export class StockComponent implements OnInit {
   products = signal<Product[]>([]);
   branches = signal<Branch[]>([]);
   loading = signal(false);
+  movementsLoading = signal(false);
   saving = signal(false);
+  stockError = signal<string | null>(null);
+  movementsError = signal<string | null>(null);
+  referenceError = signal<string | null>(null);
 
   stockBranchFilter: string | null = null;
   lowStockFilter: boolean | null = null;
@@ -180,31 +194,39 @@ export class StockComponent implements OnInit {
   branchOptions = computed(() => this.branches().map(b => ({ label: b.name, value: b.id })));
 
   ngOnInit() {
-    this.svc.listProducts().subscribe(p => this.products.set(p || []));
-    this.branchesSvc.list().subscribe(b => this.branches.set(b || []));
+    this.loadReferences();
     this.loadStock();
     this.loadMovements();
   }
 
+  loadReferences() {
+    this.referenceError.set(null);
+    this.svc.listProducts().subscribe({ next: p => this.products.set(p || []), error: () => this.referenceError.set('تعذر تحميل المنتجات.') });
+    this.branchesSvc.list().subscribe({ next: b => this.branches.set(b || []), error: () => this.referenceError.set('تعذر تحميل الفروع.') });
+  }
+
   loadStock() {
     this.loading.set(true);
+    this.stockError.set(null);
     this.svc.listStock({
       branchId: this.stockBranchFilter ?? undefined,
       lowStockOnly: this.lowStockFilter ?? undefined
     }).subscribe({
       next: d => { this.stock.set(d || []); this.loading.set(false); },
-      error: () => { this.toast.error('فشل التحميل'); this.loading.set(false); }
+      error: () => { this.stockError.set('تعذر الاتصال بخدمة المخزون. تحقق من اتصال الخادم ثم أعد المحاولة.'); this.loading.set(false); }
     });
   }
 
   loadMovements() {
+    this.movementsLoading.set(true);
+    this.movementsError.set(null);
     this.svc.listMovements({
       branchId: this.movBranchFilter ?? undefined,
       type: this.movTypeFilter ?? undefined,
       fromDate: this.fromDate || undefined, toDate: this.toDate || undefined
     }).subscribe({
-      next: d => this.movements.set(d || []),
-      error: () => this.toast.error('فشل تحميل الحركات')
+      next: d => { this.movements.set(d || []); this.movementsLoading.set(false); },
+      error: () => { this.movementsError.set('تعذر الاتصال بخدمة حركات المخزون. تحقق من اتصال الخادم ثم أعد المحاولة.'); this.movementsLoading.set(false); }
     });
   }
 
@@ -215,6 +237,7 @@ export class StockComponent implements OnInit {
 
   saveAdjust() {
     if (!this.adjustForm.productId || !this.adjustForm.branchId) { this.toast.error('اختر المنتج والفرع'); return; }
+    if (!this.adjustForm.quantity || this.adjustForm.quantity <= 0) { this.toast.error('أدخل كمية أكبر من صفر'); return; }
     this.saving.set(true);
     this.svc.adjustStock(this.adjustForm).subscribe({
       next: () => { this.saving.set(false); this.adjustDialog=false; this.toast.success('تم'); this.loadStock(); this.loadMovements(); },
@@ -232,6 +255,7 @@ export class StockComponent implements OnInit {
       this.toast.error('اختر المنتج والفرعين'); return;
     }
     if (this.transferForm.fromBranchId === this.transferForm.toBranchId) { this.toast.error('اختر فرعين مختلفين'); return; }
+    if (!this.transferForm.quantity || this.transferForm.quantity <= 0) { this.toast.error('أدخل كمية أكبر من صفر'); return; }
     this.saving.set(true);
     this.svc.transferStock(this.transferForm).subscribe({
       next: () => { this.saving.set(false); this.transferDialog=false; this.toast.success('تم النقل'); this.loadStock(); this.loadMovements(); },

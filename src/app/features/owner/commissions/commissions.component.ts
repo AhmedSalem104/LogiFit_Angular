@@ -45,7 +45,11 @@ import Swal from 'sweetalert2';
             <p-dropdown [options]="sourceOptions" [(ngModel)]="sourceFilter"
               placeholder="كل المصادر" [showClear]="true" (onChange)="loadCommissions()" appendTo="body"></p-dropdown>
           </div>
-          <div class="data-card">
+          <app-loading-skeleton *ngIf="commissionsLoading()" type="table"></app-loading-skeleton>
+          <div class="state-card error-state" *ngIf="!commissionsLoading() && commissionsError()" role="alert">
+            <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل العمولات</strong><p>{{ commissionsError() }}</p><button class="btn btn-secondary" type="button" (click)="loadCommissions()">إعادة المحاولة</button></div>
+          </div>
+          <div class="data-card" *ngIf="!commissionsLoading() && !commissionsError()">
             <p-table [value]="commissions()" [paginator]="true" [rows]="10">
               <ng-template pTemplate="header">
                 <tr><th>الموظف</th><th>المصدر</th><th>قيمة المصدر</th><th>العمولة</th>
@@ -73,7 +77,11 @@ import Swal from 'sweetalert2';
           <div style="margin-bottom: 1rem;">
             <button class="btn btn-primary" (click)="openAddRule()"><i class="pi pi-plus"></i><span>قاعدة جديدة</span></button>
           </div>
-          <div class="data-card">
+          <app-loading-skeleton *ngIf="rulesLoading()" type="table"></app-loading-skeleton>
+          <div class="state-card error-state" *ngIf="!rulesLoading() && rulesError()" role="alert">
+            <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل قواعد العمولات</strong><p>{{ rulesError() }}</p><button class="btn btn-secondary" type="button" (click)="loadRules()">إعادة المحاولة</button></div>
+          </div>
+          <div class="data-card" *ngIf="!rulesLoading() && !rulesError()">
             <p-table [value]="rules()">
               <ng-template pTemplate="header">
                 <tr><th>الموظف / الدور</th><th>المصدر</th><th>النوع</th><th>القيمة</th>
@@ -142,6 +150,10 @@ export class CommissionsComponent implements OnInit {
   employees = signal<Employee[]>([]);
   loading = signal(false);
   saving = signal(false);
+  commissionsLoading = signal(false);
+  rulesLoading = signal(false);
+  commissionsError = signal<string | null>(null);
+  rulesError = signal<string | null>(null);
   empFilter: string | null = null;
   statusFilter: CommissionStatus | null = null;
   sourceFilter: CommissionSourceType | null = null;
@@ -164,19 +176,23 @@ export class CommissionsComponent implements OnInit {
     this.loadRules();
   }
   loadCommissions() {
+    this.commissionsLoading.set(true);
+    this.commissionsError.set(null);
     this.svc.listCommissions({
       employeeId: this.empFilter ?? undefined,
       status: this.statusFilter ?? undefined,
       sourceType: this.sourceFilter ?? undefined
     }).subscribe({
-      next: d => this.commissions.set(d || []),
-      error: () => this.toast.error('فشل التحميل')
+      next: d => { this.commissions.set(d || []); this.commissionsLoading.set(false); },
+      error: () => { this.commissionsError.set('تعذر الاتصال بخدمة العمولات. تحقق من اتصال الخادم ثم أعد المحاولة.'); this.commissionsLoading.set(false); }
     });
   }
   loadRules() {
+    this.rulesLoading.set(true);
+    this.rulesError.set(null);
     this.svc.listCommissionRules().subscribe({
-      next: d => this.rules.set(d || []),
-      error: () => this.toast.error('فشل التحميل')
+      next: d => { this.rules.set(d || []); this.rulesLoading.set(false); },
+      error: () => { this.rulesError.set('تعذر الاتصال بخدمة قواعد العمولات. تحقق من اتصال الخادم ثم أعد المحاولة.'); this.rulesLoading.set(false); }
     });
   }
   emptyRule(): CreateCommissionRuleRequest {

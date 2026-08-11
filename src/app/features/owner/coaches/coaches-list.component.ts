@@ -62,8 +62,17 @@ interface CoachDisplay {
         </div>
       </app-page-header>
 
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div>
+          <strong>تعذر تحميل المدربين</strong>
+          <p>{{ errorMessage() }}</p>
+          <button type="button" class="btn btn-primary" (click)="loadCoaches()">إعادة المحاولة</button>
+        </div>
+      </div>
+
       <!-- Stats -->
-      <div class="stats-row">
+      <div class="stats-row" *ngIf="!errorMessage()">
         <div class="mini-stat">
           <span class="mini-stat__value">{{ coaches().length }}</span>
           <span class="mini-stat__label">إجمالي المدربين</span>
@@ -120,7 +129,7 @@ interface CoachDisplay {
       <app-loading-skeleton *ngIf="loading()" type="table" [rows]="5"></app-loading-skeleton>
 
       <!-- Table -->
-      <div class="table-card card" *ngIf="!loading()">
+      <div class="table-card card" *ngIf="!loading() && !errorMessage()">
         <p-table
           [value]="filteredCoaches()"
           [paginator]="true"
@@ -398,6 +407,10 @@ interface CoachDisplay {
       gap: 0.75rem;
     }
 
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:150px; padding:1.25rem; margin-bottom:1.5rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
+
     @media (max-width: 768px) {
       .stats-row {
         flex-direction: column;
@@ -425,6 +438,7 @@ export class CoachesListComponent implements OnInit {
   private router = inject(Router);
 
   loading = signal(true);
+  errorMessage = signal<string | null>(null);
   searchTerm = '';
   statusFilter: 'all' | 'active' | 'inactive' = 'all';
 
@@ -443,6 +457,7 @@ export class CoachesListComponent implements OnInit {
 
   loadCoaches(): void {
     this.loading.set(true);
+    this.errorMessage.set(null);
 
     this.ownerService.getCoaches().subscribe({
       next: (data) => {
@@ -452,7 +467,9 @@ export class CoachesListComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading coaches:', err);
-        this.notificationService.error('حدث خطأ في تحميل البيانات');
+        const message = err?.translatedMessage || err?.error?.detail || err?.error?.message || 'حدث خطأ في تحميل بيانات المدربين';
+        this.errorMessage.set(message);
+        this.notificationService.error(message);
         this.coaches.set([]);
         this.loading.set(false);
       }

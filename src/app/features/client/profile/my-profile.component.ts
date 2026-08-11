@@ -41,7 +41,16 @@ import { PasswordFieldComponent } from '../../../shared/components/password-fiel
       <!-- Loading State -->
       <app-loading-skeleton *ngIf="loading()" type="stats"></app-loading-skeleton>
 
-      <div class="profile-content" *ngIf="!loading()">
+      @if (!loading() && error(); as message) {
+        <div class="screen-state error-state" role="alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <h2>تعذر تحميل ملفك الشخصي</h2>
+          <p>{{ message }}</p>
+          <button type="button" class="btn btn-primary" (click)="loadProfile()">إعادة المحاولة</button>
+        </div>
+      }
+
+      <div class="profile-content" *ngIf="!loading() && !error()">
         <!-- Profile Header -->
         <div class="profile-header card">
           <div class="avatar-section">
@@ -207,6 +216,24 @@ import { PasswordFieldComponent } from '../../../shared/components/password-fiel
       max-width: 800px;
       padding-bottom: 2rem;
     }
+
+    .screen-state {
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .7rem;
+      padding: 2rem;
+      text-align: center;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+    }
+
+    .screen-state i { font-size: 2.5rem; color: #dc2626; }
+    .screen-state h2, .screen-state p { margin: 0; color: var(--text-primary); }
+    .screen-state p { color: var(--text-secondary); }
 
     .card {
       background: var(--bg-primary);
@@ -421,6 +448,7 @@ export class MyProfileComponent implements OnInit {
   private authService = inject(AuthService);
 
   loading = signal(true);
+  error = signal<string | null>(null);
   saving = signal(false);
   changingPassword = signal(false);
   uploadingAvatar = signal(false);
@@ -453,6 +481,7 @@ export class MyProfileComponent implements OnInit {
 
   loadProfile(): void {
     this.loading.set(true);
+    this.error.set(null);
 
     this.clientService.getProfile().subscribe({
       next: (data) => {
@@ -472,6 +501,7 @@ export class MyProfileComponent implements OnInit {
         console.error('Error loading profile:', err);
         this.notificationService.error('حدث خطأ في تحميل البيانات');
         this.profile.set(null);
+        this.error.set('تحقق من الاتصال ثم أعد المحاولة.');
         this.loading.set(false);
       }
     });
