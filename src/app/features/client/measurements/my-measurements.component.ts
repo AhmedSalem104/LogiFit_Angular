@@ -28,7 +28,16 @@ import { NotificationService } from '../../../core/services/notification.service
       <!-- Loading State -->
       <app-loading-skeleton *ngIf="loading()" type="stats"></app-loading-skeleton>
 
-      <div class="measurements-content" *ngIf="!loading()">
+      @if (!loading() && error(); as message) {
+        <div class="screen-state error-state" role="alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <h2>تعذر تحميل قياساتك</h2>
+          <p>{{ message }}</p>
+          <button type="button" class="btn btn-primary" (click)="loadMeasurements()">إعادة المحاولة</button>
+        </div>
+      }
+
+      <div class="measurements-content" *ngIf="!loading() && !error()">
         <!-- Current Stats -->
         <div class="current-stats">
           <div class="stat-card weight">
@@ -176,6 +185,24 @@ import { NotificationService } from '../../../core/services/notification.service
       max-width: 1000px;
       padding-bottom: 2rem;
     }
+
+    .screen-state {
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .7rem;
+      padding: 2rem;
+      text-align: center;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+    }
+
+    .screen-state i { font-size: 2.5rem; color: #dc2626; }
+    .screen-state h2, .screen-state p { margin: 0; color: var(--text-primary); }
+    .screen-state p { color: var(--text-secondary); }
 
     .current-stats {
       display: grid;
@@ -378,6 +405,7 @@ export class MyMeasurementsComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   loading = signal(true);
+  error = signal<string | null>(null);
   measurements = signal<BodyMeasurement[]>([]);
 
   curve: any = (d3: any) => d3.curveMonotoneX;
@@ -457,6 +485,7 @@ export class MyMeasurementsComponent implements OnInit {
 
   loadMeasurements(): void {
     this.loading.set(true);
+    this.error.set(null);
 
     this.clientService.getMyMeasurements().subscribe({
       next: (data) => {
@@ -471,6 +500,7 @@ export class MyMeasurementsComponent implements OnInit {
         console.error('Error loading measurements:', err);
         this.notificationService.error('حدث خطأ في تحميل البيانات');
         this.measurements.set([]);
+        this.error.set('تحقق من الاتصال ثم أعد المحاولة.');
         this.loading.set(false);
       }
     });

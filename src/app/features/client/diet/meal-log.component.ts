@@ -55,8 +55,17 @@ import { ClientService, MealLog } from '../services/client.service';
       <!-- Loading State -->
       <app-loading-skeleton *ngIf="loading()" type="stats"></app-loading-skeleton>
 
+      @if (!loading() && error(); as message) {
+        <div class="screen-state error-state" role="alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <h2>تعذر تحميل سجل الوجبات</h2>
+          <p>{{ message }}</p>
+          <button type="button" class="btn btn-primary" (click)="loadMealLogs()">إعادة المحاولة</button>
+        </div>
+      }
+
       <!-- Daily Summary -->
-      <div class="daily-summary" *ngIf="!loading()">
+      <div class="daily-summary" *ngIf="!loading() && !error()">
         <div class="summary-card">
           <div class="summary-value calories">{{ dailyTotals().calories }}</div>
           <div class="summary-label">سعرة</div>
@@ -76,7 +85,7 @@ import { ClientService, MealLog } from '../services/client.service';
       </div>
 
       <!-- Meals List -->
-      <div class="meals-timeline" *ngIf="!loading()">
+      <div class="meals-timeline" *ngIf="!loading() && !error()">
         @for (log of mealLogs(); track log.id) {
           <div class="meal-log-card">
             <div class="meal-time">
@@ -117,6 +126,24 @@ import { ClientService, MealLog } from '../services/client.service';
       max-width: 800px;
       padding-bottom: 2rem;
     }
+
+    .screen-state {
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .7rem;
+      padding: 2rem;
+      text-align: center;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+    }
+
+    .screen-state i { font-size: 2.5rem; color: #dc2626; }
+    .screen-state h2, .screen-state p { margin: 0; color: var(--text-primary); }
+    .screen-state p { color: var(--text-secondary); }
 
     .date-selector {
       display: flex;
@@ -370,6 +397,7 @@ export class MealLogComponent implements OnInit {
   private clientService = inject(ClientService);
 
   loading = signal(true);
+  error = signal<string | null>(null);
   mealLogs = signal<MealLog[]>([]);
   selectedDate = new Date();
   today = new Date();
@@ -383,6 +411,7 @@ export class MealLogComponent implements OnInit {
 
   loadMealLogs(): void {
     this.loading.set(true);
+    this.error.set(null);
 
     this.clientService.getMealLogs(this.selectedDate).subscribe({
       next: (data) => {
@@ -394,6 +423,7 @@ export class MealLogComponent implements OnInit {
         console.error('Error loading meal logs:', err);
         this.mealLogs.set([]);
         this.calculateTotals([]);
+        this.error.set('تحقق من الاتصال ثم أعد المحاولة.');
         this.loading.set(false);
       }
     });

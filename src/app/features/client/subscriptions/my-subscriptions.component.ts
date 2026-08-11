@@ -24,7 +24,16 @@ import { NotificationService } from '../../../core/services/notification.service
       <!-- Loading State -->
       <app-loading-skeleton *ngIf="loading()" type="stats"></app-loading-skeleton>
 
-      <div class="subscriptions-content" *ngIf="!loading()">
+      @if (!loading() && error(); as message) {
+        <div class="screen-state error-state" role="alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <h2>تعذر تحميل اشتراكاتك</h2>
+          <p>{{ message }}</p>
+          <button type="button" class="btn btn-primary" (click)="loadSubscriptions()">إعادة المحاولة</button>
+        </div>
+      }
+
+      <div class="subscriptions-content" *ngIf="!loading() && !error()">
         <!-- Active Subscription -->
         @if (activeSubscription()) {
           <div class="active-subscription card">
@@ -117,6 +126,24 @@ import { NotificationService } from '../../../core/services/notification.service
       max-width: 800px;
       padding-bottom: 2rem;
     }
+
+    .screen-state {
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .7rem;
+      padding: 2rem;
+      text-align: center;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+    }
+
+    .screen-state i { font-size: 2.5rem; color: #dc2626; }
+    .screen-state h2, .screen-state p { margin: 0; color: var(--text-primary); }
+    .screen-state p { color: var(--text-secondary); }
 
     .card {
       background: var(--bg-primary);
@@ -385,6 +412,7 @@ export class MySubscriptionsComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   loading = signal(true);
+  error = signal<string | null>(null);
   subscriptions = signal<ClientSubscription[]>([]);
 
   activeSubscription = () => this.subscriptions().find(s => this.isActiveStatus(s.status));
@@ -409,6 +437,7 @@ export class MySubscriptionsComponent implements OnInit {
 
   loadSubscriptions(): void {
     this.loading.set(true);
+    this.error.set(null);
 
     this.clientService.getMySubscriptions().subscribe({
       next: (data) => {
@@ -419,6 +448,7 @@ export class MySubscriptionsComponent implements OnInit {
         console.error('Error loading subscriptions:', err);
         this.notificationService.error('حدث خطأ في تحميل البيانات');
         this.subscriptions.set([]);
+        this.error.set('تحقق من الاتصال ثم أعد المحاولة.');
         this.loading.set(false);
       }
     });

@@ -258,3 +258,19 @@ MoreInformation أو Preparing أو Ready بدل عرض تفاصيل تقنية 
 | `/coach/diet-plans/create` and edit | Saves the full nested diet aggregate with meals, foods, quantities, targets, and times in one API call. | Invalid food/quantity or API failure leaves the form open without partial-save messaging. |
 | `/client/workout-session` | Starts/resumes a server session, posts each set, and completes the session only after the API confirms it. | Loading/blocked/error messaging stays visible; failed sets remain uncompleted for retry. |
 | `/client/my-diet` and `/client/meal-log` | Reads active plan and server meal logs, calculates totals from real log macros, and writes meal items through `/api/meal-logs`. | A missing plan is an explicit empty state; meal-log feature failure does not erase a valid plan. |
+
+## Trainee screen completion (Issue #74)
+
+The trainee route group keeps the existing product concept and now has an explicit terminal UI state for every screen: loading, empty, blocked, error, and retry where the action is recoverable. The screens remain protected by the existing `/client` authentication and role guard.
+
+| Screen | API contract verified | Completion behavior |
+|---|---|---|
+| Dashboard | `/api/client/dashboard/*` | Shows the dashboard empty/error state without rendering fabricated metrics. |
+| My program and workout session | `/api/client/programs`, `/api/workout-sessions/*` | Missing programs and session failures remain actionable; a failed set is not marked complete. |
+| My diet and meal log | `/api/client/diet-plans`, `/api/meal-logs/*` | A valid plan remains visible when log history fails; log writes require server success. |
+| Measurements and progress | `/api/client/measurements`, `/api/client/my-progress` | Uses tenant/self-scoped contracts and provides retry instead of a blank chart. |
+| Subscriptions and appointments | `/api/client/subscriptions`, `/api/appointments/my` | Displays recoverable API errors and preserves clear empty states. |
+| Chat and challenges | `/api/chat/*`, `/api/challenges/*` | Conversation/reference/challenge failures are separated from valid content and can be retried. |
+| Profile | `/api/profile` | Uses the self-service profile contract; profile updates include phone validation and a visible failure state. |
+
+The client service must use `/api/client/my-progress` for the trainee progress report and `/api/profile` for self-profile reads/writes. The former report route under the reports policy is not a client self-service contract, and the member-management route is intentionally not used by the trainee UI.
