@@ -56,6 +56,9 @@ import Swal from 'sweetalert2';
       <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
         <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل مكتبة التمارين</strong><p>{{ errorMessage() }}</p><button type="button" class="btn btn-secondary" (click)="loadExercises()">إعادة المحاولة</button></div>
       </div>
+      <div class="state-card warning-state" *ngIf="!errorMessage() && musclesError()" role="status">
+        <i class="pi pi-info-circle"></i><div><strong>قائمة العضلات غير متاحة</strong><p>{{ musclesError() }}</p><button type="button" class="btn btn-secondary" (click)="loadMuscles()">إعادة تحميل العضلات</button></div>
+      </div>
 
       <!-- Stats Row -->
       <div class="stats-row" *ngIf="!errorMessage()">
@@ -670,6 +673,9 @@ import Swal from 'sweetalert2';
     .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
     .state-card i { font-size:1.5rem; color:#dc2626; }
     .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
+    .state-card.warning-state { border-color:#fde68a; color:#92400e; background:#fffbeb; }
+    .state-card.warning-state i { color:#d97706; }
+    .state-card.warning-state p { color:#92400e; }
     .exercises-page {
       max-width: 1600px;
     }
@@ -1443,6 +1449,7 @@ export class ExercisesLibraryComponent implements OnInit {
 
   loading = signal(true);
   errorMessage = signal<string | null>(null);
+  musclesError = signal<string | null>(null);
   exercises = signal<Exercise[]>([]);
   filteredExercises = signal<Exercise[]>([]);
   muscles = signal<Muscle[]>([]);
@@ -1583,9 +1590,11 @@ export class ExercisesLibraryComponent implements OnInit {
     this.coachService.getMuscles().subscribe({
       next: (data) => {
         this.muscles.set(data);
+        this.musclesError.set(null);
       },
       error: (err) => {
         console.error('Error loading muscles:', err);
+        this.musclesError.set('تعذر تحميل العضلات المطلوبة لنموذج التمرين.');
       }
     });
   }

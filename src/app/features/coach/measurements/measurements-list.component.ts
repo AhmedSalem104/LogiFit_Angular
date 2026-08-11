@@ -48,6 +48,9 @@ import Swal from 'sweetalert2';
       <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
         <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل القياسات</strong><p>{{ errorMessage() }}</p><button type="button" class="btn btn-secondary" (click)="loadData()">إعادة المحاولة</button></div>
       </div>
+      <div class="state-card warning-state" *ngIf="!errorMessage() && referenceError()" role="status">
+        <i class="pi pi-info-circle"></i><div><strong>لا يمكن اختيار المتدرب حالياً</strong><p>{{ referenceError() }}</p><button type="button" class="btn btn-secondary" (click)="loadData()">إعادة تحميل البيانات</button></div>
+      </div>
 
       <!-- Stats Row -->
       <div class="stats-row" *ngIf="!errorMessage()">
@@ -367,6 +370,9 @@ import Swal from 'sweetalert2';
     .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
     .state-card i { font-size:1.5rem; color:#dc2626; }
     .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
+    .state-card.warning-state { border-color:#fde68a; color:#92400e; background:#fffbeb; }
+    .state-card.warning-state i { color:#d97706; }
+    .state-card.warning-state p { color:#92400e; }
     .measurements-page {
       max-width: 1400px;
     }
@@ -845,6 +851,7 @@ export class MeasurementsListComponent implements OnInit {
 
   loading = signal(true);
   errorMessage = signal<string | null>(null);
+  referenceError = signal<string | null>(null);
   measurements = signal<BodyMeasurement[]>([]);
   filteredMeasurements = signal<BodyMeasurement[]>([]);
   trainees = signal<Trainee[]>([]);
@@ -920,17 +927,22 @@ export class MeasurementsListComponent implements OnInit {
   loadData(): void {
     this.loading.set(true);
     this.errorMessage.set(null);
+    this.referenceError.set(null);
 
     // Load trainees for dropdown
     this.coachService.getTrainees().subscribe({
       next: (data) => {
         this.trainees.set(data);
+        this.referenceError.set(null);
         this.traineeOptions = data.map(t => ({
           label: t.clientName || t.fullName || t.profile?.fullName || '',
           value: t.id
         }));
       },
-      error: () => { this.traineeOptions = []; }
+      error: () => {
+        this.traineeOptions = [];
+        this.referenceError.set('تعذر تحميل قائمة المتدربين المطلوبة لتسجيل القياس.');
+      }
     });
 
     // Load measurements

@@ -44,7 +44,7 @@ import { AuthService } from '../../../core/auth/services/auth.service';
                   <span class="trainee-name">{{ trainee.clientName || trainee.fullName || trainee.profile?.fullName || 'متدرب' }}</span>
                 </div>
               }
-              @if (filteredTrainees().length === 0 && !traineesLoading()) {
+              @if (filteredTrainees().length === 0 && !traineesLoading() && !traineesError()) {
                 <div class="empty-trainee">لا يوجد متدربين</div>
               }
               @if (traineesLoading()) {
