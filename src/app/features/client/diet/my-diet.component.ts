@@ -34,8 +34,17 @@ import { catchError, forkJoin, of } from 'rxjs';
       <!-- Loading State -->
       <app-loading-skeleton *ngIf="loading()" type="stats"></app-loading-skeleton>
 
+      @if (!loading() && error(); as message) {
+        <div class="screen-state error-state" role="alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <h2>تعذر تحميل خطتك الغذائية</h2>
+          <p>{{ message }}</p>
+          <button type="button" class="btn btn-primary" (click)="loadDietPlan()">إعادة المحاولة</button>
+        </div>
+      }
+
       <!-- No Plan State -->
-      <div class="no-plan" *ngIf="!loading() && !dietPlan()">
+      <div class="no-plan" *ngIf="!loading() && !error() && !dietPlan()">
         <div class="no-plan-content">
           <i class="pi pi-calendar"></i>
           <h2>لا توجد خطة تغذية</h2>
@@ -44,7 +53,14 @@ import { catchError, forkJoin, of } from 'rxjs';
       </div>
 
       <!-- Diet Plan Content -->
-      <div class="diet-content" *ngIf="!loading() && dietPlan()">
+      <div class="diet-content" *ngIf="!loading() && !error() && dietPlan()">
+        @if (logsError(); as message) {
+          <div class="inline-warning" role="status">
+            <i class="pi pi-info-circle"></i>
+            <span>{{ message }}</span>
+            <button type="button" (click)="retryMealLogs()">إعادة المحاولة</button>
+          </div>
+        }
         <!-- Daily Summary -->
         <div class="daily-summary card">
           <div class="summary-header">
@@ -187,6 +203,45 @@ import { catchError, forkJoin, of } from 'rxjs';
     .my-diet-page {
       max-width: 800px;
       padding-bottom: 2rem;
+    }
+
+    .screen-state {
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .7rem;
+      padding: 2rem;
+      text-align: center;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+    }
+
+    .screen-state i { font-size: 2.5rem; color: #dc2626; }
+    .screen-state h2, .screen-state p { margin: 0; color: var(--text-primary); }
+    .screen-state p { color: var(--text-secondary); }
+
+    .inline-warning {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      margin-bottom: 1rem;
+      padding: .75rem 1rem;
+      color: #92400e;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 12px;
+    }
+
+    .inline-warning button {
+      margin-inline-start: auto;
+      border: 0;
+      background: transparent;
+      color: #92400e;
+      font-weight: 700;
+      cursor: pointer;
     }
 
     .no-plan {
@@ -477,6 +532,8 @@ export class MyDietComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   loading = signal(true);
+  error = signal<string | null>(null);
+  logsError = signal<string | null>(null);
   dietPlan = signal<DietPlan | null>(null);
   savingMealIds = signal<string[]>([]);
 
@@ -542,11 +599,16 @@ export class MyDietComponent implements OnInit {
 
   loadDietPlan(): void {
     this.loading.set(true);
+    this.error.set(null);
+    this.logsError.set(null);
 
     forkJoin({
       plans: this.clientService.getMyDietPlan(),
       // A disabled meal-log feature must not turn an otherwise valid plan into a blank page.
-      logs: this.clientService.getMealLogs(new Date()).pipe(catchError(() => of([])))
+      logs: this.clientService.getMealLogs(new Date()).pipe(catchError(() => {
+        this.logsError.set('تعذر تحميل سجل الوجبات. الخطة ظاهرة ويمكنك إعادة تحميل السجل.');
+        return of([]);
+      }))
     }).subscribe({
       next: ({ plans, logs }) => {
         // API returns array, get first active plan
@@ -564,8 +626,20 @@ export class MyDietComponent implements OnInit {
         console.error('Error loading diet plan:', err);
         this.notificationService.error('حدث خطأ في تحميل البيانات');
         this.dietPlan.set(null);
+        this.error.set('تحقق من الاتصال أو صلاحية الخطة ثم أعد المحاولة.');
         this.loading.set(false);
       }
+    });
+  }
+
+  retryMealLogs(): void {
+    this.logsError.set(null);
+    this.clientService.getMealLogs(new Date()).subscribe({
+      next: logs => {
+        const plan = this.dietPlan();
+        if (plan) this.markLoggedMeals(plan, logs as any[]);
+      },
+      error: () => this.logsError.set('تعذر تحميل سجل الوجبات. حاول مرة أخرى.')
     });
   }
 

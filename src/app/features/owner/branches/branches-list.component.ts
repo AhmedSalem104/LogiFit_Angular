@@ -42,7 +42,11 @@ import Swal from 'sweetalert2';
         </div>
       </app-page-header>
 
-      <div class="stats-row">
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل الفروع</strong><p>{{ errorMessage() }}</p><button type="button" class="btn btn-primary" (click)="load()">إعادة المحاولة</button></div>
+      </div>
+
+      <div class="stats-row" *ngIf="!errorMessage()">
         <div class="mini-stat">
           <div class="mini-stat__icon blue"><i class="pi pi-building"></i></div>
           <div class="mini-stat__content">
@@ -86,7 +90,7 @@ import Swal from 'sweetalert2';
 
       <app-loading-skeleton *ngIf="loading()" type="table"></app-loading-skeleton>
 
-      <div class="data-card" *ngIf="!loading()">
+      <div class="data-card" *ngIf="!loading() && !errorMessage()">
         <p-table [value]="filtered()" [paginator]="true" [rows]="10" responsiveLayout="scroll">
           <ng-template pTemplate="header">
             <tr>
@@ -229,6 +233,9 @@ import Swal from 'sweetalert2';
     }
     .hours-row .day { font-weight: 600; }
     .hours-row .closed { display:flex; gap:.4rem; align-items:center; font-size:.8rem; color: var(--text-secondary); }
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
     @media (max-width: 600px) { .hours-row { grid-template-columns: 1fr 1fr; } .hours-row .day { grid-column: 1/-1; } }
   `]
 })
@@ -238,6 +245,7 @@ export class BranchesListComponent implements OnInit {
 
   branches = signal<Branch[]>([]);
   loading = signal(false);
+  errorMessage = signal<string | null>(null);
   saving = signal(false);
 
   search = '';
@@ -270,9 +278,15 @@ export class BranchesListComponent implements OnInit {
 
   load() {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.svc.list({ isActive: this.statusFilter ?? undefined }).subscribe({
       next: data => { this.branches.set(data || []); this.loading.set(false); },
-      error: () => { this.toast.error('فشل تحميل الفروع'); this.loading.set(false); }
+      error: (e) => {
+        const message = e?.translatedMessage || e?.error?.detail || e?.error?.message || 'تعذر تحميل الفروع';
+        this.errorMessage.set(message);
+        this.toast.error(message);
+        this.loading.set(false);
+      }
     });
   }
 

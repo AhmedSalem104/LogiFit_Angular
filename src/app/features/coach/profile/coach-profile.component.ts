@@ -39,6 +39,15 @@ import { environment } from '../../../../environments/environment';
         [breadcrumbs]="[{label: 'لوحة التحكم', route: '/coach/dashboard'}, {label: 'الملف الشخصي'}]"
       ></app-page-header>
 
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div>
+          <strong>تعذر تحميل الملف الشخصي</strong>
+          <p>{{ errorMessage() }}</p>
+          <button type="button" class="btn btn-secondary" (click)="loadProfile()">إعادة المحاولة</button>
+        </div>
+      </div>
+
       <!-- Loading State -->
       <div class="profile-skeleton" *ngIf="loading()">
         <div class="skeleton-card">
@@ -53,7 +62,7 @@ import { environment } from '../../../../environments/environment';
         </div>
       </div>
 
-      <div class="profile-content" *ngIf="!loading()">
+      <div class="profile-content" *ngIf="!loading() && !errorMessage()">
         <!-- Profile Header Card -->
         <div class="profile-header-card">
           <div class="profile-cover"></div>
@@ -318,6 +327,9 @@ import { environment } from '../../../../environments/environment';
     </div>
   `,
   styles: [`
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
     .pw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; padding: 1.25rem 0; }
     .pw-field { display: flex; flex-direction: column; gap: .4rem; }
     .pw-field label { font-size: .85rem; color: var(--text-secondary); font-weight: 500; }
@@ -852,6 +864,7 @@ export class CoachProfileComponent implements OnInit {
   private authService = inject(AuthService);
 
   loading = signal(true);
+  errorMessage = signal<string | null>(null);
   saving = signal(false);
   changingPw = signal(false);
   pw = { current: '', next: '', confirm: '' };
@@ -896,6 +909,7 @@ export class CoachProfileComponent implements OnInit {
 
   loadProfile(): void {
     this.loading.set(true);
+    this.errorMessage.set(null);
 
     this.coachService.getProfile().subscribe({
       next: (data) => {
@@ -920,6 +934,7 @@ export class CoachProfileComponent implements OnInit {
       error: (err) => {
         console.error('Error loading profile:', err);
         this.notificationService.error('حدث خطأ أثناء تحميل البيانات');
+        this.errorMessage.set('تعذر الاتصال بالخادم. تحقق من الاتصال ثم حاول مرة أخرى.');
         this.loading.set(false);
       }
     });

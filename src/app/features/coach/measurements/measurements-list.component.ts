@@ -45,8 +45,15 @@ import Swal from 'sweetalert2';
         </button>
       </app-page-header>
 
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل القياسات</strong><p>{{ errorMessage() }}</p><button type="button" class="btn btn-secondary" (click)="loadData()">إعادة المحاولة</button></div>
+      </div>
+      <div class="state-card warning-state" *ngIf="!errorMessage() && referenceError()" role="status">
+        <i class="pi pi-info-circle"></i><div><strong>لا يمكن اختيار المتدرب حالياً</strong><p>{{ referenceError() }}</p><button type="button" class="btn btn-secondary" (click)="loadData()">إعادة تحميل البيانات</button></div>
+      </div>
+
       <!-- Stats Row -->
-      <div class="stats-row">
+      <div class="stats-row" *ngIf="!errorMessage()">
         <div class="mini-stat">
           <div class="mini-stat__icon total-icon">
             <i class="pi pi-chart-line"></i>
@@ -89,7 +96,7 @@ import Swal from 'sweetalert2';
       <app-loading-skeleton *ngIf="loading()" type="table" [rows]="5"></app-loading-skeleton>
 
       <!-- Measurements Table -->
-      <div class="table-container" *ngIf="!loading()">
+      <div class="table-container" *ngIf="!loading() && !errorMessage()">
         <div class="table-header">
           <div class="table-title">
             <h3>سجل القياسات</h3>
@@ -360,6 +367,12 @@ import Swal from 'sweetalert2';
     </div>
   `,
   styles: [`
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
+    .state-card.warning-state { border-color:#fde68a; color:#92400e; background:#fffbeb; }
+    .state-card.warning-state i { color:#d97706; }
+    .state-card.warning-state p { color:#92400e; }
     .measurements-page {
       max-width: 1400px;
     }
@@ -837,6 +850,8 @@ export class MeasurementsListComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   loading = signal(true);
+  errorMessage = signal<string | null>(null);
+  referenceError = signal<string | null>(null);
   measurements = signal<BodyMeasurement[]>([]);
   filteredMeasurements = signal<BodyMeasurement[]>([]);
   trainees = signal<Trainee[]>([]);
@@ -911,22 +926,22 @@ export class MeasurementsListComponent implements OnInit {
 
   loadData(): void {
     this.loading.set(true);
+    this.errorMessage.set(null);
+    this.referenceError.set(null);
 
     // Load trainees for dropdown
     this.coachService.getTrainees().subscribe({
       next: (data) => {
         this.trainees.set(data);
+        this.referenceError.set(null);
         this.traineeOptions = data.map(t => ({
           label: t.clientName || t.fullName || t.profile?.fullName || '',
           value: t.id
         }));
       },
       error: () => {
-        this.traineeOptions = [
-          { label: 'أحمد محمد', value: '1' },
-          { label: 'خالد علي', value: '2' },
-          { label: 'محمود حسن', value: '3' }
-        ];
+        this.traineeOptions = [];
+        this.referenceError.set('تعذر تحميل قائمة المتدربين المطلوبة لتسجيل القياس.');
       }
     });
 
@@ -942,6 +957,7 @@ export class MeasurementsListComponent implements OnInit {
         this.notificationService.error('حدث خطأ في تحميل البيانات');
         this.measurements.set([]);
         this.filteredMeasurements.set([]);
+        this.errorMessage.set('تعذر الاتصال بخدمة القياسات. تحقق من اتصال الخادم ثم أعد المحاولة.');
         this.loading.set(false);
       }
     });

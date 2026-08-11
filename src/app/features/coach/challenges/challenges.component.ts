@@ -57,8 +57,15 @@ import Swal from 'sweetalert2';
         </button>
       </app-page-header>
 
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل التحديات</strong><p>{{ errorMessage() }}</p><button type="button" class="btn btn-secondary" (click)="loadChallenges()">إعادة المحاولة</button></div>
+      </div>
+      <div class="state-card warning-state" *ngIf="!errorMessage() && referenceError()" role="status">
+        <i class="pi pi-info-circle"></i><div><strong>لا يمكن اختيار المشاركين حالياً</strong><p>{{ referenceError() }}</p><button type="button" class="btn btn-secondary" (click)="loadTrainees()">إعادة تحميل المتدربين</button></div>
+      </div>
+
       <!-- Stats Row -->
-      <div class="stats-row">
+      <div class="stats-row" *ngIf="!errorMessage()">
         <div class="mini-stat">
           <div class="mini-stat__icon total-icon">
             <i class="pi pi-trophy"></i>
@@ -129,7 +136,7 @@ import Swal from 'sweetalert2';
       <app-loading-skeleton *ngIf="loading()" type="stats" [rows]="3"></app-loading-skeleton>
 
       <!-- Challenges Grid -->
-      <div class="challenges-grid" *ngIf="!loading() && filteredChallenges().length > 0">
+      <div class="challenges-grid" *ngIf="!loading() && !errorMessage() && filteredChallenges().length > 0">
         <div class="challenge-card" *ngFor="let challenge of filteredChallenges()">
           <div class="challenge-card__header">
             <div class="challenge-card__title-row">
@@ -189,7 +196,7 @@ import Swal from 'sweetalert2';
       </div>
 
       <!-- Empty State -->
-      <div class="empty-state" *ngIf="!loading() && filteredChallenges().length === 0">
+      <div class="empty-state" *ngIf="!loading() && !errorMessage() && filteredChallenges().length === 0">
         <div class="empty-state__icon">
           <i class="pi pi-trophy"></i>
         </div>
@@ -295,6 +302,12 @@ import Swal from 'sweetalert2';
     </div>
   `,
   styles: [`
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
+    .state-card.warning-state { border-color:#fde68a; color:#92400e; background:#fffbeb; }
+    .state-card.warning-state i { color:#d97706; }
+    .state-card.warning-state p { color:#92400e; }
     .challenges-page {
       max-width: 1400px;
     }
@@ -743,6 +756,8 @@ export class ChallengesComponent implements OnInit {
 
   loading = signal(true);
   saving = signal(false);
+  errorMessage = signal<string | null>(null);
+  referenceError = signal<string | null>(null);
   challenges = signal<ChallengeDto[]>([]);
   traineesOptions = signal<{label: string; value: string}[]>([]);
   statusFilter = signal<number | null>(null);
@@ -787,6 +802,7 @@ export class ChallengesComponent implements OnInit {
 
   loadChallenges(): void {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.challengesService.getChallenges().subscribe({
       next: (data) => {
         this.challenges.set(data);
@@ -796,6 +812,7 @@ export class ChallengesComponent implements OnInit {
         console.error('Error loading challenges:', err);
         this.notificationService.error('حدث خطأ أثناء تحميل التحديات');
         this.challenges.set([]);
+        this.errorMessage.set('تعذر الاتصال بخدمة التحديات. تحقق من اتصال الخادم ثم أعد المحاولة.');
         this.loading.set(false);
       }
     });
@@ -804,6 +821,7 @@ export class ChallengesComponent implements OnInit {
   loadTrainees(): void {
     this.coachService.getTrainees().subscribe({
       next: (trainees) => {
+        this.referenceError.set(null);
         this.traineesOptions.set(
           trainees.map((t: any) => ({
             label: t.clientName || t.name || `${t.firstName || ''} ${t.lastName || ''}`.trim(),
@@ -813,6 +831,7 @@ export class ChallengesComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading trainees:', err);
+        this.referenceError.set('تعذر تحميل قائمة المتدربين المطلوبة لتحديد المشاركين.');
       }
     });
   }

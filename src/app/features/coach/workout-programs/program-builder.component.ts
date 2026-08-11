@@ -80,7 +80,21 @@ interface WorkoutDay {
   template: `
     <p-toast position="top-left" dir="rtl"></p-toast>
 
-    <div class="workout-builder-wizard">
+    <div class="state-card error-state" *ngIf="dataError()" role="alert">
+      <i class="pi pi-exclamation-triangle"></i>
+      <div>
+        <strong>تعذر تجهيز محرر برنامج التمرين</strong>
+        <p>{{ dataError() }}</p>
+        <button type="button" class="btn btn-secondary" (click)="retryLoad()">إعادة المحاولة</button>
+      </div>
+    </div>
+
+    <div class="state-card loading-state" *ngIf="dataLoading() && !dataError()" aria-live="polite">
+      <i class="pi pi-spin pi-spinner"></i>
+      <div><strong>جاري تجهيز محرر البرنامج</strong><p>يتم تحميل المتدربين والتمارين والبيانات المطلوبة.</p></div>
+    </div>
+
+    <div class="workout-builder-wizard" *ngIf="!dataLoading() && !dataError()">
       <!-- Wizard Header -->
       <div class="wizard-header">
         <div class="header-content">
@@ -719,6 +733,13 @@ interface WorkoutDay {
     </div>
   `,
   styles: [`
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:160px; padding:1.5rem; margin:1rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
+    .state-card .btn { border:0; border-radius:9px; padding:.6rem 1rem; color:#fff; background:#dc2626; cursor:pointer; }
+    .state-card.loading-state { border-color:#bfdbfe; color:#1d4ed8; background:#eff6ff; }
+    .state-card.loading-state i { color:#2563eb; }
+    .state-card.loading-state p { color:#1e40af; }
     /* ========== WORKOUT BUILDER WIZARD STYLES ========== */
     .workout-builder-wizard {
       min-height: 100vh;
@@ -2318,6 +2339,8 @@ export class ProgramBuilderComponent implements OnInit {
   programId: string | null = null;
   private presetClientId: string | null = null;
   saving = signal(false);
+  dataLoading = signal(true);
+  dataError = signal<string | null>(null);
   exercises = signal<Exercise[]>([]);
   trainees = signal<Trainee[]>([]);
   expandedDay: number | null = 0;
@@ -2556,6 +2579,8 @@ export class ProgramBuilderComponent implements OnInit {
     this.programId = this.route.snapshot.paramMap.get('id');
     this.presetClientId = this.route.snapshot.queryParamMap.get('clientId');
     this.isEditMode = !!this.programId;
+    this.dataLoading.set(true);
+    this.dataError.set(null);
 
     // Load exercises and trainees first, then load program if in edit mode
     forkJoin({
@@ -2592,6 +2617,7 @@ export class ProgramBuilderComponent implements OnInit {
           this.addDay('يوم الظهر والبايسبس');
           this.addDay('يوم الأكتاف');
           this.addDay('يوم الأرجل');
+          this.dataLoading.set(false);
         }
       },
       error: (err) => {
@@ -2600,14 +2626,8 @@ export class ProgramBuilderComponent implements OnInit {
         this.exerciseOptions = [];
         this.trainees.set([]);
         this.traineeOptions = [];
-        if (this.isEditMode && this.programId) {
-          this.loadProgram(this.programId!);
-        } else {
-          this.addDay('يوم الصدر والترايسبس');
-          this.addDay('يوم الظهر والبايسبس');
-          this.addDay('يوم الأكتاف');
-          this.addDay('يوم الأرجل');
-        }
+        this.dataLoading.set(false);
+        this.dataError.set('تعذر تحميل المتدربين والتمارين المطلوبة. تحقق من الاتصال ثم حاول مرة أخرى.');
       }
     });
   }
@@ -2655,6 +2675,7 @@ export class ProgramBuilderComponent implements OnInit {
   loadProgram(id: string): void {
     this.coachService.getWorkoutProgramById(id).subscribe({
       next: (program: any) => {
+        this.dataLoading.set(false);
         console.log('=== Workout Program API Response ===');
         console.log('Full program:', program);
         console.log('Routines count:', program.routines?.length ?? 0);
@@ -2706,6 +2727,8 @@ export class ProgramBuilderComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading workout program:', err);
+        this.dataLoading.set(false);
+        this.dataError.set('تعذر تحميل البرنامج. تحقق من أنه ما زال متاحاً ثم حاول مرة أخرى.');
         this.messageService.add({
           severity: 'error',
           summary: 'خطأ',
@@ -2713,6 +2736,10 @@ export class ProgramBuilderComponent implements OnInit {
         });
       }
     });
+  }
+
+  retryLoad(): void {
+    this.ngOnInit();
   }
 
   setGoal(goal: string): void {

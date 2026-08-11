@@ -85,6 +85,11 @@ flowchart LR
   والـactions يفلتران بالصلاحيات، وليس لإخفاء الواجهة وحده أي أثر أمني.
 - **Coach / Trainer** يريان عملاءهما ومواردهما المسموح بها فقط.
 - **Client** يرى بياناته الشخصية وخطته واشتراكه فقط.
+- تظهر أدوار `Manager` و`Receptionist` و`Accountant` و`Trainer` بتسميات واضحة داخل الرأس
+  والشريط. عند `workspaceType=2` تظهر تسمية مساحة المدرب الحر بصريًا، مع بقاء الحارس والدور
+  والصلاحيات كما هي.
+- كل شاشة Back-office مرتبطة بحارس Permission على مستوى المسار بالإضافة إلى تصفية الشريط؛
+  فتح الرابط يدويًا لا يحمل مكونًا إداريًا غير مصرح به.
 - الـBackend هو الحد الأمني: الـTenant والـownership وpermission لا تعتمد على
   `TenantId` أو role قادمين من المتصفح.
 
@@ -101,6 +106,10 @@ flowchart LR
    عبر `POST /api/identity/select-workspace` هو الذي يصدر JWT؛ لا يعتمد الحارس على حالة قديمة في المتصفح.
 6. عند `401` تتم محاولة refresh واحدة مشتركة للطلبات المتوازية؛ فشلها يخرج المستخدم. عند `402` أو
    حالة Tenant غير متاحة تُعرض تجربة اشتراك/حالة تجهيز واضحة بدل صفحة فارغة.
+
+داخل لوحة الجيم، تتطلب لوحتا `dashboard` و`operations` صلاحية `ViewReports` التي يتطلبها
+الـReports API نفسه. موظف الاستقبال الذي لا يملكها ينتقل إلى `/owner/clients`، ولا يرى رابط
+التقرير أو يحصل على شاشة فارغة. شاشة فريق المدرب الحر لا تفتح من Gym حتى عند كتابة الرابط يدويًا.
 
 ## رحلة الاشتراك الموحدة (Issue #248)
 
@@ -143,7 +152,7 @@ FreelanceCoach بعلامة بنفسجية وأيقونة مدرب في شاشة
 | `/client/dashboard`, `/client/my-program`, `/client/workout-session` | متابعة البرنامج وتسجيل الجلسة. |
 | `/client/my-diet`, `/client/meal-log` | الخطة الغذائية وسجل الوجبات. |
 | `/client/my-measurements`, `/client/my-progress` | القياسات والتقدم. |
-| `/client/my-subscriptions`, `/client/chat`, `/client/challenges`, `/client/profile` | الاشتراك والتواصل والتحديات والملف الشخصي. |
+| `/client/my-subscriptions`, `/client/appointments`, `/client/chat`, `/client/challenges`, `/client/profile` | الاشتراك والمواعيد والتواصل والتحديات والملف الشخصي. |
 
 ## الدفعات والاشتراك بالمنصة
 

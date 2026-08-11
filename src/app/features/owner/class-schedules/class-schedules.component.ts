@@ -36,6 +36,18 @@ import Swal from 'sweetalert2';
         <button class="btn btn-primary" (click)="openAdd()"><i class="pi pi-plus"></i><span>جدولة جديدة</span></button>
       </app-page-header>
 
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div>
+          <strong>تعذر تحميل جدول الحصص</strong>
+          <p>{{ errorMessage() }}</p>
+          <button type="button" class="btn btn-primary" (click)="load()">إعادة المحاولة</button>
+        </div>
+      </div>
+      <div class="state-card warning-state" *ngIf="!errorMessage() && referenceError()" role="status">
+        <i class="pi pi-info-circle"></i><span>{{ referenceError() }}</span>
+      </div>
+
       <div class="toolbar">
         <p-dropdown [options]="classOptions()" [(ngModel)]="classFilter"
           placeholder="كل الحصص" [showClear]="true" (onChange)="load()" appendTo="body"></p-dropdown>
@@ -46,7 +58,7 @@ import Swal from 'sweetalert2';
       </div>
 
       <app-loading-skeleton *ngIf="loading()" type="table"></app-loading-skeleton>
-      <div class="data-card" *ngIf="!loading()">
+      <div class="data-card" *ngIf="!loading() && !errorMessage()">
         <p-table [value]="schedules()" [paginator]="true" [rows]="10">
           <ng-template pTemplate="header">
             <tr><th>الحصة</th><th>المدرب</th><th>القاعة</th><th>الوقت</th>
@@ -115,7 +127,11 @@ import Swal from 'sweetalert2';
     <!-- Enrollments Dialog -->
     <p-dialog [(visible)]="enrollDialog" [modal]="true" [style]="{width:'680px'}"
               [header]="'حجوزات: ' + (selected?.groupClassName || '')" [dismissableMask]="true">
-      <div *ngIf="enrollments().length">
+      <app-loading-skeleton *ngIf="enrollLoading" type="table"></app-loading-skeleton>
+      <div class="state-card error-state" *ngIf="!enrollLoading && enrollError()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل الحجوزات</strong><p>{{ enrollError() }}</p><button type="button" class="btn btn-primary" (click)="retryEnrollments()">إعادة المحاولة</button></div>
+      </div>
+      <div *ngIf="!enrollLoading && !enrollError() && enrollments().length">
         <p-table [value]="enrollments()">
           <ng-template pTemplate="header">
             <tr><th>العميل</th><th>تاريخ الحجز</th><th>الحالة</th><th>قائمة الانتظار</th><th style="width:130px">إجراءات</th></tr>
@@ -156,6 +172,11 @@ import Swal from 'sweetalert2';
   styles: [GYM_PAGE_STYLES + `
     .color-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-left:.4rem; }
     tr.cancelled-row { opacity:.5; text-decoration: line-through; }
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
+    .warning-state { min-height:auto; border-color:#fde68a; color:#92400e; background:#fffbeb; }
+    .warning-state i { color:#d97706; }
   `]
 })
 export class ClassSchedulesComponent implements OnInit {
@@ -172,6 +193,10 @@ export class ClassSchedulesComponent implements OnInit {
   coaches = signal<Coach[]>([]);
   loading = signal(false);
   saving = signal(false);
+  errorMessage = signal<string | null>(null);
+  referenceError = signal<string | null>(null);
+  enrollError = signal<string | null>(null);
+  enrollLoading = false;
 
   classFilter: string | null = null;
   coachFilter: string | null = null;
@@ -193,15 +218,16 @@ export class ClassSchedulesComponent implements OnInit {
   clientOptions = computed(() => this.clients().map(c => ({ label: c.fullName || c.email || c.id, value: c.id })));
 
   ngOnInit() {
-    this.svc.listClasses().subscribe(c => this.classes.set(c || []));
-    this.facSvc.listRooms().subscribe(r => this.rooms.set(r || []));
-    this.ownerSvc.getClients().subscribe(c => this.clients.set(c || []));
-    this.ownerSvc.getCoaches().subscribe(c => this.coaches.set(c || []));
+    this.svc.listClasses().subscribe({ next: c => this.classes.set(c || []), error: () => this.referenceError.set('تعذر تحميل أنواع الحصص.') });
+    this.facSvc.listRooms().subscribe({ next: r => this.rooms.set(r || []), error: () => this.referenceError.set('تعذر تحميل القاعات.') });
+    this.ownerSvc.getClients().subscribe({ next: c => this.clients.set(c || []), error: () => this.referenceError.set('تعذر تحميل العملاء.') });
+    this.ownerSvc.getCoaches().subscribe({ next: c => this.coaches.set(c || []), error: () => this.referenceError.set('تعذر تحميل المدربين.') });
     this.load();
   }
 
   load() {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.svc.listSchedules({
       groupClassId: this.classFilter ?? undefined,
       coachId: this.coachFilter ?? undefined,
@@ -209,7 +235,12 @@ export class ClassSchedulesComponent implements OnInit {
       includeCancelled: true
     }).subscribe({
       next: d => { this.schedules.set(d || []); this.loading.set(false); },
-      error: () => { this.toast.error('فشل التحميل'); this.loading.set(false); }
+      error: (e) => {
+        const message = e?.translatedMessage || e?.error?.detail || e?.error?.message || 'تعذر تحميل جدول الحصص';
+        this.errorMessage.set(message);
+        this.toast.error(message);
+        this.loading.set(false);
+      }
     });
   }
 
@@ -236,10 +267,21 @@ export class ClassSchedulesComponent implements OnInit {
 
   viewEnrollments(s: ClassSchedule) {
     this.selected = s;
+    this.enrollLoading = true;
+    this.enrollError.set(null);
+    this.enrollDialog = true;
     this.svc.listEnrollments(s.id, true).subscribe({
-      next: d => { this.enrollments.set(d || []); this.enrollDialog = true; },
-      error: () => this.toast.error('فشل التحميل')
+      next: d => { this.enrollments.set(d || []); this.enrollLoading = false; },
+      error: (e) => {
+        this.enrollLoading = false;
+        this.enrollError.set(e?.translatedMessage || e?.error?.detail || e?.error?.message || 'تعذر تحميل حجوزات الحصة');
+        this.toast.error(this.enrollError()!);
+      }
     });
+  }
+
+  retryEnrollments(): void {
+    if (this.selected) this.viewEnrollments(this.selected);
   }
 
   openBook(s: ClassSchedule) {
@@ -286,6 +328,11 @@ export class ClassSchedulesComponent implements OnInit {
 
   reloadEnrollments() {
     if (!this.selected) return;
-    this.svc.listEnrollments(this.selected.id, true).subscribe(d => this.enrollments.set(d || []));
+    this.enrollLoading = true;
+    this.enrollError.set(null);
+    this.svc.listEnrollments(this.selected.id, true).subscribe({
+      next: d => { this.enrollments.set(d || []); this.enrollLoading = false; },
+      error: (e) => { this.enrollLoading = false; this.enrollError.set(e?.translatedMessage || e?.error?.detail || e?.error?.message || 'تعذر تحديث حجوزات الحصة'); }
+    });
   }
 }

@@ -26,7 +26,12 @@ import { interval, Subscription } from 'rxjs';
 
       <app-loading-skeleton *ngIf="loading()" type="stats"></app-loading-skeleton>
 
-      <div *ngIf="!loading() && data()" class="ops-grid">
+      <div *ngIf="!loading() && error()" class="state-card error-state" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div><strong>تعذر تحميل لوحة التشغيل</strong><p>{{ error() }}</p><button class="btn btn-secondary" type="button" (click)="load()">إعادة المحاولة</button></div>
+      </div>
+
+      <div *ngIf="!loading() && !error() && data()" class="ops-grid">
         <!-- Main KPI Row -->
         <div class="kpi-card kpi--primary">
           <div class="kpi-icon"><i class="pi pi-users"></i></div>
@@ -132,6 +137,8 @@ import { interval, Subscription } from 'rxjs';
     @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.4 } }
 
     .ops-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:160px; padding:1.25rem; border:1px dashed #fecaca; border-radius:14px; background:#fff7f7; color:#991b1b; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
     .kpi-card {
       background: var(--card-bg); border: 1px solid var(--card-border);
       border-radius: 14px; padding: 1.25rem; display:flex; flex-direction: column; gap:.35rem;
@@ -198,6 +205,7 @@ export class OperationsDashboardComponent implements OnInit, OnDestroy {
   private toast = inject(NotificationService);
   data = signal<OperationsDashboard | null>(null);
   loading = signal(false);
+  error = signal('');
   private pollSub?: Subscription;
 
   ngOnInit() {
@@ -209,9 +217,16 @@ export class OperationsDashboardComponent implements OnInit, OnDestroy {
 
   load(silent = false) {
     if (!silent) this.loading.set(true);
+    if (!silent) this.error.set('');
     this.svc.operationsDashboard().subscribe({
       next: d => { this.data.set(d); this.loading.set(false); },
-      error: () => { this.loading.set(false); if(!silent) this.toast.error('فشل تحميل لوحة التشغيل'); }
+      error: () => {
+        this.loading.set(false);
+        if (!silent) {
+          this.error.set('تحقق من الاتصال والصلاحيات ثم أعد المحاولة.');
+          this.toast.error('فشل تحميل لوحة التشغيل');
+        }
+      }
     });
   }
 }

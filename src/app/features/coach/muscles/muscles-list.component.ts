@@ -47,8 +47,12 @@ import Swal from 'sweetalert2';
         </button>
       </app-page-header>
 
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل العضلات</strong><p>{{ errorMessage() }}</p><button type="button" class="btn btn-secondary" (click)="loadMuscles()">إعادة المحاولة</button></div>
+      </div>
+
       <!-- Stats -->
-      <div class="stats-row">
+      <div class="stats-row" *ngIf="!errorMessage()">
         <div class="mini-stat">
           <div class="mini-stat__icon total-icon">
             <i class="pi pi-list"></i>
@@ -91,7 +95,7 @@ import Swal from 'sweetalert2';
       <app-loading-skeleton *ngIf="loading()" type="table" [rows]="5"></app-loading-skeleton>
 
       <!-- Muscles Table -->
-      <div class="table-card card" *ngIf="!loading()">
+      <div class="table-card card" *ngIf="!loading() && !errorMessage()">
         <!-- Search & Filter Header -->
         <div class="table-toolbar">
           <div class="search-box">
@@ -297,6 +301,9 @@ import Swal from 'sweetalert2';
     </div>
   `,
   styles: [`
+      .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+      .state-card i { font-size:1.5rem; color:#dc2626; }
+      .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
     .muscles-page {
       max-width: 1400px;
     }
@@ -736,6 +743,7 @@ export class MusclesListComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   loading = signal(true);
+  errorMessage = signal<string | null>(null);
   muscles = signal<Muscle[]>([]);
 
   // Search and Filter
@@ -834,6 +842,7 @@ export class MusclesListComponent implements OnInit {
 
   loadMuscles(): void {
     this.loading.set(true);
+    this.errorMessage.set(null);
 
     this.coachService.getMuscles().subscribe({
       next: (data) => {
@@ -844,6 +853,7 @@ export class MusclesListComponent implements OnInit {
         console.error('Error loading muscles:', err);
         this.notificationService.error('حدث خطأ أثناء تحميل العضلات');
         this.muscles.set([]);
+        this.errorMessage.set('تعذر الاتصال بخدمة العضلات. تحقق من اتصال الخادم ثم أعد المحاولة.');
         this.loading.set(false);
       }
     });

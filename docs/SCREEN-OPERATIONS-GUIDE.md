@@ -50,6 +50,9 @@ MoreInformation أو Preparing أو Ready بدل عرض تفاصيل تقنية 
 - كل قراءة أو تعديل يخص **Tenant / الصالة الحالية**. لا يرسل التطبيق هوية صالة موثوقة من المتصفح لتجاوز العزل؛ الخادم يستنتج سياق الصالة من الاعتماد/المضيف.
 - أزرار الإضافة والتعديل والحذف لا تعني أن العملية مضمونة: كل طلب يتحقق منه الخادم من الدور، حالة الكيان، صلاحية الميزة في اشتراك الصالة، وحدود الاستخدام Quotas.
 - عند `401` تنتهي الجلسة أو تكون غير صالحة: يسجل المستخدم الدخول من جديد. عند `403` الحساب صحيح لكن لا يملك الإذن. عند `404` الكيان خارج الصالة أو غير موجود. عند `409` توجد حالة متعارضة/تعديل متزامن ويجب إعادة التحميل قبل المحاولة. عند `5xx` لا تكرر عملية مالية أو تسجيل حضور يدوياً قبل التحقق من النتيجة.
+- روابط Back-office التي تتطلب Permission محمية بحارس مسار مباشر؛ عند فتحها دون الإذن يعاد
+  المستخدم إلى لوحته بدل تحميل صفحة فارغة أو استدعاء API غير مناسب. حالات الشاشة نفسها تبقى
+  Loading/Empty/Error مع زر إعادة المحاولة.
 - جميع أوقات العمل المحفوظة في الخادم UTC، وتعرض محلياً. لا تعتمد على ساعة الجهاز لتقرير صلاحية اشتراك أو حضور.
 
 ## 2. عناصر الواجهة المشتركة في كل مساحة عمل
@@ -60,6 +63,7 @@ MoreInformation أو Preparing أو Ready بدل عرض تفاصيل تقنية 
 | بحث الشريط الجانبي | يبحث داخل العناصر المرئية والمصرح بها في القائمة. | الوصول إلى شاشة بالاسم دون التمرير في القوائم. | لا يبحث في صفحات مخفية بسبب الدور أو الصلاحية؛ مسح النص يعيد القائمة. |
 | زر التثبيت | يثبت اتساع الشريط الجانبي أو يعيده للوضع الذكي. | يقلل الحركة لمن يعمل لساعات على شاشة كبيرة. | حالة التثبيت تحفظ محلياً في المتصفح ولا تغير صلاحيات الحساب. |
 | الرأس العام | يعرض المستخدم والسياق، الوصول للإشعارات والمظهر والملف الشخصي وتسجيل الخروج. | يبقي هوية الجلسة وإجراءاتها في مكان موحد. | تسجيل الخروج يمسح اعتماد الجلسة محلياً؛ لا يغني عن تعطيل المستخدم من الخادم. |
+| شارة الدور والسياق | تعرض الدور الكامل: مالك، مدير، استقبال، محاسب، مدرب، مدرب مساعد أو عميل؛ وتوضح مساحة المدرب الحر عند `workspaceType=2`. | تمنع التباس المستخدم الذي يرى نفس الـshell بأدوار مختلفة. | هذه تسمية عرض فقط؛ الـJWT والـBackend يحددان الدور والصلاحيات فعليًا. |
 | البحث والتصفية داخل الصفحات | يضيق سجلات القائمة بحسب النص، الحالة، التاريخ أو الفرع. | تحويل القوائم الكبيرة إلى قرار قابل للتنفيذ. | الفلتر لا يوسع النطاق الأمني؛ النتائج تبقى ضمن الصالة والصلاحيات. |
 | الجداول والصفحات | تعرض السجلات على دفعات مع حالات تحميل/فراغ/فشل. | أداء أفضل عند كثرة العملاء والعمليات. | على الهاتف يمكن تمرير الجدول أفقياً؛ لا تُخفى البيانات الحرجة بسبب عرض صغير. |
 | النماذج والحوارات | إدخال بيانات الإنشاء/التعديل وتأكيد العمليات الحساسة. | تقليل أخطاء الإدخال وحفظ التغييرات بوضوح. | الحقول المطلوبة والتحقق المحلي يساعدان المستخدم، لكن تحقق الخادم هو الملزم. لا تغادر الحوار أثناء الحفظ. |
@@ -89,7 +93,7 @@ MoreInformation أو Preparing أو Ready بدل عرض تفاصيل تقنية 
 | الشاشة | المستخدم/الصلاحية | الغرض والفائدة | البيانات والإجراءات | الضوابط والنتيجة |
 |---|---|---|---|---|
 | `/owner/dashboard` — لوحة التحكم | المالك أو من يملك صلاحية عرض لوحة الإدارة. | لقطة يومية لصحة الصالة: العملاء، الاشتراكات، الحضور، المال والمهام. | بطاقات مؤشرات، اتجاهات، اختصارات للأقسام والتنبيهات التي تستلزم قراراً. | المؤشرات تقرأ بيانات الصالة فقط؛ البطاقة لا تمنح صلاحية لا يملكها المستخدم عند فتح تفاصيلها. |
-| `/owner/operations` — لوحة التشغيل | المالك/المدير التشغيلي. | متابعة التشغيل والمال والاستثناءات في شاشة واحدة. | مؤشرات تشغيل، ملخصات مالية، عناصر تستحق المتابعة، انتقال إلى التقرير أو السجل المعني. | شاشة قراءة واتخاذ قرار؛ تنفيذ الإجراء الحقيقي يتم من شاشته وبصلاحية مستقلة. |
+| `/owner/operations` — لوحة التشغيل | Back-office مع `ViewReports`. | متابعة التشغيل والمال والاستثناءات في شاشة واحدة. | مؤشرات تشغيل، تحديث يدوي/دوري، وعناصر تستحق المتابعة مع انتقال إلى السجل المعني. | عند فشل التقرير تظهر حالة ثابتة مع إعادة محاولة؛ لا تتحول الشاشة إلى رأس فقط. روابط التنبيه تبقى خاضعة لصلاحية الشاشة المستهدفة. |
 | `/owner/profile` — ملف المالك | صاحب الحساب. | تحديث هوية المستخدم وبياناته الشخصية. | عرض وتعديل المعلومات الشخصية المتاحة، وربما الصورة/تفضيلات العرض. | لا تغير من هذه الشاشة دور المستخدم أو ملكية الصالة؛ أي تغيير حساس يتحقق منه الخادم. |
 
 ### 4.2 العملاء، المدربون، والبوابة
@@ -209,6 +213,7 @@ MoreInformation أو Preparing أو Ready بدل عرض تفاصيل تقنية 
 | `/client/my-measurements` — قياساتي | المتدرب. | رؤية القياسات وتغيرها بمرور الوقت. | عرض التاريخ والرسوم/القيم المتاحة، إضافة إدخال ذاتي إذا كانت الصالة تسمح. | البيانات الشخصية لا تظهر لمتدرب آخر؛ يتم التحقق من القيم المقبولة في الخادم. |
 | `/client/my-progress` — تقدمي | المتدرب. | تحويل السجل إلى فهم للتقدم في التدريب والتغذية. | مؤشرات ورسوم وفلاتر فترة عند توفرها. | الأرقام مشتقة من البيانات المسجلة ولا تفسر صحياً وحدها. |
 | `/client/my-subscriptions` — اشتراكاتي | المتدرب. | معرفة عضوية الصالة وحالتها وتواريخها. | عرض الخطة والحالة والبداية/النهاية والمدفوعات/الفواتير المتاحة. | لا يستطيع المتدرب تفعيل أو تعديل اشتراك منتهٍ بدون المسار الذي تقرره الصالة. |
+| `/client/appointments` — مواعيدي | المتدرب. | مراجعة المواعيد التي حددها المدرب. | قائمة بالموعد والمدرب والوقت والحالة، مع تحديث وإعادة محاولة عند فشل القراءة. | القراءة محصورة بهوية المتدرب والصالة الحالية؛ لا توجد إجراءات اعتماد أو تعديل للمتدرب. |
 | `/client/chat` — محادثاتي | المتدرب المخول. | تواصل آمن مع المدرب/الجهة المسموح بها. | فتح محادثة، إرسال/استقبال رسائل ومراجعة تاريخها. | لا يتجاوز الحجب أو حدود العلاقة بين المدرب والمتدرب. |
 | `/client/challenges` — التحديات | متدرب مخول. | اكتشاف تحديات الصالة والمشاركة والتحفيز. | عرض التحديات، قراءة القواعد، إجراء المشاركة أو المتابعة المسموح. | القبول والنتائج تحددها قواعد التحدي والخادم. |
 | `/client/profile` — ملفي | المتدرب نفسه. | إدارة بيانات الحساب والتفضيلات المتاحة. | عرض وتعديل معلومات شخصية محددة. | لا يغير الاشتراك أو العلاقة بالصالة أو الدور من هذه الشاشة. |
@@ -253,3 +258,19 @@ MoreInformation أو Preparing أو Ready بدل عرض تفاصيل تقنية 
 | `/coach/diet-plans/create` and edit | Saves the full nested diet aggregate with meals, foods, quantities, targets, and times in one API call. | Invalid food/quantity or API failure leaves the form open without partial-save messaging. |
 | `/client/workout-session` | Starts/resumes a server session, posts each set, and completes the session only after the API confirms it. | Loading/blocked/error messaging stays visible; failed sets remain uncompleted for retry. |
 | `/client/my-diet` and `/client/meal-log` | Reads active plan and server meal logs, calculates totals from real log macros, and writes meal items through `/api/meal-logs`. | A missing plan is an explicit empty state; meal-log feature failure does not erase a valid plan. |
+
+## Trainee screen completion (Issue #74)
+
+The trainee route group keeps the existing product concept and now has an explicit terminal UI state for every screen: loading, empty, blocked, error, and retry where the action is recoverable. The screens remain protected by the existing `/client` authentication and role guard.
+
+| Screen | API contract verified | Completion behavior |
+|---|---|---|
+| Dashboard | `/api/client/dashboard/*` | Shows the dashboard empty/error state without rendering fabricated metrics. |
+| My program and workout session | `/api/client/programs`, `/api/workout-sessions/*` | Missing programs and session failures remain actionable; a failed set is not marked complete. |
+| My diet and meal log | `/api/client/diet-plans`, `/api/meal-logs/*` | A valid plan remains visible when log history fails; log writes require server success. |
+| Measurements and progress | `/api/client/measurements`, `/api/client/my-progress` | Uses tenant/self-scoped contracts and provides retry instead of a blank chart. |
+| Subscriptions and appointments | `/api/client/subscriptions`, `/api/appointments/my` | Displays recoverable API errors and preserves clear empty states. |
+| Chat and challenges | `/api/chat/*`, `/api/challenges/*` | Conversation/reference/challenge failures are separated from valid content and can be retried. |
+| Profile | `/api/profile` | Uses the self-service profile contract; profile updates include phone validation and a visible failure state. |
+
+The client service must use `/api/client/my-progress` for the trainee progress report and `/api/profile` for self-profile reads/writes. The former report route under the reports policy is not a client self-service contract, and the member-management route is intentionally not used by the trainee UI.

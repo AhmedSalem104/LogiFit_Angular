@@ -34,6 +34,15 @@ import QRCode from 'qrcode';
         </div>
       </app-page-header>
 
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div>
+          <strong>تعذر تحميل بطاقات العضوية</strong>
+          <p>{{ errorMessage() }}</p>
+          <button type="button" class="btn btn-primary" (click)="load()">إعادة المحاولة</button>
+        </div>
+      </div>
+
       <div class="stats-row">
         <div class="mini-stat"><div class="mini-stat__icon blue"><i class="pi pi-id-card"></i></div>
           <div class="mini-stat__content"><span class="mini-stat__value">{{ cards().length }}</span>
@@ -58,7 +67,7 @@ import QRCode from 'qrcode';
 
       <app-loading-skeleton *ngIf="loading()" type="table"></app-loading-skeleton>
 
-      <div class="data-card" *ngIf="!loading()">
+      <div class="data-card" *ngIf="!loading() && !errorMessage()">
         <p-table [value]="cards()" [paginator]="true" [rows]="10">
           <ng-template pTemplate="header">
             <tr>
@@ -144,6 +153,9 @@ import QRCode from 'qrcode';
       display:flex; flex-direction:column; gap:1rem; align-items:center;
       padding: 1rem;
     }
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:150px; padding:1.25rem; margin-bottom:1.5rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
     .qr-image { width: 220px; height: 220px; border-radius: 12px; background: #fff; padding: 10px; }
     .qr-info { width: 100%; display: flex; flex-direction: column; gap: .5rem; }
     .qr-row { display:flex; justify-content:space-between; gap:.5rem; padding: .35rem 0; border-bottom:1px dashed var(--border-color); }
@@ -160,6 +172,7 @@ export class MembershipCardsComponent implements OnInit {
   cards = signal<MembershipCard[]>([]);
   clients = signal<Client[]>([]);
   loading = signal(false);
+  errorMessage = signal<string | null>(null);
   saving = signal(false);
   clientFilter: string | null = null;
   activeFilter: boolean | null = null;
@@ -188,12 +201,18 @@ export class MembershipCardsComponent implements OnInit {
 
   load() {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.svc.listCards({
       clientId: this.clientFilter ?? undefined,
       isActive: this.activeFilter ?? undefined
     }).subscribe({
       next: d => { this.cards.set(d || []); this.loading.set(false); },
-      error: () => { this.toast.error('فشل التحميل'); this.loading.set(false); }
+      error: (e) => {
+        const message = e?.translatedMessage || e?.error?.detail || e?.error?.message || 'تعذر تحميل بطاقات العضوية';
+        this.errorMessage.set(message);
+        this.toast.error(message);
+        this.loading.set(false);
+      }
     });
   }
 

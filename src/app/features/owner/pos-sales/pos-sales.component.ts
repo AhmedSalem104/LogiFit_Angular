@@ -18,8 +18,9 @@ import { BranchesService } from '../services/branches.service';
 import { OwnerService, Client } from '../services/owner.service';
 import {
   Sale, SaleItem, CheckoutRequest, Product, Branch,
-  PaymentMethodEnum, PaymentMethodGymLabels
+  PaymentMethodEnum, PaymentMethodGymLabels, CouponApplicability
 } from '../../../shared/models/gym-management.models';
+import { FinanceService } from '../services/finance.service';
 import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
 
 @Component({
@@ -34,6 +35,9 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
     <div class="gym-page">
       <app-page-header title="نقطة البيع (POS)" subtitle="بيع المنتجات ومراجعة السجل"
         [breadcrumbs]="[{label:'لوحة التحكم', route:'/owner/dashboard'},{label:'المبيعات'}]"></app-page-header>
+      <div class="state-card warning-state" *ngIf="referenceError()" role="status">
+        <i class="pi pi-info-circle"></i><div><strong>بعض البيانات المساعدة غير متاحة</strong><p>{{ referenceError() }}</p><button class="btn btn-secondary" type="button" (click)="loadReferences()">إعادة المحاولة</button></div>
+      </div>
 
       <p-tabView>
         <!-- Checkout Tab -->
@@ -45,7 +49,14 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
                 <input type="text" class="form-input" [(ngModel)]="productSearch" placeholder="بحث عن منتج / SKU..."/>
                 <i class="pi pi-search"></i>
               </div>
-              <div class="product-grid">
+              <app-loading-skeleton *ngIf="productsLoading()" type="card"></app-loading-skeleton>
+              <div class="state-card error-state" *ngIf="!productsLoading() && productsError()" role="alert">
+                <i class="pi pi-exclamation-triangle"></i>
+                <div><strong>تعذر تحميل المنتجات</strong><p>{{ productsError() }}</p>
+                  <button class="btn btn-secondary" (click)="loadProducts()"><i class="pi pi-refresh"></i><span>إعادة المحاولة</span></button>
+                </div>
+              </div>
+              <div class="product-grid" *ngIf="!productsLoading() && !productsError()">
                 @for (p of filteredProducts(); track p.id) {
                   <div class="product-card" (click)="addToCart(p)" [class.disabled]="p.trackStock && !(p.totalStock || 0)">
                     <img *ngIf="p.imageUrl" [src]="p.imageUrl"/>
@@ -71,8 +82,14 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
                   placeholder="العميل (اختياري)" [filter]="true" [showClear]="true" appendTo="body" styleClass="w-full"></p-dropdown>
                 <p-dropdown [options]="paymentOptions" [(ngModel)]="cart.paymentMethod"
                   appendTo="body" styleClass="w-full"></p-dropdown>
-                <input class="form-input" [(ngModel)]="couponCode" placeholder="كود خصم (اختياري)" style="text-transform:uppercase"/>
+                <div class="coupon-input">
+                  <input class="form-input" [(ngModel)]="couponCode" (ngModelChange)="onCouponCodeChange()" placeholder="كود خصم (اختياري)" style="text-transform:uppercase"/>
+                  <button class="btn btn-secondary" type="button" (click)="applyCoupon()" [disabled]="couponApplying() || !couponCode.trim() || !cart.items.length">
+                    {{ couponApplying() ? 'جارٍ...' : 'تطبيق' }}
+                  </button>
+                </div>
               </div>
+              <div class="state-card warning-state" *ngIf="couponError()" role="status"><i class="pi pi-info-circle"></i><p>{{ couponError() }}</p></div>
 
               <div class="cart-items">
                 <div *ngIf="!cart.items.length" class="empty-state"><i class="pi pi-shopping-cart"></i><p>السلة فارغة</p></div>
@@ -81,7 +98,7 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
                     <strong>{{ it.productName }}</strong>
                     <span>{{ (it.unitPriceOverride ?? it.unitPrice) | number }} × </span>
                   </div>
-                  <p-inputNumber [(ngModel)]="it.quantity" [min]="1" [style]="{width:'70px'}"></p-inputNumber>
+                  <p-inputNumber [(ngModel)]="it.quantity" (ngModelChange)="onCartPricingChanged()" [min]="1" [style]="{width:'70px'}"></p-inputNumber>
                   <span class="cart-row__total">{{ (it.quantity || 0) * (it.unitPriceOverride ?? it.unitPrice ?? 0) | number }}</span>
                   <button class="action-btn danger" (click)="removeCartItem(i)"><i class="pi pi-trash"></i></button>
                 </div>
@@ -91,7 +108,7 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
                 <div><span>الإجمالي الفرعي:</span><strong>{{ subtotal() | number:'1.0-2' }}</strong></div>
                 <div>
                   <span>خصم إضافي:</span>
-                  <p-inputNumber [(ngModel)]="cart.extraDiscount" [min]="0" [style]="{width:'110px'}"></p-inputNumber>
+                    <p-inputNumber [(ngModel)]="cart.extraDiscount" (ngModelChange)="onCartPricingChanged()" [min]="0" [style]="{width:'110px'}"></p-inputNumber>
                 </div>
                 <div class="grand"><span>الإجمالي الكلي:</span><strong>{{ grandTotal() | number:'1.0-2' }}</strong></div>
               </div>
@@ -116,7 +133,14 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
             <input type="date" class="form-input" [(ngModel)]="fromDate" (change)="loadHistory()"/>
             <input type="date" class="form-input" [(ngModel)]="toDate" (change)="loadHistory()"/>
           </div>
-          <div class="data-card">
+          <app-loading-skeleton *ngIf="historyLoading()" type="table"></app-loading-skeleton>
+          <div class="state-card error-state" *ngIf="!historyLoading() && historyError()" role="alert">
+            <i class="pi pi-exclamation-triangle"></i>
+            <div><strong>تعذر تحميل سجل المبيعات</strong><p>{{ historyError() }}</p>
+              <button class="btn btn-secondary" (click)="loadHistory()"><i class="pi pi-refresh"></i><span>إعادة المحاولة</span></button>
+            </div>
+          </div>
+          <div class="data-card" *ngIf="!historyLoading() && !historyError()">
             <p-table [value]="sales()" [paginator]="true" [rows]="10">
               <ng-template pTemplate="header">
                 <tr><th>الرقم</th><th>التاريخ</th><th>العميل</th><th>الفرع</th>
@@ -171,12 +195,17 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
     .cart-totals > div { display: flex; justify-content: space-between; align-items: center; }
     .cart-totals > div.grand { font-size: 1.1rem; padding-top: .5rem; border-top: 1px dashed var(--border-color); color: var(--primary-500); }
     .cart-actions { display: flex; gap: .5rem; justify-content: flex-end; }
+    .coupon-input { display:flex; gap:.5rem; }
+    .coupon-input .form-input { flex:1; min-width:0; }
+    .coupon-input .btn { white-space:nowrap; }
+    .state-card.warning-state { min-height:auto; margin:0; padding:.65rem .85rem; }
   `]
 })
 export class PosSalesComponent implements OnInit {
   private svc = inject(InventoryService);
   private branchesSvc = inject(BranchesService);
   private ownerSvc = inject(OwnerService);
+  private financeSvc = inject(FinanceService);
   private toast = inject(NotificationService);
 
   products = signal<Product[]>([]);
@@ -184,6 +213,14 @@ export class PosSalesComponent implements OnInit {
   clients = signal<Client[]>([]);
   sales = signal<Sale[]>([]);
   saving = signal(false);
+  productsLoading = signal(false);
+  productsError = signal<string | null>(null);
+  historyLoading = signal(false);
+  historyError = signal<string | null>(null);
+  referenceError = signal<string | null>(null);
+  couponApplying = signal(false);
+  couponDiscount = signal(0);
+  couponError = signal<string | null>(null);
 
   productSearch = '';
   cart: CheckoutRequest = this.emptyCart();
@@ -203,17 +240,37 @@ export class PosSalesComponent implements OnInit {
 
   subtotal = computed(() => this.cart.items.reduce((s, it) =>
     s + (Number(it.quantity || 0) * Number(it.unitPriceOverride ?? it.unitPrice ?? 0)), 0));
-  grandTotal = computed(() => Math.max(0, this.subtotal() - Number(this.cart.extraDiscount || 0)));
+  grandTotal = computed(() => Math.max(0, this.subtotal() - Number(this.cart.extraDiscount || 0) - this.couponDiscount()));
 
   ngOnInit() {
-    this.svc.listProducts({ isActive: true }).subscribe(p => this.products.set(p || []));
-    this.branchesSvc.list().subscribe(b => {
-      this.branches.set(b || []);
-      const def = (b || []).find(x => x.isDefault) || (b || [])[0];
-      if (def && !this.cart.branchId) this.cart.branchId = def.id;
-    });
-    this.ownerSvc.getClients().subscribe(c => this.clients.set(c || []));
+    this.loadProducts();
+    this.loadReferences();
     this.loadHistory();
+  }
+
+  loadReferences() {
+    this.referenceError.set(null);
+    this.branchesSvc.list().subscribe({
+      next: b => {
+        this.branches.set(b || []);
+        const def = (b || []).find(x => x.isDefault) || (b || [])[0];
+        if (def && !this.cart.branchId) this.cart.branchId = def.id;
+      },
+      error: () => this.referenceError.set('تعذر تحميل الفروع؛ لا يمكن إتمام البيع قبل اختيار فرع.')
+    });
+    this.ownerSvc.getClients().subscribe({
+      next: c => this.clients.set(c || []),
+      error: () => this.referenceError.set('تعذر تحميل قائمة العملاء؛ يمكنك إتمام البيع بدون ربط عميل.')
+    });
+  }
+
+  loadProducts() {
+    this.productsLoading.set(true);
+    this.productsError.set(null);
+    this.svc.listProducts({ isActive: true }).subscribe({
+      next: p => { this.products.set(p || []); this.productsLoading.set(false); },
+      error: () => { this.productsError.set('تعذر الاتصال بخدمة المنتجات. تحقق من اتصال الخادم ثم أعد المحاولة.'); this.productsLoading.set(false); }
+    });
   }
 
   emptyCart(): CheckoutRequest {
@@ -229,18 +286,57 @@ export class PosSalesComponent implements OnInit {
       unitPrice: p.sellingPrice, discountAmount: 0
     });
     this.cart.items = [...this.cart.items];
+    this.clearAppliedCoupon();
   }
 
   removeCartItem(i: number) {
     this.cart.items.splice(i, 1);
     this.cart.items = [...this.cart.items];
+    this.clearAppliedCoupon();
   }
 
-  clearCart() { this.cart = this.emptyCart(); this.couponCode = ''; }
+  clearCart() { this.cart = this.emptyCart(); this.couponCode = ''; this.clearAppliedCoupon(); }
+
+  onCouponCodeChange() { this.clearAppliedCoupon(); }
+  onCartPricingChanged() { this.clearAppliedCoupon(); }
+
+  private clearAppliedCoupon() {
+    if (this.cart.couponId) this.cart = { ...this.cart, couponId: null };
+    this.couponDiscount.set(0);
+    this.couponError.set(null);
+  }
+
+  applyCoupon() {
+    const code = this.couponCode.trim().toUpperCase();
+    if (!code || !this.cart.items.length) return;
+    const amount = Math.max(0, this.subtotal() - Number(this.cart.extraDiscount || 0));
+    this.couponApplying.set(true);
+    this.couponError.set(null);
+    this.financeSvc.validateCoupon({ code, amount, context: CouponApplicability.Products }).subscribe({
+      next: result => {
+        this.couponApplying.set(false);
+        if (!result.isValid || !result.coupon) {
+          this.clearAppliedCoupon();
+          this.couponError.set(result.errorMessage || 'كود الخصم غير صالح لهذا البيع.');
+          return;
+        }
+        this.cart = { ...this.cart, couponId: result.coupon.id };
+        this.couponDiscount.set(Math.max(0, Number(result.estimatedDiscount || 0)));
+        this.toast.success('تم تطبيق الكوبون');
+      },
+      error: (e) => {
+        this.couponApplying.set(false);
+        this.clearAppliedCoupon();
+        this.couponError.set(e?.error?.detail || 'تعذر التحقق من الكوبون.');
+      }
+    });
+  }
 
   checkout() {
     if (!this.cart.branchId) { this.toast.error('اختر الفرع'); return; }
     if (!this.cart.items.length) { this.toast.error('السلة فارغة'); return; }
+    if (this.couponCode.trim() && !this.cart.couponId) { this.toast.error('طبّق كود الخصم أولًا أو امسحه'); return; }
+    if (this.grandTotal() <= 0) { this.toast.error('يجب أن يكون إجمالي البيع أكبر من صفر'); return; }
     this.saving.set(true);
     this.svc.checkout(this.cart).subscribe({
       next: () => {
@@ -254,12 +350,14 @@ export class PosSalesComponent implements OnInit {
   }
 
   loadHistory() {
+    this.historyLoading.set(true);
+    this.historyError.set(null);
     this.svc.listSales({
       branchId: this.histBranch ?? undefined,
       fromDate: this.fromDate || undefined, toDate: this.toDate || undefined
     }).subscribe({
-      next: d => this.sales.set(d || []),
-      error: () => this.toast.error('فشل التحميل')
+      next: d => { this.sales.set(d || []); this.historyLoading.set(false); },
+      error: () => { this.historyError.set('تعذر الاتصال بخدمة سجل المبيعات. تحقق من اتصال الخادم ثم أعد المحاولة.'); this.historyLoading.set(false); }
     });
   }
 }

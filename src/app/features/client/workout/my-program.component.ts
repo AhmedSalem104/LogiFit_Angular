@@ -28,8 +28,17 @@ import { NotificationService } from '../../../core/services/notification.service
       <!-- Loading State -->
       <app-loading-skeleton *ngIf="loading()" type="stats"></app-loading-skeleton>
 
+      @if (!loading() && error(); as message) {
+        <div class="screen-state error-state" role="alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <h2>تعذر تحميل برنامجك</h2>
+          <p>{{ message }}</p>
+          <button type="button" class="btn btn-primary" (click)="loadProgram()">إعادة المحاولة</button>
+        </div>
+      }
+
       <!-- No Program State -->
-      <div class="no-program" *ngIf="!loading() && !program()">
+      <div class="no-program" *ngIf="!loading() && !error() && !program()">
         <div class="no-program-content">
           <i class="pi pi-list"></i>
           <h2>لا يوجد برنامج تمرين</h2>
@@ -38,7 +47,7 @@ import { NotificationService } from '../../../core/services/notification.service
       </div>
 
       <!-- Program Content -->
-      <div class="program-content" *ngIf="!loading() && program()">
+      <div class="program-content" *ngIf="!loading() && !error() && program()">
         <!-- Program Overview -->
         <div class="program-overview card">
           <div class="program-header">
@@ -201,6 +210,24 @@ import { NotificationService } from '../../../core/services/notification.service
       max-width: 1200px;
       padding-bottom: 2rem;
     }
+
+    .screen-state {
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .7rem;
+      padding: 2rem;
+      text-align: center;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+    }
+
+    .screen-state i { font-size: 2.5rem; color: #dc2626; }
+    .screen-state h2, .screen-state p { margin: 0; color: var(--text-primary); }
+    .screen-state p { color: var(--text-secondary); }
 
     .no-program {
       display: flex;
@@ -490,6 +517,7 @@ export class MyProgramComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   loading = signal(true);
+  error = signal<string | null>(null);
   program = signal<WorkoutProgram | null>(null);
   viewingDay = signal<WorkoutDay | null>(null);
 
@@ -509,6 +537,7 @@ export class MyProgramComponent implements OnInit {
 
   loadProgram(): void {
     this.loading.set(true);
+    this.error.set(null);
 
     this.clientService.getMyWorkoutProgram().subscribe({
       next: (data) => {
@@ -526,6 +555,7 @@ export class MyProgramComponent implements OnInit {
         console.error('Error loading workout program:', err);
         this.notificationService.error('حدث خطأ في تحميل البيانات');
         this.program.set(null);
+        this.error.set('تحقق من الاتصال أو صلاحية البرنامج ثم أعد المحاولة.');
         this.loading.set(false);
       }
     });

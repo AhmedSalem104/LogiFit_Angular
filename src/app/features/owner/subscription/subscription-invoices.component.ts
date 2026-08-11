@@ -20,6 +20,13 @@ import { SubscriptionInvoice, SubscriptionInvoiceStatus, INVOICE_STATUS_AR } fro
 
       @if (loading()) {
         <div class="loading"><i class="pi pi-spin pi-spinner"></i> جاري التحميل...</div>
+      } @else if (errorMessage()) {
+        <div class="card error-state" role="alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <strong>تعذر تحميل الفواتير</strong>
+          <p class="muted">{{ errorMessage() }}</p>
+          <button class="btn btn-primary" type="button" (click)="load()">إعادة المحاولة</button>
+        </div>
       } @else if (!invoices().length) {
         <div class="card empty"><i class="pi pi-inbox empty-icon"></i><p class="muted">لا توجد فواتير بعد</p></div>
       } @else {
@@ -56,6 +63,9 @@ import { SubscriptionInvoice, SubscriptionInvoiceStatus, INVOICE_STATUS_AR } fro
     h1 { font-size:1.5rem; font-weight:700; color:var(--text-primary); }
     .muted { color:var(--text-secondary); }
     .loading { text-align:center; padding:3rem; color:var(--text-secondary); }
+    .error-state { display:flex; flex-direction:column; align-items:center; gap:.45rem; text-align:center; }
+    .error-state > i { font-size:2rem; color:#dc2626; }
+    .error-state p { margin:0 0 .45rem; }
     .card { background:var(--bg-primary); border:1px solid var(--border-color); border-radius:14px; padding:1rem; }
     .empty { text-align:center; padding:3rem; } .empty-icon { font-size:2.5rem; color:var(--text-muted); margin-bottom:.75rem; }
     .table-wrap { overflow-x:auto; }
@@ -73,12 +83,23 @@ import { SubscriptionInvoice, SubscriptionInvoiceStatus, INVOICE_STATUS_AR } fro
 export class SubscriptionInvoicesComponent implements OnInit {
   private billing = inject(TenantBillingService);
   loading = signal(true);
+  errorMessage = signal('');
   invoices = signal<SubscriptionInvoice[]>([]);
 
   ngOnInit(): void {
+    this.load();
+  }
+
+  load(): void {
+    this.loading.set(true);
+    this.errorMessage.set('');
     this.billing.getInvoices().subscribe({
       next: (data) => { this.invoices.set(data); this.loading.set(false); },
-      error: () => this.loading.set(false)
+      error: () => {
+        this.invoices.set([]);
+        this.loading.set(false);
+        this.errorMessage.set('تحقق من الاتصال والصلاحيات ثم أعد المحاولة.');
+      }
     });
   }
 

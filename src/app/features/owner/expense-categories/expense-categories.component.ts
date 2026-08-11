@@ -32,7 +32,13 @@ import Swal from 'sweetalert2';
       </app-page-header>
 
       <app-loading-skeleton *ngIf="loading()" type="table"></app-loading-skeleton>
-      <div class="data-card" *ngIf="!loading()">
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div><strong>تعذر تحميل فئات المصروفات</strong><p>{{ errorMessage() }}</p>
+          <button class="btn btn-secondary" (click)="load()"><i class="pi pi-refresh"></i><span>إعادة المحاولة</span></button>
+        </div>
+      </div>
+      <div class="data-card" *ngIf="!loading() && !errorMessage()">
         <p-table [value]="items()" [paginator]="true" [rows]="10">
           <ng-template pTemplate="header">
             <tr><th>الاسم</th><th>الوصف</th><th>الفئة الأب</th><th>الحالة</th><th style="width:120px">إجراءات</th></tr>
@@ -83,6 +89,7 @@ export class ExpenseCategoriesComponent implements OnInit {
   items = signal<ExpenseCategory[]>([]);
   loading = signal(false);
   saving = signal(false);
+  errorMessage = signal<string | null>(null);
   dialog = false;
   isEdit = false;
   editingId: string | null = null;
@@ -93,9 +100,13 @@ export class ExpenseCategoriesComponent implements OnInit {
   ngOnInit() { this.load(); }
   load() {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.svc.listExpenseCategories().subscribe({
       next: d => { this.items.set(d || []); this.loading.set(false); },
-      error: () => { this.toast.error('فشل التحميل'); this.loading.set(false); }
+      error: () => {
+        this.errorMessage.set('تعذر الاتصال بخدمة فئات المصروفات. تحقق من اتصال الخادم ثم أعد المحاولة.');
+        this.loading.set(false);
+      }
     });
   }
   openAdd() { this.isEdit = false; this.editingId = null; this.form = { name: '', isActive: true }; this.dialog = true; }

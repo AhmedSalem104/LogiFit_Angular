@@ -44,7 +44,25 @@ import { ClientService, WorkoutDay, WorkoutExercise, CompletedSet } from '../ser
       </div>
 
       @if (errorMessage(); as error) {
-        <div class="session-error" role="alert">{{ error }}</div>
+        <div class="session-error" role="alert">
+          <span>{{ error }}</span>
+          @if (!sessionId()) {
+            <button type="button" (click)="retryLoad()">إعادة المحاولة</button>
+          }
+        </div>
+      }
+
+      @if (loading()) {
+        <div class="session-state" role="status">
+          <i class="pi pi-spin pi-spinner"></i>
+          <span>جاري تجهيز جلسة التمرين...</span>
+        </div>
+      } @else if (!currentDay()) {
+        <div class="session-state error-state" role="alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <span>لا يمكن عرض جلسة التمرين بدون بيانات اليوم.</span>
+          <button type="button" (click)="retryLoad()">إعادة المحاولة</button>
+        </div>
       }
 
       <!-- Current Exercise -->
@@ -235,7 +253,11 @@ import { ClientService, WorkoutDay, WorkoutExercise, CompletedSet } from '../ser
     .video-box iframe, .video-box video { width: 100%; aspect-ratio: 16 / 9; display: block; border: 0; background: #000; }
     .video-close { position: absolute; top: .6rem; inset-inline-end: .6rem; z-index: 2; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(0,0,0,.55); color: #fff; cursor: pointer; font-size: 1rem; }
     .video-close:hover { background: rgba(0,0,0,.8); }
-    .session-error { margin: 1rem 1.5rem 0; padding: .85rem 1rem; border-radius: 12px; background: #fef2f2; color: #b91c1c; }
+    .session-error { display: flex; align-items: center; gap: .8rem; margin: 1rem 1.5rem 0; padding: .85rem 1rem; border-radius: 12px; background: #fef2f2; color: #b91c1c; }
+    .session-error button, .session-state button { border: 0; border-radius: 8px; padding: .45rem .75rem; background: #2563eb; color: #fff; cursor: pointer; font-weight: 700; }
+    .session-state { min-height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .8rem; margin: 1rem 1.5rem; padding: 2rem; border: 1px solid var(--border-color); border-radius: 16px; background: var(--bg-primary); color: var(--text-secondary); }
+    .session-state i { font-size: 2rem; color: #2563eb; }
+    .session-state.error-state i { color: #dc2626; }
   `, `
     .workout-session {
       min-height: 100vh;
@@ -664,6 +686,8 @@ export class WorkoutSessionComponent implements OnInit {
   isResting = signal(false);
   restTimeRemaining = signal(0);
   showCompletionDialog = false;
+  loading = signal(true);
+  routineId = signal<string | null>(null);
   sessionId = signal<string | null>(null);
   errorMessage = signal<string | null>(null);
   endingSession = signal(false);
@@ -707,6 +731,7 @@ export class WorkoutSessionComponent implements OnInit {
     // API uses routineId, but also support legacy dayId for backward compatibility
     const routineId = this.route.snapshot.queryParamMap.get('routineId') ||
                       this.route.snapshot.queryParamMap.get('dayId');
+    this.routineId.set(routineId);
     this.loadDay(routineId);
   }
 
@@ -716,8 +741,13 @@ export class WorkoutSessionComponent implements OnInit {
   }
 
   loadDay(routineId: string | null): void {
+    this.loading.set(true);
+    this.errorMessage.set(null);
+    this.currentDay.set(null);
+    this.sessionId.set(null);
     if (!routineId) {
       this.errorMessage.set('تعذر بدء التمرين: لم يتم تحديد يوم التمرين.');
+      this.loading.set(false);
       return;
     }
 
@@ -731,22 +761,32 @@ export class WorkoutSessionComponent implements OnInit {
               next: (session) => {
                 this.hydrateExistingSession(session);
                 this.errorMessage.set(null);
+                this.loading.set(false);
                 this.startTimer();
               },
               error: () => {
                 this.errorMessage.set('تم بدء الجلسة، لكن تعذر تحميل التقدم السابق. يمكنك المتابعة وسيتم حفظ المجموعات الجديدة.');
+                this.loading.set(false);
                 this.startTimer();
               }
             });
           },
-          error: () => this.errorMessage.set('تعذر بدء جلسة التمرين. تحقق من أن هذا التمرين معين لحسابك.')
+          error: () => {
+            this.errorMessage.set('تعذر بدء جلسة التمرين. تحقق من أن هذا التمرين معين لحسابك.');
+            this.loading.set(false);
+          }
         });
       },
       error: (err) => {
         console.error('Error loading workout day:', err);
         this.errorMessage.set('تعذر تحميل التمرين. حاول مرة أخرى أو ارجع إلى البرنامج.');
+        this.loading.set(false);
       }
     });
+  }
+
+  retryLoad(): void {
+    if (!this.sessionId()) this.loadDay(this.routineId());
   }
 
   startTimer(): void {

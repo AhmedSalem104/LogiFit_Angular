@@ -50,8 +50,17 @@ import Swal from 'sweetalert2';
         </div>
       </app-page-header>
 
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div>
+          <strong>تعذر تحميل خطط الاشتراك</strong>
+          <p>{{ errorMessage() }}</p>
+          <button type="button" class="btn btn-primary" (click)="loadPlans()">إعادة المحاولة</button>
+        </div>
+      </div>
+
       <!-- Stats Row -->
-      <div class="stats-row">
+      <div class="stats-row" *ngIf="!errorMessage()">
         <div class="mini-stat">
           <div class="mini-stat__icon blue"><i class="pi pi-box"></i></div>
           <span class="mini-stat__value">{{ plans().length }}</span>
@@ -71,7 +80,7 @@ import Swal from 'sweetalert2';
 
       <app-loading-skeleton *ngIf="loading()" type="stats"></app-loading-skeleton>
 
-      <div class="plans-grid" *ngIf="!loading()">
+      <div class="plans-grid" *ngIf="!loading() && !errorMessage()">
         @for (plan of plans(); track plan.id) {
           <div class="plan-card" [class.inactive]="!plan.isActive">
             <div class="plan-header">
@@ -303,6 +312,10 @@ import Swal from 'sweetalert2';
     .plans-page {
       max-width: 1200px;
     }
+
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:150px; padding:1.25rem; margin-bottom:1.5rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
 
     .stats-row {
       display: flex;
@@ -669,6 +682,7 @@ export class PlansListComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   loading = signal(true);
+  errorMessage = signal<string | null>(null);
   saving = signal(false);
   plans = signal<SubscriptionPlan[]>([]);
 
@@ -713,6 +727,7 @@ export class PlansListComponent implements OnInit {
 
   loadPlans(): void {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.ownerService.getSubscriptionPlans().subscribe({
       next: (data) => {
         this.plans.set(data);
@@ -722,7 +737,9 @@ export class PlansListComponent implements OnInit {
         console.error('Error loading plans:', err);
         this.plans.set([]);
         this.loading.set(false);
-        this.notificationService.error('حدث خطأ أثناء تحميل الخطط');
+        const message = err?.translatedMessage || err?.error?.detail || err?.error?.message || 'حدث خطأ أثناء تحميل الخطط';
+        this.errorMessage.set(message);
+        this.notificationService.error(message);
       }
     });
   }

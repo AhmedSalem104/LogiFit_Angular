@@ -44,7 +44,9 @@
 
 **LogicFit** = نظام SaaS متعدد المستأجرين (multi-tenant) لإدارة الصالات الرياضية.
 - كل صالة = **tenant** منفصل. كل استدعاء API مرتبط ضمنياً بـ `tenantId` (من التوكن).
-- **3 أدوار:** `Owner` / `Coach` / `Client`.
+- **أدوار الواجهة الحالية:** `Owner` / `Manager` / `Receptionist` / `Accountant` / `Coach` /
+  `Trainer` / `Client`. وتستخدم مساحة `FreelanceCoach` نفس أدوار الواجهة مع سياق مساحة مستقل؛
+  السياق يغيّر التسمية البصرية فقط ولا يغيّر الدور أو حدود الصلاحيات.
 - ثنائي اللغة: **EN (LTR) + AR (RTL)**، مع وضعي Dark/Light.
 - Backend حقيقي (لا mock data): `https://logicfit.runasp.net/api` (عبر proxy، انظر §9.6).
 
@@ -71,7 +73,8 @@
 
 ## 2. المصادقة والصلاحيات
 
-**الأدوار (قيم الـ backend):** `Owner = 1`, `Coach = 2`, `Client = 3`.
+**الأدوار (قيم الـ backend):** `Owner = 1`, `Coach = 2`, `Client = 3`, `Manager = 4`,
+`Receptionist = 5`, `Accountant = 6`, `Trainer = 7`.
 - ⚠️ الـ backend يرجّع الدور كـ**نص** ("Owner") في login response، لكن يستقبله كـ**رقم** في register. `auth.service.ts` يعالج الحالتين (`mapRoleToEnum`).
 
 **التدفّق:**
@@ -82,7 +85,9 @@
   `errorInterceptor` عملية refresh واحدة مشتركة ثم يخرج عند الفشل.
 - **تسجيل صالة جديدة** (`registerGym`): خطوتان متسلسلتان — (1) POST `/tenants` لإنشاء الـ tenant (subdomain يُولّد آلياً من اسم الصالة + timestamp)، (2) `register` للـ owner بـ `role=1`.
 
-**الحرّاس (`core/auth/guards`):** `authGuard`, `guestGuard`, `ownerGuard`, `coachGuard`, `clientGuard`.
+**الحرّاس (`core/auth/guards`):** `authGuard`, `guestGuard`, `ownerGuard`, `coachGuard`, `clientGuard`،
+و`permissionGuard`/`featureGuard` على مستوى الشاشة. إخفاء الرابط من الشريط ليس حدًا أمنيًا؛
+الشاشات الإدارية التي لها Permission تستخدم الآن حارسًا مباشرًا أيضًا.
 
 **الـ Interceptors (`core/auth/interceptors`):**
 - `jwtInterceptor`: يضيف `Authorization: Bearer` عند وجود Access Token ويضبط
@@ -288,11 +293,18 @@ Vercel: Build = `npm run build`, Output = `dist/logicfit-app/browser`.
 **الأدوار (7 الآن):** `Owner=1, Coach=2, Client=3, Manager=4, Receptionist=5, Accountant=6, Trainer=7`.
 - `BACK_OFFICE_ROLES` = Owner/Manager/Receptionist/Accountant → لوحة `/owner` (يفصلها الصلاحيات).
 - `COACH_ROLES` = Coach/Trainer → لوحة `/coach`. (محدّثة في `role.guard.ts`.)
+- لوحة المالك ولوحة التشغيل تستخدمان `ViewReports` على مستوى المسار، لذلك ينتقل موظف
+  الاستقبال إلى أول شاشة مسموحة له بدل استدعاء تقرير يعيد `403`. شاشة `freelance-team` تتحقق
+  أيضًا من `workspaceType=2` عند فتح الرابط مباشرة.
 
 **RBAC (الصلاحيات):** كتالوج 14 صلاحية في `auth.models.ts` (`Permission`). الأدوات:
 - `AuthService.hasPermission() / hasAnyPermission() / hasAllPermissions()`.
 - `*appHasPermission` directive (`shared/directives/has-permission.directive.ts`) لإظهار/إخفاء الأزرار.
 - الـ sidebar يفلتر العناصر بالصلاحيات (`matchesPanel` + `matchesPermission`).
+- المالك الحالي هو دور الوصول الكامل في الواجهة كما هو في RBAC؛ لذلك لا تمنع جلسة مالك قديمة
+  تفتقد `permissions[]` من فتح شاشة مصرح بها. باقي الأدوار تمر عبر قائمة الصلاحيات نفسها.
+- التسميات المشتركة مركزية في `core/auth/role-labels.ts`، وتعرض `مالك مساحة تدريب حر` أو
+  `مدرب حر` عند وجود سياق `workspaceType=2` دون إنشاء Role جديد.
 - `402` (تجاوز حد الباقة) → توجيه لـ `/owner/subscription?upgrade=1`. `403` → إخفاء/توجيه.
 
 **White-Label Branding:** `BrandingService` + `APP_INITIALIZER` في `app.config.ts` → يقرأ الـ subdomain، يجلب `GET /api/branding/{identifier}`، يطبّق الألوان/اللوجو/الخط/CSS ويحفظ `tenantId`. (localhost يتخطّى.)

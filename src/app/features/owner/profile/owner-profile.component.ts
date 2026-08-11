@@ -21,6 +21,8 @@ import { PasswordFieldComponent } from '../../../shared/components/password-fiel
 
       @if (loading()) {
         <div class="loading"><i class="pi pi-spin pi-spinner"></i> جاري التحميل...</div>
+      } @else if (errorMessage()) {
+        <div class="state-card error-state" role="alert"><i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل الملف الشخصي</strong><p>{{ errorMessage() }}</p><button type="button" class="btn btn-secondary" (click)="load()">إعادة المحاولة</button></div></div>
       } @else {
         <!-- Identity header -->
         <div class="card head-card">
@@ -111,6 +113,9 @@ import { PasswordFieldComponent } from '../../../shared/components/password-fiel
   styles: [`
     .profile-page { max-width: 900px; }
     .loading { text-align: center; padding: 3rem; color: var(--text-secondary); }
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
     .card { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.25rem; }
     h2 { font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin: 0; }
     h3 { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin: 0 0 1.1rem; }
@@ -151,6 +156,7 @@ export class OwnerProfileComponent implements OnInit {
   changingPw = signal(false);
   uploadingAvatar = signal(false);
   profile = signal<SelfProfile | null>(null);
+  errorMessage = signal<string | null>(null);
 
   form: FormGroup = this.fb.group({
     fullName: ['', Validators.required],
@@ -170,8 +176,9 @@ export class OwnerProfileComponent implements OnInit {
 
   ngOnInit(): void { this.load(); }
 
-  private load(): void {
+  load(): void {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.profileSvc.get().subscribe({
       next: (p) => {
         this.profile.set(p);
@@ -182,7 +189,7 @@ export class OwnerProfileComponent implements OnInit {
         });
         this.loading.set(false);
       },
-      error: () => { this.notify.error('تعذّر تحميل الملف الشخصي'); this.loading.set(false); }
+      error: () => { this.errorMessage.set('تعذر الاتصال بخدمة الملف الشخصي. تحقق من اتصال الخادم ثم أعد المحاولة.'); this.loading.set(false); }
     });
   }
 

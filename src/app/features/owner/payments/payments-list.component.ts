@@ -35,7 +35,14 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
         <button class="btn btn-primary" (click)="openAdd()"><i class="pi pi-plus"></i><span>دفعة جديدة</span></button>
       </app-page-header>
 
-      <div class="stats-row">
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div><strong>تعذر تحميل المدفوعات</strong><p>{{ errorMessage() }}</p>
+          <button class="btn btn-secondary" (click)="load()"><i class="pi pi-refresh"></i><span>إعادة المحاولة</span></button>
+        </div>
+      </div>
+
+      <div class="stats-row" *ngIf="!errorMessage()">
         <div class="mini-stat"><div class="mini-stat__icon green"><i class="pi pi-dollar"></i></div>
           <div class="mini-stat__content"><span class="mini-stat__value">{{ total() | number:'1.0-0' }}</span>
             <span class="mini-stat__label">إجمالي المدفوعات (ج.م)</span></div></div>
@@ -56,7 +63,7 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
       </div>
 
       <app-loading-skeleton *ngIf="loading()" type="table"></app-loading-skeleton>
-      <div class="data-card" *ngIf="!loading()">
+      <div class="data-card" *ngIf="!loading() && !errorMessage()">
         <p-table [value]="items()" [paginator]="true" [rows]="10">
           <ng-template pTemplate="header">
             <tr><th>التاريخ</th><th>العميل</th><th>الفاتورة</th><th>الفرع</th>
@@ -121,6 +128,7 @@ export class PaymentsListComponent implements OnInit {
   branches = signal<Branch[]>([]);
   loading = signal(false);
   saving = signal(false);
+  errorMessage = signal<string | null>(null);
   clientFilter: string | null = null;
   branchFilter: string | null = null;
   methodFilter: PaymentMethodEnum | null = null;
@@ -140,6 +148,7 @@ export class PaymentsListComponent implements OnInit {
   }
   load() {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.svc.listPayments({
       clientId: this.clientFilter ?? undefined,
       branchId: this.branchFilter ?? undefined,
@@ -147,7 +156,10 @@ export class PaymentsListComponent implements OnInit {
       fromDate: this.fromDate || undefined, toDate: this.toDate || undefined
     }).subscribe({
       next: d => { this.items.set(d || []); this.loading.set(false); },
-      error: () => { this.toast.error('فشل التحميل'); this.loading.set(false); }
+      error: () => {
+        this.errorMessage.set('تعذر الاتصال بخدمة المدفوعات. تحقق من اتصال الخادم ثم أعد المحاولة.');
+        this.loading.set(false);
+      }
     });
   }
   openAdd() { this.form = { amount: 0, method: PaymentMethodEnum.Cash }; this.dialog = true; }
