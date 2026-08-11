@@ -79,6 +79,17 @@ export const GYM_PAGE_STYLES = `
   .empty-state i { font-size: 2.75rem; display:block; margin-bottom: .75rem; opacity: .5; }
   .empty-state p { font-size: .95rem; }
 
+  .state-card {
+    display: flex; align-items: center; gap: .75rem; min-height: 130px;
+    padding: 1.25rem; margin-bottom: 1.25rem;
+    border: 1px dashed #fecaca; border-radius: 16px;
+    color: #991b1b; background: #fff7f7;
+  }
+  .state-card i { font-size: 1.5rem; color: #dc2626; }
+  .state-card p { margin: .35rem 0 .75rem; color: #7f1d1d; }
+  .state-card.warning-state { min-height: auto; border-color: #fde68a; color: #92400e; background: #fffbeb; }
+  .state-card.warning-state i { color: #d97706; }
+
   .action-btn {
     width: 34px; height: 34px; padding: 0; border: 1px solid var(--border-color);
     background: var(--bg-secondary); color: var(--text-secondary);

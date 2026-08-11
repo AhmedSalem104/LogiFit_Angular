@@ -32,7 +32,14 @@ import Swal from 'sweetalert2';
         <button class="btn btn-primary" (click)="openAdd()"><i class="pi pi-plus"></i><span>منتج جديد</span></button>
       </app-page-header>
 
-      <div class="stats-row">
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div><strong>تعذر تحميل المنتجات</strong><p>{{ errorMessage() }}</p>
+          <button class="btn btn-secondary" (click)="load()"><i class="pi pi-refresh"></i><span>إعادة المحاولة</span></button>
+        </div>
+      </div>
+
+      <div class="stats-row" *ngIf="!errorMessage()">
         <div class="mini-stat"><div class="mini-stat__icon blue"><i class="pi pi-box"></i></div>
           <div class="mini-stat__content"><span class="mini-stat__value">{{ items().length }}</span>
             <span class="mini-stat__label">إجمالي المنتجات</span></div></div>
@@ -56,7 +63,7 @@ import Swal from 'sweetalert2';
       </div>
 
       <app-loading-skeleton *ngIf="loading()" type="table"></app-loading-skeleton>
-      <div class="data-card" *ngIf="!loading()">
+      <div class="data-card" *ngIf="!loading() && !errorMessage()">
         <p-table [value]="items()" [paginator]="true" [rows]="10">
           <ng-template pTemplate="header">
             <tr><th>الاسم</th><th>SKU</th><th>الفئة</th><th>سعر التكلفة</th><th>سعر البيع</th>
@@ -133,6 +140,7 @@ export class ProductsListComponent implements OnInit {
   categories = signal<ProductCategory[]>([]);
   loading = signal(false);
   saving = signal(false);
+  errorMessage = signal<string | null>(null);
   search = '';
   categoryFilter: string | null = null;
   lowStockFilter: boolean | null = null;
@@ -150,13 +158,17 @@ export class ProductsListComponent implements OnInit {
   }
   load() {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.svc.listProducts({
       categoryId: this.categoryFilter ?? undefined,
       searchTerm: this.search || undefined,
       lowStockOnly: this.lowStockFilter ?? undefined
     }).subscribe({
       next: d => { this.items.set(d || []); this.loading.set(false); },
-      error: () => { this.toast.error('فشل التحميل'); this.loading.set(false); }
+      error: () => {
+        this.errorMessage.set('تعذر الاتصال بخدمة المنتجات. تحقق من اتصال الخادم ثم أعد المحاولة.');
+        this.loading.set(false);
+      }
     });
   }
   emptyForm(): CreateProductRequest {
