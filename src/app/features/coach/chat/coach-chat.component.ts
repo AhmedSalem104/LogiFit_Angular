@@ -50,6 +50,12 @@ import { AuthService } from '../../../core/auth/services/auth.service';
               @if (traineesLoading()) {
                 <div class="empty-trainee">جاري التحميل...</div>
               }
+              @if (traineesError() && !traineesLoading()) {
+                <div class="chat-error" role="alert">
+                  <span>{{ traineesError() }}</span>
+                  <button type="button" (click)="retryTrainees()">إعادة المحاولة</button>
+                </div>
+              }
             </div>
           </div>
         }
@@ -60,6 +66,12 @@ import { AuthService } from '../../../core/auth/services/auth.service';
             <div class="loading-state">
               <i class="pi pi-spin pi-spinner"></i>
               <span>جاري تحميل المحادثات...</span>
+            </div>
+          }
+          @if (conversationError() && !conversationsLoading()) {
+            <div class="chat-error" role="alert">
+              <span>{{ conversationError() }}</span>
+              <button type="button" (click)="retryConversations()">إعادة المحاولة</button>
             </div>
           }
           @for (conv of conversations(); track conv.id) {
@@ -84,7 +96,7 @@ import { AuthService } from '../../../core/auth/services/auth.service';
               </div>
             </div>
           }
-          @if (!conversationsLoading() && conversations().length === 0) {
+          @if (!conversationsLoading() && !conversationError() && conversations().length === 0) {
             <div class="empty-state">
               <i class="pi pi-inbox"></i>
               <p>لا توجد محادثات</p>
@@ -116,6 +128,12 @@ import { AuthService } from '../../../core/auth/services/auth.service';
                 <span>جاري تحميل الرسائل...</span>
               </div>
             }
+            @if (messageError() && !messagesLoading()) {
+              <div class="chat-error message-error" role="alert">
+                <span>{{ messageError() }}</span>
+                <button type="button" (click)="retryMessages()">إعادة المحاولة</button>
+              </div>
+            }
             @for (msg of messages(); track msg.id) {
               <div class="message-bubble" [class.sent]="msg.senderId === currentUserId()" [class.received]="msg.senderId !== currentUserId()">
                 <div class="bubble-content">
@@ -132,19 +150,24 @@ import { AuthService } from '../../../core/auth/services/auth.service';
           </div>
 
           <!-- Message Input -->
-          <div class="message-input-area">
-            <input
-              type="text"
-              class="message-input"
-              placeholder="اكتب رسالتك..."
-              [(ngModel)]="newMessage"
-              (keydown.enter)="sendMessage()"
-              [disabled]="sending()"
-            />
-            <button class="btn-send" (click)="sendMessage()" [disabled]="!newMessage.trim() || sending()">
-              <i class="pi" [class.pi-send]="!sending()" [class.pi-spin]="sending()" [class.pi-spinner]="sending()"></i>
-            </button>
-          </div>
+          @if (!messageError()) {
+            <div class="message-input-area">
+              <input
+                type="text"
+                class="message-input"
+                placeholder="اكتب رسالتك..."
+                [(ngModel)]="newMessage"
+                (keydown.enter)="sendMessage()"
+                [disabled]="sending()"
+              />
+              <button class="btn-send" (click)="sendMessage()" [disabled]="!newMessage.trim() || sending()">
+                <i class="pi" [class.pi-send]="!sending()" [class.pi-spin]="sending()" [class.pi-spinner]="sending()"></i>
+              </button>
+            </div>
+          }
+          @if (sendError()) {
+            <div class="send-error" role="alert">{{ sendError() }}</div>
+          }
         } @else {
           <!-- Empty State -->
           <div class="empty-chat-state">
@@ -654,6 +677,33 @@ import { AuthService } from '../../../core/auth/services/auth.service';
       font-size: 1.2rem;
     }
 
+    .chat-error {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+      padding: .85rem 1rem;
+      margin: .75rem;
+      border: 1px dashed #fecaca;
+      border-radius: 12px;
+      color: #991b1b;
+      background: #fff7f7;
+      font-size: .85rem;
+    }
+
+    .chat-error button {
+      flex: 0 0 auto;
+      border: 0;
+      border-radius: 8px;
+      padding: .45rem .7rem;
+      color: #fff;
+      background: #dc2626;
+      cursor: pointer;
+    }
+
+    .message-error { margin: 1rem; }
+    .send-error { padding: .5rem 1rem; color: #b91c1c; font-size: .8rem; text-align: center; }
+
     /* ==================== Mobile Responsive ==================== */
 
     @media (max-width: 768px) {
@@ -704,6 +754,10 @@ export class CoachChatComponent implements OnInit, OnDestroy {
   conversationsLoading = signal(false);
   messagesLoading = signal(false);
   sending = signal(false);
+  conversationError = signal<string | null>(null);
+  messageError = signal<string | null>(null);
+  traineesError = signal<string | null>(null);
+  sendError = signal<string | null>(null);
   showNewChat = signal(false);
   trainees = signal<Trainee[]>([]);
   traineesLoading = signal(false);
@@ -744,6 +798,7 @@ export class CoachChatComponent implements OnInit, OnDestroy {
 
   loadConversations(): void {
     if (!this.conversationsLoading()) {
+      this.conversationError.set(null);
       if (this.conversations().length === 0) {
         this.conversationsLoading.set(true);
       }
@@ -760,9 +815,17 @@ export class CoachChatComponent implements OnInit, OnDestroy {
             }
           }
         },
-        error: () => this.conversationsLoading.set(false)
+        error: () => {
+          this.conversationsLoading.set(false);
+          this.conversationError.set('تعذر تحميل المحادثات. تحقق من الاتصال ثم حاول مرة أخرى.');
+        }
       });
     }
+  }
+
+  retryConversations(): void {
+    this.conversationsLoading.set(false);
+    this.loadConversations();
   }
 
   selectConversation(conv: ConversationDto): void {
@@ -782,6 +845,7 @@ export class CoachChatComponent implements OnInit, OnDestroy {
   }
 
   loadMessages(conversationId: string, showLoading: boolean): void {
+    this.messageError.set(null);
     if (showLoading) {
       this.messagesLoading.set(true);
     }
@@ -791,8 +855,17 @@ export class CoachChatComponent implements OnInit, OnDestroy {
         this.messagesLoading.set(false);
         setTimeout(() => this.scrollToBottom(), 50);
       },
-      error: () => this.messagesLoading.set(false)
+      error: () => {
+        this.messagesLoading.set(false);
+        this.messages.set([]);
+        this.messageError.set('تعذر تحميل الرسائل. تحقق من الاتصال ثم حاول مرة أخرى.');
+      }
     });
+  }
+
+  retryMessages(): void {
+    const conversation = this.selectedConversation();
+    if (conversation) this.loadMessages(conversation.id, true);
   }
 
   sendMessage(): void {
@@ -803,6 +876,7 @@ export class CoachChatComponent implements OnInit, OnDestroy {
     if (!conv) return;
 
     this.sending.set(true);
+    this.sendError.set(null);
     const command: SendMessageCommand = {
       conversationId: conv.id,
       content
@@ -815,7 +889,10 @@ export class CoachChatComponent implements OnInit, OnDestroy {
         this.loadMessages(conv.id, false);
         this.loadConversations();
       },
-      error: () => this.sending.set(false)
+      error: () => {
+        this.sending.set(false);
+        this.sendError.set('تعذر إرسال الرسالة. حاول مرة أخرى.');
+      }
     });
   }
 
@@ -831,6 +908,7 @@ export class CoachChatComponent implements OnInit, OnDestroy {
 
     // Send first message to create conversation
     this.sending.set(true);
+    this.sendError.set(null);
     const command: SendMessageCommand = {
       recipientId: clientId,
       content: 'مرحبا! كيف يمكنني مساعدتك؟'
@@ -842,7 +920,10 @@ export class CoachChatComponent implements OnInit, OnDestroy {
         this.showNewChat.set(false);
         this.loadConversations();
       },
-      error: () => this.sending.set(false)
+      error: () => {
+        this.sending.set(false);
+        this.sendError.set('تعذر بدء المحادثة. حاول مرة أخرى.');
+      }
     });
   }
 
@@ -852,15 +933,23 @@ export class CoachChatComponent implements OnInit, OnDestroy {
     }
   }
 
-  private loadTrainees(): void {
+  loadTrainees(): void {
     this.traineesLoading.set(true);
+    this.traineesError.set(null);
     this.coachService.getTrainees().subscribe({
       next: (trainees) => {
         this.trainees.set(trainees);
         this.traineesLoading.set(false);
       },
-      error: () => this.traineesLoading.set(false)
+      error: () => {
+        this.traineesLoading.set(false);
+        this.traineesError.set('تعذر تحميل قائمة المتدربين.');
+      }
     });
+  }
+
+  retryTrainees(): void {
+    this.loadTrainees();
   }
 
   // Load trainees when showNewChat toggled on
