@@ -34,13 +34,25 @@ import Swal from 'sweetalert2';
         <button class="btn btn-primary" (click)="openAdd()"><i class="pi pi-plus"></i><span>حصة جديدة</span></button>
       </app-page-header>
 
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div>
+          <strong>تعذر تحميل أنواع الحصص</strong>
+          <p>{{ errorMessage() }}</p>
+          <button type="button" class="btn btn-primary" (click)="load()">إعادة المحاولة</button>
+        </div>
+      </div>
+      <div class="state-card warning-state" *ngIf="!errorMessage() && referenceError()" role="status">
+        <i class="pi pi-info-circle"></i><span>{{ referenceError() }}</span>
+      </div>
+
       <div class="toolbar">
         <p-dropdown [options]="branchOptions()" [(ngModel)]="branchFilter"
           placeholder="كل الفروع" [showClear]="true" (onChange)="load()" appendTo="body"></p-dropdown>
       </div>
 
       <app-loading-skeleton *ngIf="loading()" type="stats"></app-loading-skeleton>
-      <div class="class-grid" *ngIf="!loading()">
+      <div class="class-grid" *ngIf="!loading() && !errorMessage()">
         <div class="class-card" *ngFor="let c of items()" [style.borderTop]="'4px solid '+(c.color||'#3b82f6')">
           <div class="class-card__header">
             <h3>{{ c.name }}</h3>
@@ -99,6 +111,11 @@ import Swal from 'sweetalert2';
   `,
   styles: [GYM_PAGE_STYLES + `
     .class-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap:1rem; }
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
+    .warning-state { min-height:auto; border-color:#fde68a; color:#92400e; background:#fffbeb; }
+    .warning-state i { color:#d97706; }
     .class-card {
       background: var(--card-bg); border: 1px solid var(--card-border);
       border-radius: 14px; padding: 1.25rem; display:flex; flex-direction:column; gap:.75rem;
@@ -120,6 +137,8 @@ export class GroupClassesComponent implements OnInit {
   items = signal<GroupClass[]>([]);
   branches = signal<Branch[]>([]);
   loading = signal(false);
+  errorMessage = signal<string | null>(null);
+  referenceError = signal<string | null>(null);
   saving = signal(false);
   branchFilter: string | null = null;
   dialog = false; isEdit = false; editingId: string | null = null;
@@ -127,14 +146,23 @@ export class GroupClassesComponent implements OnInit {
   branchOptions = computed(() => this.branches().map(b => ({ label: b.name, value: b.id })));
 
   ngOnInit() {
-    this.branchesSvc.list().subscribe(b => this.branches.set(b || []));
+    this.branchesSvc.list().subscribe({
+      next: b => this.branches.set(b || []),
+      error: () => this.referenceError.set('تعذر تحميل الفروع؛ يمكنك إعادة المحاولة بعد فتح الشاشة مرة أخرى.')
+    });
     this.load();
   }
   load() {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.svc.listClasses({ branchId: this.branchFilter ?? undefined }).subscribe({
       next: d => { this.items.set(d || []); this.loading.set(false); },
-      error: () => { this.toast.error('فشل التحميل'); this.loading.set(false); }
+      error: (e) => {
+        const message = e?.translatedMessage || e?.error?.detail || e?.error?.message || 'تعذر تحميل أنواع الحصص';
+        this.errorMessage.set(message);
+        this.toast.error(message);
+        this.loading.set(false);
+      }
     });
   }
   emptyForm(): CreateGroupClassRequest {

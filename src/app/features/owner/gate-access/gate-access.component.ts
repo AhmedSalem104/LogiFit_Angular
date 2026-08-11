@@ -35,6 +35,15 @@ import { AttendanceComponent } from '../attendance/attendance.component';
       <app-page-header title="الدخول والحضور" subtitle="تسجيل الدخول والخروج ومراجعة الحضور من مكان واحد"
         [breadcrumbs]="[{label:'لوحة التحكم', route:'/owner/dashboard'},{label:'الدخول والحضور'}]"></app-page-header>
 
+      <div class="state-card error-state" *ngIf="!loading() && logsError()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div>
+          <strong>تعذر تحميل سجل البوابة</strong>
+          <p>{{ logsError() }}</p>
+          <button type="button" class="btn btn-primary" (click)="load()">إعادة المحاولة</button>
+        </div>
+      </div>
+
       <div class="checkin-card">
         <h3 class="section-title"><i class="pi pi-sign-in"></i> تسجيل دخول برمز QR</h3>
         <div class="checkin-row">
@@ -93,7 +102,10 @@ import { AttendanceComponent } from '../attendance/attendance.component';
       <p-dialog [(visible)]="detailsDialogVisible" [modal]="true" [style]="{width:'760px', maxWidth:'96vw'}"
                 header="الملف الكامل للعميل" [dismissableMask]="true">
         <app-loading-skeleton *ngIf="detailsLoading" type="card"></app-loading-skeleton>
-        <ng-container *ngIf="!detailsLoading && memberDetails as details">
+        <div class="state-card error-state" *ngIf="!detailsLoading && detailsError()" role="alert">
+          <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل ملف العميل</strong><p>{{ detailsError() }}</p><button type="button" class="btn btn-primary" (click)="retryMemberHistory()">إعادة المحاولة</button></div>
+        </div>
+        <ng-container *ngIf="!detailsLoading && !detailsError() && memberDetails as details">
           <div class="details-hero">
             <div><h3>{{ details.client.profile?.fullName || details.client.fullName || details.client.email }}</h3>
               <span>{{ details.client.phoneNumber || details.client.email || '—' }}</span></div>
@@ -134,7 +146,7 @@ import { AttendanceComponent } from '../attendance/attendance.component';
 
       <app-loading-skeleton *ngIf="loading()" type="table"></app-loading-skeleton>
 
-      <div class="data-card" *ngIf="!loading()">
+      <div class="data-card" *ngIf="!loading() && !logsError()">
         <p-table class="gate-log-table" dir="ltr" [value]="logs()" [paginator]="true" [rows]="15">
           <ng-template pTemplate="header">
             <tr>
@@ -163,7 +175,11 @@ import { AttendanceComponent } from '../attendance/attendance.component';
         </p-table>
       </div>
       <h3 class="section-title" style="margin-top:2rem"><i class="pi pi-users"></i> سجل حضور الموظفين والمدربين</h3>
-      <div class="data-card"><p-table [value]="staffRows()" [paginator]="true" [rows]="15">
+      <app-loading-skeleton *ngIf="staffLoading()" type="table"></app-loading-skeleton>
+      <div class="state-card error-state" *ngIf="!staffLoading() && staffError()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل حضور الموظفين والمدربين</strong><p>{{ staffError() }}</p><button type="button" class="btn btn-primary" (click)="load()">إعادة المحاولة</button></div>
+      </div>
+      <div class="data-card" *ngIf="!staffLoading() && !staffError()"><p-table [value]="staffRows()" [paginator]="true" [rows]="15">
         <ng-template pTemplate="header"><tr><th>الموظف</th><th>الفرع</th><th>الدخول</th><th>الخروج</th><th>المدة</th><th>الطريقة</th></tr></ng-template>
         <ng-template pTemplate="body" let-s><tr><td>{{ s.name || s.email || '-' }}</td><td>{{ branchName(s.branchId) }}</td><td>{{ s.checkInTime | date:'yyyy-MM-dd HH:mm' }}</td><td>{{ s.checkOutTime ? (s.checkOutTime | date:'yyyy-MM-dd HH:mm') : 'داخل الجيم' }}</td><td>{{ s.durationMinutes != null ? (s.durationMinutes | number:'1.0-0') + ' دقيقة' : '-' }}</td><td>QR</td></tr></ng-template>
         <ng-template pTemplate="emptymessage"><tr><td colspan="6"><div class="empty-state"><i class="pi pi-clock"></i><p>لا يوجد حضور موظفين</p></div></td></tr></ng-template>
@@ -177,6 +193,9 @@ import { AttendanceComponent } from '../attendance/attendance.component';
       background: var(--card-bg); border: 1px solid var(--card-border);
       border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem;
     }
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
     .checkin-row { display:flex; gap:.75rem; align-items:center; flex-wrap: wrap; }
     .checkin-row input.form-input { flex: 1 1 280px; font-size: 1rem; }
     .result-banner {
@@ -224,6 +243,9 @@ export class GateAccessComponent implements OnInit {
   staffRows = signal<StaffAttendanceRecord[]>([]);
   branches = signal<Branch[]>([]);
   loading = signal(false);
+  logsError = signal<string | null>(null);
+  staffLoading = signal(false);
+  staffError = signal<string | null>(null);
   checking = signal(false);
   scanning = signal(false);
   lookup = signal<QrMemberLookup | null>(null);
@@ -231,6 +253,7 @@ export class GateAccessComponent implements OnInit {
   detailsDialogVisible = false;
   showAttendance = false;
   detailsLoading = false;
+  detailsError = signal<string | null>(null);
   memberDetails: { client: Client; subscriptions: ClientSubscription[]; payments: import('../../../shared/models/gym-management.models').Payment[] } | null = null;
   lastResult = signal<GateAccessResponse | null>(null);
 
@@ -302,8 +325,10 @@ export class GateAccessComponent implements OnInit {
   }
 
   openMemberHistory(clientId: string): void {
+    this.historyClientId = clientId;
     this.detailsDialogVisible = true;
     this.detailsLoading = true;
+    this.detailsError.set(null);
     this.memberDetails = null;
     forkJoin({
       client: this.ownerSvc.getClientById(clientId),
@@ -311,8 +336,18 @@ export class GateAccessComponent implements OnInit {
       payments: this.financeSvc.listPayments({ clientId })
     }).subscribe({
       next: details => { this.memberDetails = details; this.detailsLoading = false; },
-      error: () => { this.detailsLoading = false; this.toast.error('تعذر تحميل الملف الكامل للعميل'); }
+      error: (e) => {
+        this.detailsLoading = false;
+        const message = e?.translatedMessage || e?.error?.detail || e?.error?.message || 'تعذر تحميل الملف الكامل للعميل';
+        this.detailsError.set(message);
+        this.toast.error(message);
+      }
     });
+  }
+  private historyClientId: string | null = null;
+
+  retryMemberHistory(): void {
+    if (this.historyClientId) this.openMemberHistory(this.historyClientId);
   }
   getSelectedBranchName(): string {
     return this.branches().find(branch => branch.id === this.selectedBranchId)?.name || 'الفرع الافتراضي';
@@ -329,7 +364,13 @@ export class GateAccessComponent implements OnInit {
 
   load() {
     this.loading.set(true);
-    this.svc.staffAttendance({ branchId: this.filterBranch ?? undefined, fromDate: this.fromDate || undefined, toDate: this.toDate || undefined }).subscribe({ next: rows => this.staffRows.set(rows || []) });
+    this.logsError.set(null);
+    this.staffError.set(null);
+    this.staffLoading.set(true);
+    this.svc.staffAttendance({ branchId: this.filterBranch ?? undefined, fromDate: this.fromDate || undefined, toDate: this.toDate || undefined }).subscribe({
+      next: rows => { this.staffRows.set(rows || []); this.staffLoading.set(false); },
+      error: (e) => { this.staffRows.set([]); this.staffLoading.set(false); this.staffError.set(e?.translatedMessage || e?.error?.detail || e?.error?.message || 'تعذر تحميل حضور الموظفين والمدربين'); }
+    });
     this.svc.logs({
       branchId: this.filterBranch ?? undefined,
       result: this.filterResult ?? undefined,
@@ -338,7 +379,12 @@ export class GateAccessComponent implements OnInit {
       take: 200
     }).subscribe({
       next: d => { this.logs.set(d || []); this.loading.set(false); },
-      error: () => { this.toast.error('فشل التحميل'); this.loading.set(false); }
+      error: (e) => {
+        const message = e?.translatedMessage || e?.error?.detail || e?.error?.message || 'تعذر تحميل سجل البوابة';
+        this.logsError.set(message);
+        this.toast.error(message);
+        this.loading.set(false);
+      }
     });
   }
 
