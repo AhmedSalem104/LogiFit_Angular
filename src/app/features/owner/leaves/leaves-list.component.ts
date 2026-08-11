@@ -33,7 +33,10 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
         <button class="btn btn-primary" (click)="openAdd()"><i class="pi pi-plus"></i><span>طلب إجازة</span></button>
       </app-page-header>
 
-      <div class="stats-row">
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل طلبات الإجازة</strong><p>{{ errorMessage() }}</p><button class="btn btn-secondary" type="button" (click)="load()">إعادة المحاولة</button></div>
+      </div>
+      <div class="stats-row" *ngIf="!errorMessage()">
         <div class="mini-stat"><div class="mini-stat__icon orange"><i class="pi pi-clock"></i></div>
           <div class="mini-stat__content"><span class="mini-stat__value">{{ pendingCount() }}</span>
             <span class="mini-stat__label">في انتظار المراجعة</span></div></div>
@@ -55,7 +58,7 @@ import { GYM_PAGE_STYLES } from '../shared/gym-page.styles';
       </div>
 
       <app-loading-skeleton *ngIf="loading()" type="table"></app-loading-skeleton>
-      <div class="data-card" *ngIf="!loading()">
+      <div class="data-card" *ngIf="!loading() && !errorMessage()">
         <p-table [value]="items()" [paginator]="true" [rows]="10">
           <ng-template pTemplate="header">
             <tr><th>الموظف</th><th>النوع</th><th>من</th><th>إلى</th><th>المدة</th>
@@ -116,6 +119,7 @@ export class LeavesListComponent implements OnInit {
   employees = signal<Employee[]>([]);
   loading = signal(false);
   saving = signal(false);
+  errorMessage = signal<string | null>(null);
   empFilter: string | null = null;
   statusFilter: LeaveStatus | null = null;
   typeFilter: LeaveType | null = null;
@@ -137,13 +141,14 @@ export class LeavesListComponent implements OnInit {
   }
   load() {
     this.loading.set(true);
+    this.errorMessage.set(null);
     this.svc.listLeaves({
       employeeId: this.empFilter ?? undefined,
       status: this.statusFilter ?? undefined,
       leaveType: this.typeFilter ?? undefined
     }).subscribe({
       next: d => { this.items.set(d || []); this.loading.set(false); },
-      error: () => { this.toast.error('فشل التحميل'); this.loading.set(false); }
+      error: () => { this.errorMessage.set('تعذر الاتصال بخدمة الإجازات. تحقق من اتصال الخادم ثم أعد المحاولة.'); this.loading.set(false); }
     });
   }
   emptyForm(): CreateLeaveRequest {
@@ -157,6 +162,7 @@ export class LeavesListComponent implements OnInit {
     if (!this.form.employeeId || !this.form.fromDate || !this.form.toDate) {
       this.toast.error('الموظف والتواريخ مطلوبة'); return;
     }
+    if (this.form.fromDate > this.form.toDate) { this.toast.error('تاريخ البداية يجب أن يسبق تاريخ النهاية'); return; }
     this.saving.set(true);
     this.svc.createLeave(this.form).subscribe({
       next: () => { this.saving.set(false); this.dialog=false; this.toast.success('تم'); this.load(); },

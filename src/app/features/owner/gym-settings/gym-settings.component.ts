@@ -26,6 +26,11 @@ import { environment } from '../../../../environments/environment';
           <i class="pi pi-spin pi-spinner"></i>
           <span>جاري تحميل البيانات...</span>
         </div>
+      } @else if (loadError()) {
+        <div class="state-card error-state" role="alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          <div><strong>تعذر تحميل إعدادات الصالة</strong><p>{{ loadError() }}</p><button type="button" class="btn btn-secondary" (click)="loadProfile()">إعادة المحاولة</button></div>
+        </div>
       } @else {
         <!-- Cover Image Section -->
         <div class="cover-section">
@@ -228,6 +233,9 @@ import { environment } from '../../../../environments/environment';
       color: var(--text-muted);
       i { font-size: 2.5rem; }
     }
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
 
     /* Cover Section */
     .cover-section {
@@ -581,6 +589,7 @@ export class GymSettingsComponent implements OnInit {
   profile = signal<GymProfile | null>(null);
   loading = signal(true);
   saving = signal(false);
+  loadError = signal<string | null>(null);
 
   form: UpdateGymProfileRequest = {
     name: '',
@@ -600,6 +609,7 @@ export class GymSettingsComponent implements OnInit {
 
   loadProfile(): void {
     this.loading.set(true);
+    this.loadError.set(null);
     this.ownerService.getGymProfile().subscribe({
       next: (data) => {
         this.profile.set(data);
@@ -629,7 +639,7 @@ export class GymSettingsComponent implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        this.notify.error('حدث خطأ في تحميل بيانات الصالة');
+        this.loadError.set('تعذر الاتصال بخدمة إعدادات الصالة. تحقق من اتصال الخادم ثم أعد المحاولة.');
         this.loading.set(false);
       }
     });
