@@ -53,8 +53,12 @@ import Swal from 'sweetalert2';
         </button>
       </app-page-header>
 
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل مكتبة التمارين</strong><p>{{ errorMessage() }}</p><button type="button" class="btn btn-secondary" (click)="loadExercises()">إعادة المحاولة</button></div>
+      </div>
+
       <!-- Stats Row -->
-      <div class="stats-row">
+      <div class="stats-row" *ngIf="!errorMessage()">
         <div class="stat-card purple">
           <div class="stat-icon"><i class="pi pi-list"></i></div>
           <div class="stat-info">
@@ -89,7 +93,7 @@ import Swal from 'sweetalert2';
       <app-loading-skeleton *ngIf="loading()" type="table"></app-loading-skeleton>
 
       <!-- Table Container -->
-      <div class="table-container" *ngIf="!loading()">
+      <div class="table-container" *ngIf="!loading() && !errorMessage()">
         <div class="table-header">
           <div class="table-title">
             <i class="pi pi-list"></i>
@@ -663,6 +667,9 @@ import Swal from 'sweetalert2';
     </div>
   `,
   styles: [`
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
     .exercises-page {
       max-width: 1600px;
     }
@@ -1435,6 +1442,7 @@ export class ExercisesLibraryComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   loading = signal(true);
+  errorMessage = signal<string | null>(null);
   exercises = signal<Exercise[]>([]);
   filteredExercises = signal<Exercise[]>([]);
   muscles = signal<Muscle[]>([]);
@@ -1584,6 +1592,7 @@ export class ExercisesLibraryComponent implements OnInit {
 
   loadExercises(): void {
     this.loading.set(true);
+    this.errorMessage.set(null);
 
     this.coachService.getExercises().subscribe({
       next: (data) => {
@@ -1596,6 +1605,7 @@ export class ExercisesLibraryComponent implements OnInit {
         this.notificationService.error('حدث خطأ في تحميل البيانات');
         this.exercises.set([]);
         this.filteredExercises.set([]);
+        this.errorMessage.set('تعذر الاتصال بخدمة مكتبة التمارين. تحقق من اتصال الخادم ثم أعد المحاولة.');
         this.loading.set(false);
       }
     });

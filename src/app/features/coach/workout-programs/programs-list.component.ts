@@ -43,8 +43,17 @@ import { NotificationService } from '../../../core/services/notification.service
         </a>
       </app-page-header>
 
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div>
+          <strong>تعذر تحميل برامج التمرين</strong>
+          <p>{{ errorMessage() }}</p>
+          <button type="button" class="btn btn-secondary" (click)="loadPrograms()">إعادة المحاولة</button>
+        </div>
+      </div>
+
       <!-- Stats -->
-      <div class="stats-row">
+      <div class="stats-row" *ngIf="!errorMessage()">
         <div class="stat-card purple">
           <div class="stat-icon"><i class="pi pi-list"></i></div>
           <div class="stat-content">
@@ -71,7 +80,7 @@ import { NotificationService } from '../../../core/services/notification.service
       <!-- Loading State -->
       @if (loading()) {
         <app-loading-skeleton type="stats"></app-loading-skeleton>
-      } @else {
+      } @else if (!errorMessage()) {
         <!-- Professional Table -->
         <div class="table-container">
           <div class="table-header">
@@ -228,6 +237,9 @@ import { NotificationService } from '../../../core/services/notification.service
     <!-- Print Dialog removed - using standalone preview window like builder -->
   `,
   styles: [`
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
     .programs-page {
       max-width: 1400px;
       margin: 0 auto;
@@ -647,6 +659,7 @@ export class ProgramsListComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   loading = signal(true);
+  errorMessage = signal<string | null>(null);
   programs = signal<WorkoutProgram[]>([]);
   filteredPrograms = signal<WorkoutProgram[]>([]);
 
@@ -722,6 +735,7 @@ export class ProgramsListComponent implements OnInit {
 
   loadPrograms(): void {
     this.loading.set(true);
+    this.errorMessage.set(null);
 
     this.coachService.getWorkoutPrograms().subscribe({
       next: (data) => {
@@ -738,6 +752,7 @@ export class ProgramsListComponent implements OnInit {
       error: (err) => {
         console.error('Error loading programs:', err);
         this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.errorMessage.set('تعذر الاتصال بالخادم. تحقق من الاتصال ثم حاول مرة أخرى.');
         this.programs.set([]);
         this.filteredPrograms.set([]);
         this.loading.set(false);

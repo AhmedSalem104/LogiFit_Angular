@@ -64,9 +64,12 @@ import { NotificationService } from '../../../core/services/notification.service
 
       <!-- Loading State -->
       <app-loading-skeleton *ngIf="loading()" type="stats"></app-loading-skeleton>
+      <div class="state-card error-state" *ngIf="!loading() && error()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i><div><strong>تعذر تحميل لوحة المدرب</strong><p>{{ error() }}</p><button type="button" class="btn btn-secondary" (click)="loadDashboardData()">إعادة المحاولة</button></div>
+      </div>
 
       <!-- Quick Actions - Moved to top for better UX -->
-      <div class="quick-actions-section" *ngIf="!loading()">
+      <div class="quick-actions-section" *ngIf="!loading() && !error()">
         <div class="section-header">
           <h2><i class="pi pi-bolt"></i> إجراءات سريعة</h2>
         </div>
@@ -115,7 +118,7 @@ import { NotificationService } from '../../../core/services/notification.service
       </div>
 
       <!-- Stats Cards -->
-      <div class="stats-section" *ngIf="!loading()">
+      <div class="stats-section" *ngIf="!loading() && !error()">
         <div class="section-header">
           <h2><i class="pi pi-chart-bar"></i> الإحصائيات العامة</h2>
         </div>
@@ -170,7 +173,7 @@ import { NotificationService } from '../../../core/services/notification.service
       </div>
 
       <!-- Main Content Grid -->
-      <div class="main-content-grid" *ngIf="!loading()">
+      <div class="main-content-grid" *ngIf="!loading() && !error()">
         <!-- Top Trainees Section -->
         <div class="content-card top-trainees">
           <div class="card-header">
@@ -286,7 +289,7 @@ import { NotificationService } from '../../../core/services/notification.service
       </div>
 
       <!-- Resources Section -->
-      <div class="resources-section" *ngIf="!loading()">
+      <div class="resources-section" *ngIf="!loading() && !error()">
         <div class="section-header">
           <h2><i class="pi pi-database"></i> الموارد والمكتبات</h2>
         </div>
@@ -323,6 +326,9 @@ import { NotificationService } from '../../../core/services/notification.service
     </div>
   `,
   styles: [`
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin:1rem 0; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
     .coach-dashboard {
       max-width: 1400px;
       margin: 0 auto;

@@ -964,6 +964,7 @@ export class SidebarComponent {
       roles: [UserRole.Coach],
       items: [
         { label: 'متدربيني', icon: 'pi-users', route: '/coach/trainees', roles: [UserRole.Coach] },
+        { label: 'اشتراكات العملاء', icon: 'pi-wallet', route: '/coach/subscriptions', roles: [UserRole.Coach], permission: 'ManageClientSubscriptions' },
         { label: 'برامج التمارين', icon: 'pi-calendar', route: '/coach/workout-programs', roles: [UserRole.Coach] },
         { label: 'الخطط الغذائية', icon: 'pi-heart', route: '/coach/diet-plans', roles: [UserRole.Coach] },
       ]

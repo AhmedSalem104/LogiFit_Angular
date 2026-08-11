@@ -45,8 +45,17 @@ import { NotificationService } from '../../../core/services/notification.service
         </a>
       </app-page-header>
 
+      <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div>
+          <strong>تعذر تحميل خطط التغذية</strong>
+          <p>{{ errorMessage() }}</p>
+          <button type="button" class="btn btn-secondary" (click)="loadPlans()">إعادة المحاولة</button>
+        </div>
+      </div>
+
       <!-- Stats Cards -->
-      <div class="stats-row">
+      <div class="stats-row" *ngIf="!errorMessage()">
         <div class="stat-card total">
           <div class="stat-icon">
             <i class="pi pi-calendar"></i>
@@ -89,7 +98,7 @@ import { NotificationService } from '../../../core/services/notification.service
       <app-loading-skeleton *ngIf="loading()" type="stats"></app-loading-skeleton>
 
       <!-- Table Container -->
-      <div class="table-container" *ngIf="!loading()">
+      <div class="table-container" *ngIf="!loading() && !errorMessage()">
         <!-- Table Header -->
         <div class="table-header">
           <div class="table-title">
@@ -465,6 +474,9 @@ import { NotificationService } from '../../../core/services/notification.service
     </p-dialog>
   `,
   styles: [`
+    .state-card { display:flex; align-items:center; gap:.75rem; min-height:130px; padding:1.25rem; margin-bottom:1.25rem; border:1px dashed #fecaca; border-radius:16px; color:#991b1b; background:#fff7f7; }
+    .state-card i { font-size:1.5rem; color:#dc2626; }
+    .state-card p { margin:.35rem 0 .75rem; color:#7f1d1d; }
     .diet-plans-page {
       max-width: 1600px;
     }
@@ -1205,6 +1217,7 @@ export class DietPlansListComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   loading = signal(true);
+  errorMessage = signal<string | null>(null);
   plans = signal<DietPlan[]>([]);
   filteredPlans = signal<DietPlan[]>([]);
 
@@ -1275,6 +1288,7 @@ export class DietPlansListComponent implements OnInit {
 
   loadPlans(): void {
     this.loading.set(true);
+    this.errorMessage.set(null);
 
     this.coachService.getDietPlans().subscribe({
       next: (data) => {
@@ -1287,6 +1301,7 @@ export class DietPlansListComponent implements OnInit {
       error: (err) => {
         console.error('Error loading diet plans:', err);
         this.notificationService.error('حدث خطأ في تحميل البيانات');
+        this.errorMessage.set('تعذر الاتصال بالخادم. تحقق من الاتصال ثم حاول مرة أخرى.');
         this.plans.set([]);
         this.filteredPlans.set([]);
         this.loading.set(false);
