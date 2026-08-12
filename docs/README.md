@@ -6,6 +6,7 @@
 
 | الوثيقة | ما الذي تجيب عنه؟ |
 |---|---|
+| [التوثيق الكامل لكل الشاشات](COMPLETE-SCREEN-DOCUMENTATION.md) | كل Route فعلي، الحماية، الغرض، عائلة الـAPI، التدفقات، الحالات، الصلاحيات، واختبارات واجهة الصالة والمدرب والمتدرب. |
 | [مرجع المشروع](PROJECT_REFERENCE.md) | البنية، Guards، Services، النماذج، والأوامر. |
 | [تدفقات ومساحات العمل](WORKSPACE-FLOWS.md) | من يستخدم كل شاشة، ما الذي يفعله، وما حدود الصلاحية. |
 | [كتالوج عقود API](API-ENDPOINT-CATALOG.md) | جميع Tenant وPlatform endpoints: route، method، access، inputs، responses. |
@@ -25,3 +26,13 @@ Copy-Item .\docs\API-ENDPOINT-CATALOG.md "..\LogicFit_Angular\docs\API-ENDPOINT-
 
 ثم راجع فرق الملف قبل الدمج. المصدر التنفيذي الوحيد للـAPI هو الـControllers
 وDTOs في مشروع `LogicFit`.
+
+يتم تحديث جدول الـRoutes ونسخة كتالوج الـAPI معاً من مستودع الـBackend عبر:
+
+```powershell
+cd "..\LogicFit"
+.\Scripts\Export-FrontendRouteDocumentation.ps1
+```
+
+لا تعتبر شاشة موثقة إلا إذا كان لها Route أو سبب واضح لعدم وجوده، Guard/Permission،
+حالة Loading/Empty/Error/Blocked، وربط موثق بالـAPI.
