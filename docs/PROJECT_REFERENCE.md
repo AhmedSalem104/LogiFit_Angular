@@ -35,6 +35,7 @@
 
 - `WorkspaceType.FreelanceCoach` remains tenant-isolated but has an independent public identity and branding profile.
 - `/identity/login` proves the global identity before issuing a tenant JWT. It returns active workspaces and pending applications together; selecting one workspace exchanges a short-lived selection token for the existing JWT and HttpOnly refresh-cookie contract.
+- Backend #294 keeps workspace selection on the Platform/Tenant boundary: membership is checked from platform scalar ids, the assigned tenant database is resolved server-side, and `503 TENANT_DATABASE_UNAVAILABLE` is rendered as a retryable workspace-not-ready state instead of a blank page or generic server error.
 - Pending applications now include a safe activation snapshot (`paymentStatus`, `workspaceStatus`, `subscriptionStatus`, `provisioningStatus`, `databaseStatusCode`, `requiredAction`, `nextStep`, and `userMessage`). The login context shows the current stage and routes the user to tracking instead of opening an unready tenant.
 - `mustChangePassword` is honored after identity workspace selection: owners go to `/owner/profile`, coaches to `/coach/profile`, and clients to `/client/profile`; the auth guard keeps protected routes on the profile until the change succeeds.
 - Public requests use opaque, short-lived tracking tokens held in `sessionStorage`. They are not refresh tokens and no normal tenant session is issued before Platform approval.
