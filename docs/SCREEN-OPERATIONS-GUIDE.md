@@ -318,3 +318,11 @@ unchanged; the Backend still owns subscription and feature authorization.
 Every owner lazy route has a capability-aware parent guard. The guard is not a replacement for
 the backend authorization policy. The frontend build/test changes are task-branch only until
 release and production verification.
+
+### Issue #86 — old-session recovery
+
+On application startup, a persisted authenticated user without a valid `workspaceType` is
+reconciled through `POST /api/auth/refresh`. The screen waits for that result before routing. A
+FreelanceCoach receives the coaching dashboard and navigation; a missing type does not render
+Gym screens and instead sends the user to identity login. `/workspace-unavailable` is a terminal
+blocked state with a re-login action, not a link that loops back into a forbidden dashboard.

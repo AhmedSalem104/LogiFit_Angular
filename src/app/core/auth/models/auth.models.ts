@@ -105,6 +105,10 @@ export function capabilitiesForWorkspace(workspaceType?: number): WorkspaceCapab
     ];
   }
 
+  // A missing workspace type is an incomplete/stale session, not a Gym.
+  // Fail closed so an old token can never accidentally unlock the Gym UI.
+  if (workspaceType !== 1) return [];
+
   return [
     WorkspaceCapabilities.GymExperience,
     WorkspaceCapabilities.CoachingClients,
