@@ -21,6 +21,11 @@ flowchart TD
 
 ## شاشات المصادقة (`/auth`)
 
+> **Issue #77 / Backend #292:** The identity-login screen continues to use the existing
+> `activeWorkspaces`/`pendingApplications` response. No route, visual component, or API call was
+> changed in this repository; the related Backend fix is tracked separately and is not yet
+> production-verified.
+
 | المسار | الغرض | العمليات | الحالات المهمة |
 |---|---|---|---|
 | `/auth/login` | توافق واجهة فقط | إعادة توجيه إلى `/identity/login` | لا يستدعي Legacy API |
