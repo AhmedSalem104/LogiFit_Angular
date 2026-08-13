@@ -11,6 +11,8 @@ export const ownerRoutes: Routes = [
   { path: 'operations', canActivate: [permissionGuard(Permissions.ViewReports)], loadComponent: () => import('./operations-dashboard/operations-dashboard.component').then(m => m.OperationsDashboardComponent), title: 'لوحة التشغيل - LogicFit' },
 
   // Members
+  { path: 'clients/:id', canActivate: [permissionGuard(Permissions.ViewMembers)], loadComponent: () => import('./clients/client-details.component').then(m => m.ClientDetailsComponent), title: 'Client details' },
+  { path: 'coaches/:id', canActivate: [permissionGuard(Permissions.ManageCoaches)], loadComponent: () => import('./coaches/coach-details.component').then(m => m.CoachDetailsComponent), title: 'Coach details' },
   { path: 'clients', canActivate: [permissionGuard(Permissions.ViewMembers)], loadComponent: () => import('./clients/clients-list.component').then(m => m.ClientsListComponent), title: 'العملاء - LogicFit' },
   { path: 'coaches', canActivate: [permissionGuard(Permissions.ManageCoaches)], loadComponent: () => import('./coaches/coaches-list.component').then(m => m.CoachesListComponent), title: 'المدربين - LogicFit' },
   { path: 'freelance-team', canActivate: [freelanceWorkspaceGuard, permissionGuard(Permissions.ManageCoaches)], loadComponent: () => import('./freelance-team/freelance-team.component').then(m => m.FreelanceTeamComponent), title: 'فريق المدرب الحر - LogicFit' },

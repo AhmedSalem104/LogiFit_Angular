@@ -5,6 +5,7 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { NotificationService } from '../../../core/services/notification.service';
 import { TenantStatusService } from '../../../core/tenant/tenant-status.service';
+import { AuthService } from '../../../core/auth/services/auth.service';
 import { TenantBillingService } from './tenant-billing.service';
 import {
   PlatformPlan, MySubscription, PlatformPaymentMethod, PaymentRequest,
@@ -23,10 +24,10 @@ type View = 'overview' | 'plans' | 'payment';
     <div class="subscription-page">
       <div class="page-head">
         <div>
-          <h1>اشتراك الصالة في المنصة</h1>
-          <p class="muted">أدر اشتراك صالتك في منصة LogicFit والدفع ومتابعة الحالة</p>
+          <h1>{{ auth.isFreelanceWorkspace() ? 'اشتراك مساحة التدريب' : 'اشتراك الصالة في المنصة' }}</h1>
+          <p class="muted">{{ auth.isFreelanceWorkspace() ? 'أدر باقة مساحة التدريب والدفع ومتابعة الحالة' : 'أدر اشتراك صالتك في منصة LogicFit والدفع ومتابعة الحالة' }}</p>
         </div>
-        <a routerLink="/owner/subscription/invoices" class="btn btn-ghost">
+        <a [routerLink]="auth.isFreelanceWorkspace() ? '/coach/subscription/invoices' : '/owner/subscription/invoices'" class="btn btn-ghost">
           <i class="pi pi-credit-card"></i> فواتير المنصة
         </a>
       </div>
@@ -79,8 +80,8 @@ type View = 'overview' | 'plans' | 'payment';
             <div class="usage-grid">
               <div class="usage" *ngIf="sub()!.members">{{ renderUsage('الأعضاء', sub()!.members!) }}</div>
               <div class="usage" *ngIf="sub()!.coaches">{{ renderUsage('المدربين', sub()!.coaches!) }}</div>
-              <div class="usage" *ngIf="sub()!.branches">{{ renderUsage('الفروع', sub()!.branches!) }}</div>
-              <div class="usage" *ngIf="sub()!.employees">{{ renderUsage('الموظفين', sub()!.employees!) }}</div>
+              <div class="usage" *ngIf="!auth.isFreelanceWorkspace() && sub()!.branches">{{ renderUsage('الفروع', sub()!.branches!) }}</div>
+              <div class="usage" *ngIf="!auth.isFreelanceWorkspace() && sub()!.employees">{{ renderUsage('الموظفين', sub()!.employees!) }}</div>
             </div>
 
             <div class="features" *ngIf="sub()!.features?.length">
@@ -147,8 +148,8 @@ type View = 'overview' | 'plans' | 'payment';
                 <ul class="limits">
                   <li><i class="pi pi-users"></i> الأعضاء: {{ limitLabel(plan.maxMembers) }}</li>
                   <li><i class="pi pi-id-card"></i> المدربين: {{ limitLabel(plan.maxCoaches) }}</li>
-                  <li><i class="pi pi-building"></i> الفروع: {{ limitLabel(plan.maxBranches) }}</li>
-                  <li><i class="pi pi-briefcase"></i> الموظفين: {{ limitLabel(plan.maxEmployees) }}</li>
+                  <li *ngIf="!auth.isFreelanceWorkspace()"><i class="pi pi-building"></i> الفروع: {{ limitLabel(plan.maxBranches) }}</li>
+                  <li *ngIf="!auth.isFreelanceWorkspace()"><i class="pi pi-briefcase"></i> الموظفين: {{ limitLabel(plan.maxEmployees) }}</li>
                 </ul>
                 <div class="features">
                   <span class="chip" *ngFor="let f of plan.features">{{ featureLabel(f) }}</span>
@@ -293,6 +294,7 @@ type View = 'overview' | 'plans' | 'payment';
 })
 export class MySubscriptionComponent implements OnInit {
   readonly PaymentRequestOperation = PaymentRequestOperation;
+  protected readonly auth = inject(AuthService);
   private billing = inject(TenantBillingService);
   private notify = inject(NotificationService);
   private route = inject(ActivatedRoute);
