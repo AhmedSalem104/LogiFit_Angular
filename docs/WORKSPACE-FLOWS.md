@@ -203,3 +203,14 @@ FreelanceCoach بعلامة بنفسجية وأيقونة مدرب في شاشة
    set completion and session completion are reflected locally only after the API confirms success.
 5. The diet screen reads the day's meal logs, logs every item on completion, and keeps the meal
    pending if any item fails. Unsupported/failed meal-log loading does not blank a valid plan.
+
+### Issue #82 — FreelanceOwner after successful workspace selection
+
+After `POST /api/identity/select-workspace` succeeds for an active freelance workspace, the
+frontend retains the existing Owner identity role and uses `workspaceType=2` as the presentation
+context. `/owner/dashboard` renders the coach dashboard for that context; coach routes are allowed
+for the same FreelanceOwner without issuing a second login or changing the JWT role.
+
+An optional-feature or quota response with HTTP `402` stays with the screen that requested it. The
+global interceptor no longer opens the plan picker. The screen shows loading/error/retry state, and
+the user can deliberately open the platform subscription screen when an upgrade is wanted.

@@ -289,3 +289,15 @@ The trainee route group keeps the existing product concept and now has an explic
 | Profile | `/api/profile` | Uses the self-service profile contract; profile updates include phone validation and a visible failure state. |
 
 The client service must use `/api/client/my-progress` for the trainee progress report and `/api/profile` for self-profile reads/writes. The former report route under the reports policy is not a client self-service contract, and the member-management route is intentionally not used by the trainee UI.
+
+## Issue #82 — FreelanceOwner dashboard and subscription UX
+
+| Situation | Expected screen behavior |
+|---|---|
+| Active `FreelanceOwner` selects a ready workspace | Keep the existing tenant session and render the coach dashboard inside the shared owner shell. |
+| Coach route opened by a `FreelanceOwner` | Allow the route when the selected workspace is freelance; do not change the backend role to Coach. |
+| Optional feature/quota returns `402` | Keep the current screen, show its recoverable error/empty state, and provide retry or an explicit billing action. |
+| Active subscription with a locked optional feature | Never force `/owner/subscription?upgrade=1`; the subscription remains active and the user can continue using included features. |
+
+This is a frontend behavior correction. The Backend API contract and Platform Admin screens are
+unchanged; the Backend still owns subscription and feature authorization.

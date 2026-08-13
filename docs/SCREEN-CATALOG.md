@@ -125,3 +125,11 @@ sequenceDiagram
 - `DELETE /api/gymprofile/gallery`: حذف صورة معرض مرتبطة بالجيم الحالي.
 
 > لا تعتمد الواجهة على `tenantId` من نموذج المستخدم عند تنفيذ العمليات الحساسة؛ الخادم يستخرج Tenant context من التوكن والـmiddleware.
+
+## Issue #82 — Freelance workspace landing
+
+`FreelanceOwner` uses the same identity selection endpoint and tenant JWT as other workspaces. Once
+the selected freelance workspace is ready, the shared `/owner/dashboard` route renders the coach
+dashboard and coach routes accept the freelance workspace context. An optional feature `402` is
+shown by the requesting screen and is not a global redirect to the plan picker. This preserves the
+active subscription while keeping upgrade navigation explicit.
