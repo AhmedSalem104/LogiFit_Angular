@@ -87,3 +87,11 @@ remain readable when the sidebar is collapsed.
 
 تحذيرات حجم مكونات builders وCommonJS الحالية معروفة، لكن أي خطأ TypeScript أو
 فشل build يمنع الدمج.
+
+## Ordered workspace sidebar (Issue #88)
+
+The ordered links use the existing two-column desktop menu and single-column collapsed/mobile
+drawer. The change is limited to link and section order; it does not change drawer width,
+breakpoints, hover expansion, pin persistence, search behavior, or overflow rules. Verify the
+workflow order for both Gym and FreelanceCoach at 360, 768, 1024, and 1440 widths in RTL and LTR.
+In collapsed mode every ordered item must remain identifiable by its icon tooltip/title.

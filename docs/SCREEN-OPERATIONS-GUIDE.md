@@ -326,3 +326,16 @@ reconciled through `POST /api/auth/refresh`. The screen waits for that result be
 FreelanceCoach receives the coaching dashboard and navigation; a missing type does not render
 Gym screens and instead sends the user to identity login. `/workspace-unavailable` is a terminal
 blocked state with a re-login action, not a link that loops back into a forbidden dashboard.
+
+### Issue #88 - ordered sidebar behavior
+
+The shared sidebar keeps the same responsive drawer, pin, hover, search, and permission behavior,
+but presents visible links in a workspace workflow order. The Gym menu prioritizes operational
+management; the FreelanceCoach menu prioritizes clients, programs, progress, sessions, finance,
+reports, and the assistant team. Links are filtered by role, permission, and workspace capability
+before sorting, so ordering cannot reveal a forbidden feature. The assistant-team-only section is
+shown as Assistant Team for FreelanceCoach owners.
+
+Loading, empty, blocked, and API error states belong to the destination screen and are unchanged.
+No sidebar link invokes a new endpoint, and direct navigation remains protected by the existing
+route guard and backend authorization.

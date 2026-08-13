@@ -238,3 +238,16 @@ single tenant refresh. A valid `FreelanceCoach` response restores the coaching c
 lands on `/coach/dashboard`; a missing or invalid type clears the stale session and returns the
 user to `/identity/login`. The UI never falls back to Gym capabilities, and direct Gym URLs still
 resolve to `/workspace-unavailable` without invoking their feature API.
+
+### Issue #88 - sidebar workflow order
+
+After role and capability filtering, the sidebar applies a stable workspace-specific order:
+
+- Gym: dashboard, operations, members/coaches, memberships, attendance, facilities, group
+  classes, finance, inventory/POS, reports, staff/payroll, settings, subscription, profile.
+- FreelanceCoach: dashboard, clients, workout and nutrition programs, measurements, sessions and
+  communication, payments and reports, assistant team, settings, subscription, profile.
+
+This changes presentation only. It preserves the existing shared routes, capability guards,
+permission checks, and backend tenant isolation. A new route not yet listed in the order map keeps
+its existing relative position until it is assigned to the appropriate workflow section.
