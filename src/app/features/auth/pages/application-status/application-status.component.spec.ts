@@ -1,8 +1,9 @@
-import { TestBed } from '@angular/core/testing';
+import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { throwError } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { FreelanceOnboardingService } from '../../../../core/freelance/services/freelance-onboarding.service';
+import { ApplicationRequestStatus, ApplicationTrackingStatus } from '../../../../core/freelance/models/freelance.models';
 import { ApplicationStatusComponent } from './application-status.component';
 
 describe('ApplicationStatusComponent tracking recovery', () => {
@@ -25,6 +26,23 @@ describe('ApplicationStatusComponent tracking recovery', () => {
     });
     component = TestBed.runInInjectionContext(() => new ApplicationStatusComponent());
   });
+
+  function trackingStatus(overrides: Partial<ApplicationTrackingStatus> = {}): ApplicationTrackingStatus {
+    return {
+      applicationId: 'application-1',
+      applicationType: 2,
+      status: ApplicationRequestStatus.Submitted,
+      workspaceIdentifier: 'coach-space',
+      informationRequest: null,
+      requestedFields: [],
+      submittedAt: new Date().toISOString(),
+      reviewedAt: null,
+      editableValues: {},
+      canAccessDashboard: false,
+      userJourneyStage: 'Preparing',
+      ...overrides,
+    };
+  }
 
   it('redirects to identity recovery when no tracking session exists in this browser', () => {
     onboarding.getTrackingToken.and.returnValue(null);
@@ -49,5 +67,45 @@ describe('ApplicationStatusComponent tracking recovery', () => {
       queryParams: { continue: 'application-status' },
       replaceUrl: true,
     });
+  });
+
+  it('refreshes a non-terminal application and stops when the workspace is ready', fakeAsync(() => {
+    onboarding.getTrackingToken.and.returnValue('tracking-token');
+    onboarding.getTrackingStatus.and.returnValues(
+      of(trackingStatus()),
+      of(trackingStatus({
+        status: ApplicationRequestStatus.Approved,
+        canAccessDashboard: true,
+        userJourneyStage: 'Ready',
+      })),
+    );
+
+    component.ngOnInit();
+    expect(onboarding.getTrackingStatus).toHaveBeenCalledTimes(1);
+
+    tick(10000);
+
+    expect(onboarding.getTrackingStatus).toHaveBeenCalledTimes(2);
+    expect(component.status()?.canAccessDashboard).toBeTrue();
+    component.ngOnDestroy();
+  }));
+
+  it('returns to identity login instead of leaving a ready user on the tracking screen', () => {
+    onboarding.getTrackingToken.and.returnValue('tracking-token');
+    onboarding.getTrackingStatus.and.returnValue(of(trackingStatus({
+      status: ApplicationRequestStatus.Approved,
+      canAccessDashboard: true,
+      userJourneyStage: 'Ready',
+    })));
+
+    component.ngOnInit();
+    component.continueToWorkspace();
+
+    expect(onboarding.clearTrackingToken).toHaveBeenCalled();
+    expect(router.navigate).toHaveBeenCalledWith(['/identity/login'], {
+      queryParams: { continue: 'workspace' },
+      replaceUrl: true,
+    });
+    component.ngOnDestroy();
   });
 });

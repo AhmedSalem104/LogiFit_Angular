@@ -20,7 +20,7 @@
 | `/identity/phone-security` | Signed-in or workspace-selection identity | Verify the first E.164 phone or change an existing phone using a purpose-bound OTP challenge. | A successful phone change revokes old sessions and requires sign-in again; duplicate/invalid phones and expired/consumed OTPs are shown beside the form. |
 | `/identity/reset-password` | Visitor with an email or verified phone | Choose one-use email link or Phone + OTP, then set a strong new password. | The response does not reveal account existence. Success revokes all existing sessions and returns to unified sign-in. |
 | `/identity/join` | Recipient of an email-bound invitation | Preview workspace/role/sponsor, prove the same identity, accept, and complete InviteAcceptance OTP only if backend policy asks for it. | The browser never chooses a role. Tokens are one-use; quota and membership activation are decided by the backend. |
-| `/identity/application-status` | حامل Tracking Token أو هوية أعادت إصداره | يعرض حالة الطلب وطلب الاستكمال. يرسل الحقول المطلوبة فقط ثم يعيد التقديم. | انتهاء الجلسة يوجّه لتسجيل الدخول بالهوية؛ الرفض لا يعدّل القرار بل يبدأ طلبًا جديدًا. |
+| `/identity/application-status` | حامل Tracking Token أو هوية أعادت إصداره | يعرض حالة الطلب وطلب الاستكمال، يحدّث الحالات غير النهائية تلقائيًا كل 10 ثوانٍ، ويوفر تحديثًا يدويًا وزر دخول بعد الجاهزية. يرسل الحقول المطلوبة فقط ثم يعيد التقديم. | انتهاء الجلسة أو الضغط على العودة يوجّه لتسجيل الدخول بالهوية؛ عند `canAccessDashboard=true` يتوقف التحديث وتظهر `الدخول إلى المنصة` التي تبدأ جلسة اختيار Workspace؛ الرفض لا يعدّل القرار بل يبدأ طلبًا جديدًا. |
 
 > **الغرض من هذا المستند:** مرجع تشغيلي للشاشات التي يراها مالك الصالة وفريقه والمدرب والمتدرب. لا يكتفي بسرد الرابط؛ بل يوضح لماذا توجد الشاشة، من يحق له استخدامها، ما الذي تقرأه أو تغيّره، وما النتيجة المتوقعة من كل إجراء.
 >
@@ -37,6 +37,15 @@
 MoreInformation أو Preparing أو Ready بدل عرض تفاصيل تقنية مربكة. في حالة طلب المعلومات يظهر كل
 حقل طلبته الإدارة فقط. عند `Preparing` تظهر رسالة انتظار ولا تستدعى APIs الخاصة بالـTenant. عند
 الفشل تظهر حالة Blocked مع رسالة وإجراء واضح، ولا تظهر صفحة فارغة أو stack trace.
+
+### Issue #80 — استرداد المستخدم بعد اكتمال التفعيل
+
+قد يصل المستخدم إلى الشاشة قبل اكتمال التجهيز ثم تتغير الحالة وهو ما يزال داخل جلسة Tracking.
+هذه الجلسة للقراءة فقط، لذلك تعرض الشاشة `Ready` لكنها لا تحاول إصدار Tenant JWT تلقائيًا.
+تستدعي الشاشة تحديثًا دوريًا كل 10 ثوانٍ للحالات غير النهائية، وعند الجاهزية تعرض زر `الدخول إلى
+المنصة` يعيد المستخدم إلى `/identity/login`، حيث يتحقق الخادم من المساحات النشطة ويصدر جلسة
+`select-workspace`. يوجد أيضًا زر `العودة إلى تسجيل الدخول` في كل حالة، مع الحفاظ على عدم تخزين
+Refresh Token أو بيانات اتصال.
 
 ## 1. طريقة قراءة الدليل وحدود الصلاحيات
 

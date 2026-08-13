@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { concatMap } from 'rxjs';
+import { concatMap, Subscription, timer } from 'rxjs';
 import { FreelanceOnboardingService } from '../../../../core/freelance/services/freelance-onboarding.service';
 import { ApplicationRequestStatus, ApplicationTrackingStatus } from '../../../../core/freelance/models/freelance.models';
 
@@ -46,7 +46,24 @@ interface ActivationStep {
         } @else if (application.status === Status.Rejected) {
           <p class="information-request">الطلب مرفوض. يمكنك إنشاء طلب جديد عند تجهيز البيانات أو تغيير الهوية المطلوبة.</p>
           <a routerLink="/auth/register-freelance" class="btn btn-primary">إنشاء طلب جديد</a>
-        } @else { <p class="information-request">سنرسل التحديث عند انتقال الطلب إلى المرحلة التالية. يمكنك العودة لاحقًا عبر تسجيل الدخول بالهوية.</p> }
+        } @else {
+          <p class="information-request">
+            @if (application.canAccessDashboard) {
+              تم تجهيز مساحة العمل ويمكنك الدخول بأمان.
+            } @else {
+              يتم تحديث حالة الطلب تلقائيًا كل عدة ثوانٍ. يمكنك أيضًا التحديث يدويًا.
+            }
+          </p>
+        }
+        <div class="status-actions">
+          @if (application.canAccessDashboard) {
+            <button class="btn btn-primary" type="button" (click)="continueToWorkspace()">الدخول إلى المنصة</button>
+          }
+          @if (!application.canAccessDashboard && application.status !== Status.Rejected) {
+            <button class="btn btn-secondary" type="button" [disabled]="loading() || refreshing()" (click)="load()">{{ refreshing() ? 'جارٍ التحديث...' : 'تحديث الحالة الآن' }}</button>
+          }
+          <button class="btn btn-secondary" type="button" (click)="returnToLogin()">العودة إلى تسجيل الدخول</button>
+        </div>
         } @else {
         <div class="information-request"><p>انتهت جلسة المتابعة أو لم تُفتح من هذا المتصفح.</p><a routerLink="/identity/login">سجّل الدخول بالهوية للمتابعة</a></div>
         }
@@ -55,12 +72,12 @@ interface ActivationStep {
     </section>
   `,
   styles: [`
-    .status-page h2 { margin:0 0 1rem; color:var(--text-primary); font-size:1.7rem; }.status-card,.information-request { padding:1rem; border:1px solid var(--border-color); border-radius:10px; background:var(--bg-primary); }.status-card.needs-info { border-color:#f59e0b; }.status-card h3 { margin:.55rem 0 .25rem; color:var(--text-primary); }.badge { display:inline-block; padding:.25rem .55rem; border-radius:999px; background:rgba(37,99,235,.1); color:#1d4ed8; font-size:.8rem; font-weight:700; }.muted { color:var(--text-secondary); }.information-request { margin-top:1rem; color:var(--text-primary); line-height:1.7; }.information-request p { margin:.25rem 0 0; } form { display:grid; gap:.85rem; margin-top:1rem; } label { display:grid; gap:.35rem; color:var(--text-primary); font-size:.9rem; font-weight:600; }.form-input { width:100%; box-sizing:border-box; min-height:42px; padding:.65rem .75rem; border:1px solid var(--border-color); border-radius:8px; color:var(--text-primary); background:var(--bg-primary); font:inherit; }.btn { display:inline-flex; align-items:center; justify-content:center; min-height:46px; border:0; border-radius:8px; text-decoration:none; }.w-full { width:100%; }.btn:disabled { opacity:.65; }.error { color:#b91c1c; margin:0; }.status-page > .btn { margin-top:1rem; padding:0 1rem; }
+    .status-page h2 { margin:0 0 1rem; color:var(--text-primary); font-size:1.7rem; }.status-card,.information-request { padding:1rem; border:1px solid var(--border-color); border-radius:10px; background:var(--bg-primary); }.status-card.needs-info { border-color:#f59e0b; }.status-card h3 { margin:.55rem 0 .25rem; color:var(--text-primary); }.badge { display:inline-block; padding:.25rem .55rem; border-radius:999px; background:rgba(37,99,235,.1); color:#1d4ed8; font-size:.8rem; font-weight:700; }.muted { color:var(--text-secondary); }.information-request { margin-top:1rem; color:var(--text-primary); line-height:1.7; }.information-request p { margin:.25rem 0 0; } form { display:grid; gap:.85rem; margin-top:1rem; } label { display:grid; gap:.35rem; color:var(--text-primary); font-size:.9rem; font-weight:600; }.form-input { width:100%; box-sizing:border-box; min-height:42px; padding:.65rem .75rem; border:1px solid var(--border-color); border-radius:8px; color:var(--text-primary); background:var(--bg-primary); font:inherit; }.btn { display:inline-flex; align-items:center; justify-content:center; min-height:46px; padding:0 1rem; border:0; border-radius:8px; text-decoration:none; font:inherit; font-weight:700; cursor:pointer; }.btn-primary { background:#2563eb; color:#fff; }.btn-secondary { border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); }.btn:disabled { opacity:.65; cursor:not-allowed; }.status-actions { display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1rem; }.error { color:#b91c1c; margin:0; }.status-page > .btn { margin-top:1rem; padding:0 1rem; }
   `, `
     .status-heading{display:flex;align-items:center;justify-content:space-between;gap:.6rem}.type-badge,.access-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.28rem .55rem;border-radius:999px;color:#1d4ed8;background:#dbeafe;font-size:.72rem;font-weight:800}.type-badge.freelance{color:#6d28d9;background:#ede9fe}.access-badge{color:#b45309;background:#fef3c7}.access-badge.ready{color:#047857;background:#d1fae5}.activation-card{margin-top:1rem;padding:1rem;border:1px solid var(--border-color);border-radius:10px;background:var(--bg-primary)}.activation-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}.activation-heading h3{margin:0;color:var(--text-primary)}.activation-heading p{margin:.25rem 0 0;color:var(--text-secondary);font-size:.8rem}.activation-timeline{display:grid;grid-template-columns:repeat(6,1fr);gap:.45rem;margin:1rem 0}.activation-step{display:grid;justify-items:center;gap:.35rem;min-width:0;padding:.6rem .35rem;border:1px solid var(--border-color);border-radius:9px;color:var(--text-secondary);background:var(--bg-secondary);text-align:center}.activation-step.done{border-color:#bbf7d0;color:#047857;background:#f0fdf4}.activation-step.current{border-color:#bfdbfe;color:#1d4ed8;background:#eff6ff}.activation-step.blocked{border-color:#fecdd3;color:#b91c1c;background:#fff1f2}.step-marker{display:grid;place-items:center;width:1.8rem;height:1.8rem;border-radius:50%;background:rgba(148,163,184,.14)}.activation-step strong{font-size:.72rem}.activation-step small{font-size:.62rem;line-height:1.4}.activation-facts{display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem}.activation-facts>div{padding:.55rem;border:1px solid var(--border-color);border-radius:8px}.activation-facts span,.activation-facts b{display:block}.activation-facts span{color:var(--text-secondary);font-size:.65rem}.activation-facts b{margin-top:.2rem;color:var(--text-primary);font-size:.72rem;line-height:1.45}.activation-message{display:flex;align-items:flex-start;gap:.45rem;margin-top:.7rem;padding:.7rem;border:1px solid #bfdbfe;border-radius:8px;color:#1d4ed8;background:#eff6ff;font-size:.78rem;line-height:1.5}.activation-message.success{border-color:#bbf7d0;color:#047857;background:#f0fdf4}.activation-message.danger{border-color:#fecdd3;color:#b91c1c;background:#fff1f2}@media(max-width:700px){.activation-timeline{grid-template-columns:repeat(3,1fr)}.activation-facts{grid-template-columns:repeat(2,1fr)}.activation-heading{flex-direction:column}}@media(max-width:420px){.activation-timeline{grid-template-columns:repeat(2,1fr)}}
   `],
 })
-export class ApplicationStatusComponent implements OnInit {
+export class ApplicationStatusComponent implements OnInit, OnDestroy {
   private readonly onboarding = inject(FreelanceOnboardingService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
@@ -68,12 +85,18 @@ export class ApplicationStatusComponent implements OnInit {
   readonly status = signal<ApplicationTrackingStatus | null>(null);
   readonly loading = signal(true);
   readonly saving = signal(false);
+  readonly refreshing = signal(false);
   readonly error = signal('');
   readonly form = this.fb.group({
     FullName: [''], WorkspaceName: [''], OwnerFullName: [''], BrandName: [''], LogoUrl: [''], PhotoUrl: [''], CoverImageUrl: [''], BackgroundImageUrl: [''], PrimaryColor: ['#2563eb'], SecondaryColor: ['#0f172a'], Bio: [''], Specialties: [''], Certifications: [''], SocialLinks: [''], WelcomeMessage: [''], BookingSettings: [''],
   });
 
+  private refreshSubscription: Subscription | null = null;
+  private readonly refreshIntervalMs = 10000;
+
   ngOnInit(): void { this.load(); }
+
+  ngOnDestroy(): void { this.stopAutoRefresh(); }
 
   timeline(application: ApplicationTrackingStatus): ActivationStep[] {
     const requestDone = application.status >= ApplicationRequestStatus.Submitted;
@@ -97,18 +120,61 @@ export class ApplicationStatusComponent implements OnInit {
 
   load(): void {
     if (!this.onboarding.getTrackingToken()) { this.recoverTrackingSession(); return; }
-    this.loading.set(true); this.error.set('');
+    this.stopAutoRefresh();
+    this.fetchStatus(true);
+  }
+
+  continueToWorkspace(): void {
+    this.navigateToLogin('workspace');
+  }
+
+  returnToLogin(): void {
+    this.navigateToLogin('application-status');
+  }
+
+  private fetchStatus(showLoading: boolean): void {
+    if (!this.onboarding.getTrackingToken()) { this.recoverTrackingSession(); return; }
+    if (showLoading) this.loading.set(true);
+    else this.refreshing.set(true);
+    this.error.set('');
     this.onboarding.getTrackingStatus().subscribe({
-      next: status => { this.status.set(status); this.patchEditableValues(status); this.loading.set(false); },
+      next: status => {
+        this.applyStatus(status);
+        this.loading.set(false);
+        this.refreshing.set(false);
+      },
       error: err => {
+        this.stopAutoRefresh();
         if (err?.status === 401 || err?.status === 403) {
           this.recoverTrackingSession();
           return;
         }
         this.error.set(err?.translatedMessage || err?.error?.message || 'تعذر تحميل حالة الطلب.');
         this.loading.set(false);
+        this.refreshing.set(false);
       },
     });
+  }
+
+  private shouldAutoRefresh(application: ApplicationTrackingStatus): boolean {
+    return !application.canAccessDashboard && ![
+      ApplicationRequestStatus.NeedsMoreInformation,
+      ApplicationRequestStatus.Rejected,
+      ApplicationRequestStatus.Cancelled,
+      ApplicationRequestStatus.Expired,
+    ].includes(application.status);
+  }
+
+  private startAutoRefresh(): void {
+    if (this.refreshSubscription) return;
+    this.refreshSubscription = timer(this.refreshIntervalMs, this.refreshIntervalMs).subscribe(() => {
+      if (!this.refreshing() && !this.saving()) this.fetchStatus(false);
+    });
+  }
+
+  private stopAutoRefresh(): void {
+    this.refreshSubscription?.unsubscribe();
+    this.refreshSubscription = null;
   }
 
   saveAndResubmit(application: ApplicationTrackingStatus): void {
@@ -116,7 +182,7 @@ export class ApplicationStatusComponent implements OnInit {
     const fields: Record<string, unknown> = {};
     for (const field of application.requestedFields) fields[field] = this.toApiValue(field, this.form.get(field)?.value);
     this.onboarding.updateRequestedFields(fields).pipe(concatMap(() => this.onboarding.resubmit())).subscribe({
-      next: status => { this.status.set(status); this.saving.set(false); },
+      next: status => { this.applyStatus(status); this.saving.set(false); },
       error: err => { this.error.set(err?.translatedMessage || err?.error?.message || 'تعذر حفظ البيانات وإعادة التقديم.'); this.saving.set(false); },
     });
   }
@@ -126,11 +192,28 @@ export class ApplicationStatusComponent implements OnInit {
   statusLabel(status: ApplicationRequestStatus): string { return ({ 1: 'مسودة', 2: 'مُقدّم', 3: 'قيد المراجعة', 4: 'مطلوب استكمال', 5: 'مقبول', 6: 'مرفوض', 7: 'ملغى', 8: 'منتهي' } as Record<number, string>)[status]; }
   applicationLabel(type: number): string { return type === 2 ? 'طلب مساحة مدرب حر' : 'طلب انضمام إلى مساحة عمل'; }
 
+  private applyStatus(status: ApplicationTrackingStatus): void {
+    this.status.set(status);
+    this.patchEditableValues(status);
+    if (this.shouldAutoRefresh(status)) this.startAutoRefresh();
+    else this.stopAutoRefresh();
+  }
+
   private recoverTrackingSession(): void {
+    this.stopAutoRefresh();
     this.onboarding.clearTrackingToken();
     this.loading.set(false);
     this.router.navigate(['/identity/login'], {
       queryParams: { continue: 'application-status' },
+      replaceUrl: true,
+    });
+  }
+
+  private navigateToLogin(continueTarget: string): void {
+    this.stopAutoRefresh();
+    this.onboarding.clearTrackingToken();
+    this.router.navigate(['/identity/login'], {
+      queryParams: { continue: continueTarget },
       replaceUrl: true,
     });
   }
