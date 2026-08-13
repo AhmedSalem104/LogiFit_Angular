@@ -389,3 +389,16 @@ server session, records sets only after a successful response, and ends the sess
 The diet screen loads today's meal logs and marks a meal complete only after all item logs succeed.
 The task branch is not deployed or production-verified until the backend migration and both releases
 are merged and health-checked.
+
+## Issue #82 — Active FreelanceOwner landing and feature-limit handling
+
+An active `FreelanceOwner` keeps the existing identity and tenant-selection contract, then lands on
+the shared `/owner/dashboard` route with the freelance workspace context. The route renders the
+coach dashboard for `workspaceType=2` and the coach route guard accepts that owner context, so the
+owner can use trainee, workout, diet, appointment, and profile screens without changing the
+backend role or tenant isolation.
+
+An untyped HTTP `402` from an optional feature or quota is rendered by the originating screen. It
+must not globally navigate to `/owner/subscription?upgrade=1`; explicit feature guards and billing
+actions remain the only upgrade entry points. This keeps an active Starter subscription active
+while showing a recoverable feature-unavailable state instead of the plan picker.

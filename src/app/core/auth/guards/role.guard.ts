@@ -16,8 +16,16 @@ export const roleGuard = (allowedRoles: UserRole[]): CanActivateFn => {
       return router.createUrlTree(['/auth/login']);
     }
 
+    // A FreelanceOwner is stored as Owner for identity/authorization, but the
+    // freelance workspace uses the coach feature panel. Allow that owner to
+    // enter coach routes without changing the backend role or tenant scope.
+    const isFreelanceOwnerCoachRoute = authService.isFreelanceWorkspace()
+      && authService.isOwner()
+      && allowedRoles.length > 0
+      && allowedRoles.every(role => COACH_ROLES.includes(role));
+
     // Check if user has required role
-    if (authService.hasRole(allowedRoles)) {
+    if (isFreelanceOwnerCoachRoute || authService.hasRole(allowedRoles)) {
       return true;
     }
 

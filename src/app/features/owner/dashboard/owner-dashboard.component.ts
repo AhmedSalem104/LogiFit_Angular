@@ -7,6 +7,8 @@ import { StatCardComponent } from '../../../shared/components/stat-card/stat-car
 import { ChartCardComponent } from '../../../shared/components/chart-card/chart-card.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { BrandingService } from '../../../core/services/branding.service';
+import { AuthService } from '../../../core/auth/services/auth.service';
+import { CoachDashboardComponent } from '../../coach/dashboard/coach-dashboard.component';
 import { ReportsService } from '../services/reports.service';
 import {
   DashboardReport,
@@ -26,9 +28,13 @@ import {
     PageHeaderComponent,
     StatCardComponent,
     ChartCardComponent,
-    LoadingSkeletonComponent
+    LoadingSkeletonComponent,
+    CoachDashboardComponent
   ],
   template: `
+    @if (auth.isFreelanceWorkspace()) {
+      <app-coach-dashboard></app-coach-dashboard>
+    } @else {
     <div class="dashboard">
       @if (branding.branding()?.dashboardBannerUrl || branding.branding()?.name) {
         <section class="tenant-hero" [style.background-image]="branding.branding()?.dashboardBannerUrl ? 'linear-gradient(90deg, rgba(15,23,42,.88), rgba(15,23,42,.35)), url(' + branding.branding()!.dashboardBannerUrl + ')' : null">
@@ -239,6 +245,7 @@ import {
         </app-chart-card>
       </div>
     </div>
+    }
   `,
   styles: [`
     .dashboard {
@@ -393,6 +400,7 @@ import {
 export class OwnerDashboardComponent implements OnInit {
   private reportsService = inject(ReportsService);
   readonly branding = inject(BrandingService);
+  readonly auth = inject(AuthService);
 
   // Data signals
   dashboard = signal<DashboardReport | null>(null);
@@ -444,7 +452,11 @@ export class OwnerDashboardComponent implements OnInit {
   legendPosition: LegendPosition = LegendPosition.Below;
 
   ngOnInit(): void {
-    this.loadAllData();
+    // FreelanceOwner uses the coach dashboard. Do not issue gym-only report
+    // requests that can produce an optional-feature 402 during bootstrap.
+    if (!this.auth.isFreelanceWorkspace()) {
+      this.loadAllData();
+    }
   }
 
   loadAllData(): void {

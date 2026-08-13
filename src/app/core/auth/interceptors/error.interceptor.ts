@@ -52,8 +52,10 @@ function handle401(
 }
 
 /**
- * Global HTTP error handler: token refresh (401), plan-limit gating (402),
- * permission (403), and translated messages for the rest.
+ * Global HTTP error handler: token refresh (401), typed tenant gates,
+ * permission (403), and translated messages for the rest. An untyped 402 is
+ * rendered by the originating screen so an optional feature cannot redirect
+ * the whole application to the plan picker.
  */
 /**
  * Tenant access gates: any protected request may suddenly return a typed
@@ -134,11 +136,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           break;
 
         case 402:
-          // Plan limit exceeded / feature not included → route owner to billing/upgrade
+          // A feature/quota limit belongs to the originating screen. Deliberate
+          // upgrade navigation remains the responsibility of featureGuard or
+          // an explicit billing action; never redirect the whole app here.
           errorMessage = error.error?.message || 'لقد وصلت إلى حد باقتك. يرجى ترقية الاشتراك.';
-          if (authService.hasPermission('ManageTenantBilling')) {
-            router.navigate(['/owner/subscription'], { queryParams: { upgrade: 1 } });
-          }
           break;
 
         case 403:

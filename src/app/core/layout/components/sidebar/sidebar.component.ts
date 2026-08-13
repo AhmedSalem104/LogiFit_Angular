@@ -1070,7 +1070,10 @@ export class SidebarComponent {
     if (!current) return false;
     for (const r of roles) {
       if (r === UserRole.Owner && BACK_OFFICE_ROLES.includes(current)) return true;
-      if (r === UserRole.Coach && COACH_ROLES.includes(current)) return true;
+      if (r === UserRole.Coach && (
+        COACH_ROLES.includes(current)
+        || (this.authService.isFreelanceWorkspace() && this.authService.isOwner())
+      )) return true;
       if (r === current) return true;
     }
     return false;
