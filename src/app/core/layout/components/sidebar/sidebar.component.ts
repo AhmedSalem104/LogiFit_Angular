@@ -7,7 +7,7 @@ import { UserRole, Permission, BACK_OFFICE_ROLES, COACH_ROLES } from '../../../a
 import { getRoleLabel } from '../../../auth/role-labels';
 import { requiredCapabilityForWorkspaceRoute } from '../../../auth/guards/workspace-capability.guard';
 
-interface NavItem {
+export interface NavItem {
   label: string;
   icon: string;
   route: string;
@@ -17,11 +17,117 @@ interface NavItem {
   freelanceOnly?: boolean;
 }
 
-interface NavGroup {
+export interface NavGroup {
   title: string;
   items: NavItem[];
   roles?: UserRole[];
   permission?: Permission | Permission[];
+}
+
+export type SidebarWorkspaceType = 'Gym' | 'FreelanceCoach';
+
+// The sidebar is intentionally ordered by the user's workflow, not by the
+// order in which routes were added. Unknown routes keep their original order
+// so a new feature is never silently moved to an arbitrary location.
+const GYM_NAVIGATION_ORDER: readonly string[] = [
+  '/owner/dashboard',
+  '/owner/operations',
+  '/owner/clients',
+  '/owner/coaches',
+  '/owner/membership-cards',
+  '/owner/gate-access',
+  '/owner/subscription-plans',
+  '/owner/subscriptions',
+  '/owner/attendance',
+  '/owner/branches',
+  '/owner/rooms',
+  '/owner/equipment',
+  '/owner/maintenance',
+  '/owner/group-classes',
+  '/owner/class-schedules',
+  '/owner/invoices',
+  '/owner/payments',
+  '/owner/expenses',
+  '/owner/expense-categories',
+  '/owner/coupons',
+  '/owner/tax-settings',
+  '/owner/pos-sales',
+  '/owner/products',
+  '/owner/product-categories',
+  '/owner/stock',
+  '/owner/suppliers',
+  '/owner/reports',
+  '/owner/operations-reports',
+  '/owner/employees',
+  '/owner/workspace-access',
+  '/owner/shifts',
+  '/owner/leaves',
+  '/owner/commissions',
+  '/owner/payroll',
+  '/owner/gym-settings',
+  '/owner/subscription',
+  '/owner/subscription/invoices',
+  '/owner/profile'
+];
+
+const FREELANCE_NAVIGATION_ORDER: readonly string[] = [
+  '/owner/dashboard',
+  '/coach/dashboard',
+  '/coach/trainees',
+  '/coach/workout-programs',
+  '/coach/diet-plans',
+  '/coach/measurements',
+  '/coach/appointments',
+  '/coach/chat',
+  '/coach/challenges',
+  '/coach/exercises',
+  '/coach/foods',
+  '/coach/muscles',
+  '/coach/finance',
+  '/coach/subscriptions',
+  '/coach/reports',
+  '/owner/freelance-team',
+  '/coach/settings',
+  '/coach/subscription',
+  '/owner/subscription',
+  '/owner/subscription/invoices',
+  '/coach/profile'
+];
+
+function routeOrder(route: string, order: readonly string[]): number {
+  const index = order.indexOf(route);
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+}
+
+/**
+ * Sorts only the already-visible navigation. Permission and capability
+ * filtering must happen before this helper is called.
+ */
+export function orderNavGroupsForWorkspace(
+  groups: NavGroup[],
+  workspaceType: SidebarWorkspaceType
+): NavGroup[] {
+  const order = workspaceType === 'FreelanceCoach'
+    ? FREELANCE_NAVIGATION_ORDER
+    : GYM_NAVIGATION_ORDER;
+
+  return groups
+    .map((group, groupIndex) => {
+      const items = group.items
+        .map((item, itemIndex) => ({ item, itemIndex }))
+        .sort((left, right) => {
+          const rankDifference = routeOrder(left.item.route, order) - routeOrder(right.item.route, order);
+          return rankDifference || left.itemIndex - right.itemIndex;
+        })
+        .map(({ item }) => item);
+      const groupRank = items.length
+        ? Math.min(...items.map(item => routeOrder(item.route, order)))
+        : Number.MAX_SAFE_INTEGER;
+
+      return { group, groupIndex, groupRank, items };
+    })
+    .sort((left, right) => left.groupRank - right.groupRank || left.groupIndex - right.groupIndex)
+    .map(({ group, items }) => ({ ...group, items }));
 }
 
 @Component({
@@ -1099,10 +1205,31 @@ export class SidebarComponent {
   }
 
   get visibleNavGroups(): NavGroup[] {
-    return this.navGroups
+    const visibleGroups = this.navGroups
       .filter(group => this.matchesPanel(group.roles) && this.matchesPermission(group.permission))
-      .map(group => ({ ...group, items: group.items.filter(item => this.canShowItem(item)) }))
+      .map(group => {
+        const items = group.items.filter(item => this.canShowItem(item));
+        return {
+          ...group,
+          title: this.contextualGroupTitle(group, items),
+          items
+        };
+      })
       .filter(group => group.items.length > 0);
+
+    return orderNavGroupsForWorkspace(
+      visibleGroups,
+      this.authService.isFreelanceWorkspace() ? 'FreelanceCoach' : 'Gym'
+    );
+  }
+
+  private contextualGroupTitle(group: NavGroup, items: NavItem[]): string {
+    if (this.authService.isFreelanceWorkspace()
+      && group.items.some(item => item.route === '/owner/freelance-team')
+      && items.some(item => item.route === '/owner/freelance-team')) {
+      return '\u0641\u0631\u064a\u0642 \u0627\u0644\u0645\u0633\u0627\u0639\u062f\u0629';
+    }
+    return group.title;
   }
 
   get filteredNavGroups(): NavGroup[] {

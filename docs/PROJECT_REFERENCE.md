@@ -425,3 +425,17 @@ capabilities instead of the Gym set. The application initializer refreshes an ol
 session before route activation. This prevents an old browser record from exposing Gym
 navigation; the backend remains the final authorization boundary. This fix is local until its
 PR is merged, released, deployed, and health-verified.
+
+### Issue #88 - ordered workspace sidebar
+
+The shared sidebar now sorts the already-visible links by the selected workspace workflow.
+Gym owners see dashboard and operations first, followed by members/coaches, memberships and
+attendance, facilities, group classes, finance, inventory/POS, reports, staff/payroll, settings,
+platform subscription, and profile. FreelanceCoach owners see clients, training and nutrition,
+measurements, sessions and communication, coaching finance/reports, assistant team, settings,
+subscription, and profile.
+
+Ordering is frontend-only and uses the existing route/capability snapshot. It does not add APIs,
+permissions, or tenant data access. A FreelanceCoach group containing only
+/owner/freelance-team is labelled Assistant Team in that context; Gym-only links remain filtered
+out before ordering. Unknown future routes retain their original relative position.
