@@ -6,8 +6,8 @@
 
 > **Issue #77 / Backend #292:** The login screen must receive a `200` identity context for a
 > verified owner whose application is still pending, then show the application-status action and
-> keep dashboard access blocked. Invalid credentials remain `401`. The Backend fix is pending
-> release; the Angular flow and endpoint contract are unchanged.
+> keep dashboard access blocked. Invalid credentials remain `401`. Backend #292 is merged; the
+> Angular flow and endpoint contract are unchanged and still require a production publish.
 
 1. The public application root redirects to `/identity/login`, a single RTL card using Email +
    Password.
@@ -38,6 +38,24 @@ When workspace selection returns `mustChangePassword`, the user is routed to the
 actual role (`/owner/profile`, `/coach/profile`, or `/client/profile`). `authGuard` redirects any
 other protected route back to that profile until the password change succeeds; the local flag is
 cleared only after `POST /api/auth/change-password` succeeds.
+
+### Workspace selection availability (Backend #294)
+
+`POST /api/identity/select-workspace` is the server exchange that turns the short-lived selection
+token into the tenant JWT. The Backend verifies the platform membership first, then resolves the
+assigned tenant database before loading the local account and permissions. The Angular client must
+keep the loading state visible while this request is running and handle these outcomes explicitly:
+
+- `200`: store only the access token, keep the refresh token in the HttpOnly cookie, and continue
+  to the dashboard or first-login password-change route.
+- `403`: show the workspace access state (missing/inactive account or membership) and do not open
+  tenant pages.
+- `503` with `code=TENANT_DATABASE_UNAVAILABLE`: show the workspace-not-ready state and allow a
+  retry from the login context; never render a blank dashboard or retry with a client-supplied
+  database identifier.
+
+After a successful exchange, the first dashboard request is routed by the server-side tenant
+database mapping. The browser does not receive or submit connection material.
 
 ### Existing freelance application flow
 
