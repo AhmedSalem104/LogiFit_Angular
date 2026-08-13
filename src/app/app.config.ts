@@ -9,6 +9,7 @@ import { routes } from './app.routes';
 import { jwtInterceptor } from './core/auth/interceptors/jwt.interceptor';
 import { errorInterceptor } from './core/auth/interceptors/error.interceptor';
 import { BrandingService } from './core/services/branding.service';
+import { AuthService } from './core/auth/services/auth.service';
 
 /**
  * Load white-label branding (colors/logo/appName) + resolve tenantId from the
@@ -16,6 +17,15 @@ import { BrandingService } from './core/services/branding.service';
  */
 function initBranding(branding: BrandingService) {
   return () => firstValueFrom(branding.bootstrap()).catch(() => null);
+}
+
+/**
+ * Reconcile sessions created before workspaceType/capabilities were part of
+ * the auth contract. The server is authoritative; a missing context is never
+ * interpreted as a Gym session.
+ */
+function initAuthSession(auth: AuthService) {
+  return () => firstValueFrom(auth.restoreSession()).catch(() => false);
 }
 
 export const appConfig: ApplicationConfig = {
@@ -36,6 +46,12 @@ export const appConfig: ApplicationConfig = {
       provide: APP_INITIALIZER,
       useFactory: initBranding,
       deps: [BrandingService],
+      multi: true
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initAuthSession,
+      deps: [AuthService],
       multi: true
     }
   ]

@@ -230,3 +230,11 @@ the user can deliberately open the platform subscription screen when an upgrade 
 
 Switching tenants recalculates the snapshot and route surface. Tenant IDs, workspace type, and
 permissions from the browser are never treated as a security boundary.
+
+### Issue #86 — stale-session protection
+
+When the browser contains a session created before `workspaceType` was stored, startup performs a
+single tenant refresh. A valid `FreelanceCoach` response restores the coaching capabilities and
+lands on `/coach/dashboard`; a missing or invalid type clears the stale session and returns the
+user to `/identity/login`. The UI never falls back to Gym capabilities, and direct Gym URLs still
+resolve to `/workspace-unavailable` without invoking their feature API.

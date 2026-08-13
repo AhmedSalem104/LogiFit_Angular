@@ -11,7 +11,7 @@ import { RouterLink } from '@angular/router';
         <i class="pi pi-lock" aria-hidden="true"></i>
         <h1>الميزة غير متاحة لهذه المساحة</h1>
         <p>هذه الشاشة مخصصة لنوع مساحة عمل مختلف. استخدم أقسام مساحتك الحالية من القائمة.</p>
-        <a routerLink="/coach/dashboard" class="primary">العودة إلى لوحة المساحة</a>
+        <a routerLink="/identity/login" class="primary">تسجيل الدخول من جديد</a>
       </div>
     </main>
   `,

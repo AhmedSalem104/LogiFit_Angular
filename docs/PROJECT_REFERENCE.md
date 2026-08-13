@@ -417,3 +417,11 @@ returns `WORKSPACE_CAPABILITY_NOT_AVAILABLE` for an invalid workspace feature. T
 components and API services remain reused; only the presentation routes, navigation, and
 capability-aware entry points differ. This implementation is local/task-branch only until the
 Backend and Tenant UI changes are merged, released, deployed, and health-verified.
+
+### Issue #86 — stale workspace context
+
+The capability fallback is fail-closed: `undefined` or an unknown workspace type returns no
+capabilities instead of the Gym set. The application initializer refreshes an old authenticated
+session before route activation. This prevents an old browser record from exposing Gym
+navigation; the backend remains the final authorization boundary. This fix is local until its
+PR is merged, released, deployed, and health-verified.

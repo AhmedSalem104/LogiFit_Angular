@@ -1,7 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap, catchError, throwError, switchMap, map } from 'rxjs';
+import { Observable, tap, catchError, throwError, switchMap, map, of } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { StorageService } from '../../services/storage.service';
 import { TenantStatusService } from '../../tenant/tenant-status.service';
@@ -62,7 +62,9 @@ export class AuthService {
     this.token.set(this.loadTokenFromStorage());
     this.currentUser.set(this.loadUserFromStorage());
     this.permissionsSig.set(this.loadPermissionsFromStorage());
-    this.capabilitiesSig.set(this.currentUser()?.capabilities ?? capabilitiesForWorkspace(this.currentUser()?.workspaceType));
+    // Capabilities are derived from the selected workspace type, never from
+    // a client-controlled/stale localStorage array.
+    this.capabilitiesSig.set(capabilitiesForWorkspace(this.currentUser()?.workspaceType));
 
     // Check token expiration on init
     this.checkTokenExpiration();
@@ -137,6 +139,33 @@ export class AuthService {
         // Refresh failed → session is dead
         this.clearSession();
         return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Reconcile a session persisted by an older build. Before workspaceType was
+   * returned, the browser could retain an authenticated user without a
+   * workspace context. Refreshing once lets the server restore the selected
+   * tenant type and capabilities; if it cannot, the session is cleared rather
+   * than being treated as a Gym.
+   */
+  restoreSession(): Observable<boolean> {
+    const user = this.currentUser();
+    const hasWorkspaceContext = user?.workspaceType === 1 || user?.workspaceType === 2;
+    if (!this.token() || !user || hasWorkspaceContext) return of(!!this.token() && !!user);
+
+    return this.http.post<AuthResponse>(`${this.apiUrl}/refresh`, {}, { withCredentials: true }).pipe(
+      tap(response => {
+        if (response.workspaceType !== 1 && response.workspaceType !== 2) {
+          throw new Error('Workspace context is missing from the refreshed session.');
+        }
+        this.handleAuthSuccess(response);
+      }),
+      map(() => true),
+      catchError(() => {
+        this.clearSession();
+        return of(false);
       })
     );
   }
@@ -367,9 +396,10 @@ export class AuthService {
     // Store permissions
     const permissions = response.permissions ?? [];
     const selectedWorkspaceType = response.workspaceType ?? workspaceType;
-    const capabilities = response.capabilities?.length
-      ? response.capabilities
-      : capabilitiesForWorkspace(selectedWorkspaceType);
+    // The server remains authoritative for API authorization. The browser
+    // derives its navigation surface from the selected type so an old or
+    // tampered capability array cannot expose Gym links in a freelance UI.
+    const capabilities = capabilitiesForWorkspace(selectedWorkspaceType);
     this.storage.setItem(environment.permissionsKey, permissions);
     this.permissionsSig.set(permissions);
     this.capabilitiesSig.set(capabilities);
