@@ -4,6 +4,11 @@
 
 ### Unified login entry (2026-07-30)
 
+> **Issue #77 / Backend #292:** The login screen must receive a `200` identity context for a
+> verified owner whose application is still pending, then show the application-status action and
+> keep dashboard access blocked. Invalid credentials remain `401`. The Backend fix is pending
+> release; the Angular flow and endpoint contract are unchanged.
+
 1. The public application root redirects to `/identity/login`, a single RTL card using Email +
    Password.
 2. Email calls `POST /api/identity/login`, which returns the active-workspace/pending-application

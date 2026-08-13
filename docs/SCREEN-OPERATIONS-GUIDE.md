@@ -3,6 +3,12 @@
 ## شاشات المدرب الحر والهوية
 
 - `/identity/register`: ينشئ المدعو هوية عامة فقط عبر `POST /api/identity/register`، ثم يعرض حالة انتظار تأكيد البريد؛ لا يمنحه JWT أو عضوية أو وصولًا إلى مساحة عمل.
+
+> **Issue #77 / Backend #292:** `/identity/login` has no frontend implementation change. Its
+> expected states remain: invalid credentials show a safe `401` message; a valid verified owner
+> with a pending application sees the lifecycle card and tracking action; `canAccessDashboard` is
+> never treated as true until the backend access gate confirms readiness. This note is unreleased
+> until the backend deployment and health/login verification are complete.
 - `/identity/verify-email` و`/identity/reset-password`: شاشتا رابط بريد آمن. تقرآن token من URL fragment فقط، لا تخزنانه محليًا ولا تطبعانه في الواجهة أو السجل.
 - `/owner/freelance-team`: متاح فقط لمالك مساحة المدرب الحر الحاصل على `ManageCoaches`. يرسل طلب انضمام لمدرب أو مساعد أو عميل موجود بهوية عامة؛ لا يفعّل العضوية مباشرة ويعرض أخطاء الهوية وحدود الباقة من الخادم.
 

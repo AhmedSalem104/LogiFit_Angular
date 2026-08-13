@@ -6,6 +6,12 @@
 
 ## Freelance workspace and identity-first authentication (2026-07-29)
 
+> **Issue #77 / Backend #292 documentation note:** The existing identity-login page already calls
+> `POST /api/identity/login` and renders `pendingApplications` without opening the tenant
+> dashboard. Backend #292 fixes a Platform/Tenant query-boundary `500` on valid credentials; no
+> Angular code or response shape changes are required. This note is unreleased until the Backend
+> PR is deployed and the production health/login checks pass.
+
 ### Unified entry update (2026-07-30)
 
 - `/` now opens `/identity/login`, the public identity-first entry. It accepts Email + Password,
