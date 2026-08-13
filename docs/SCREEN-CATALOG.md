@@ -133,3 +133,25 @@ the selected freelance workspace is ready, the shared `/owner/dashboard` route r
 dashboard and coach routes accept the freelance workspace context. An optional feature `402` is
 shown by the requesting screen and is not a global redirect to the plan picker. This preserves the
 active subscription while keeping upgrade navigation explicit.
+
+## Issue #84 — Capability-driven navigation additions
+
+- `WorkspaceCapabilityGuard`: shared guard for capability-specific routes; maps owner URL prefixes
+  to `WorkspaceCapability` and redirects unavailable features to `/workspace-unavailable`.
+- `WorkspaceUnavailableComponent`: explicit blocked state for a valid authenticated user whose
+  selected workspace does not support the requested feature.
+- `Coach finance`: `/coach/finance`, reusing the shared owner payment list component and guarded by
+  `CoachingFinance` plus `ManageFinance`.
+- `Coach reports`: `/coach/reports`, combining coaching dashboard/client data with the shared
+  financial report contract and rendering client and income metrics with retry/error/empty states.
+- `Coaching subscription`: `/coach/subscription` and `/coach/subscription/invoices`, reusing the
+  shared billing screens with coaching labels and without Gym branch/employee limits.
+- `Coaching settings`: `/coach/settings`, a small workspace-focused settings entry that links to
+  profile and billing without exposing Gym settings.
+- `ClientDetailsComponent`: `/owner/clients/:id`, resolving the missing owner detail route with
+  loading, error, not-found, and back states.
+- `CoachDetailsComponent`: `/owner/coaches/:id`, with the equivalent owner detail behavior.
+
+The sidebar now filters by `workspaceType` capabilities as well as roles and permissions. Gym and
+FreelanceCoach still use the same Angular application and shared components; the selected
+workspace determines which navigation and routes are available.

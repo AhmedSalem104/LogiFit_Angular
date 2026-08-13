@@ -402,3 +402,18 @@ An untyped HTTP `402` from an optional feature or quota is rendered by the origi
 must not globally navigate to `/owner/subscription?upgrade=1`; explicit feature guards and billing
 actions remain the only upgrade entry points. This keeps an active Starter subscription active
 while showing a recoverable feature-unavailable state instead of the plan picker.
+
+## Issue #84 — Workspace capability-driven experience
+
+The selected workspace response now carries `workspaceType` and a server-calculated
+`capabilities` list. `AuthService` stores the snapshot and uses it for the shell subtitle,
+navigation filtering, and route guards. `Gym` renders the full owner back-office surface; a
+`FreelanceCoach` owner lands in the coaching experience and does not see or render Gym-only
+routes such as branches, staff, inventory, POS, gate access, membership cards, group classes, or
+gym membership plans.
+
+The frontend guard is a UX boundary only. The Backend applies the same capability contract and
+returns `WORKSPACE_CAPABILITY_NOT_AVAILABLE` for an invalid workspace feature. The shared
+components and API services remain reused; only the presentation routes, navigation, and
+capability-aware entry points differ. This implementation is local/task-branch only until the
+Backend and Tenant UI changes are merged, released, deployed, and health-verified.

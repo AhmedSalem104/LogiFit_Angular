@@ -5,6 +5,7 @@ import { AuthService } from '../../../auth/services/auth.service';
 import { ThemeState } from '../../../../state/theme.state';
 import { UserRole, Permission, BACK_OFFICE_ROLES, COACH_ROLES } from '../../../auth/models/auth.models';
 import { getRoleLabel } from '../../../auth/role-labels';
+import { requiredCapabilityForWorkspaceRoute } from '../../../auth/guards/workspace-capability.guard';
 
 interface NavItem {
   label: string;
@@ -45,7 +46,7 @@ interface NavGroup {
           </div>
           <div class="logo-text">
             <span class="logo-title">LogicFit</span>
-            <span class="logo-subtitle">Gym Management</span>
+            <span class="logo-subtitle">{{ authService.isFreelanceWorkspace() ? 'Coaching Studio' : 'Gym Management' }}</span>
           </div>
         </div>
         <button
@@ -1060,6 +1061,16 @@ export class SidebarComponent {
       items: [
         { label: 'ملفي الشخصي', icon: 'pi-user', route: '/owner/profile', roles: [UserRole.Owner] },
       ]
+    },
+    {
+      title: 'إدارة مساحة التدريب',
+      roles: [UserRole.Coach],
+      items: [
+        { label: 'المدفوعات والمديونيات', icon: 'pi-wallet', route: '/coach/finance', roles: [UserRole.Coach], permission: 'ManageFinance' },
+        { label: 'تقارير العملاء والدخل', icon: 'pi-chart-line', route: '/coach/reports', roles: [UserRole.Coach], permission: 'ViewReports' },
+        { label: 'اشتراك مساحة التدريب', icon: 'pi-star', route: '/coach/subscription', roles: [UserRole.Coach], permission: 'ManageTenantBilling' },
+        { label: 'إعدادات مساحة التدريب', icon: 'pi-cog', route: '/coach/settings', roles: [UserRole.Coach], permission: 'ManageSettings' },
+      ]
     }
   ];
 
@@ -1110,8 +1121,10 @@ export class SidebarComponent {
   }
 
   canShowItem(item: NavItem): boolean {
+    const requiredCapability = requiredCapabilityForWorkspaceRoute(item.route);
     return this.matchesPanel(item.roles)
       && this.matchesPermission(item.permission)
+      && (!requiredCapability || this.authService.hasCapability(requiredCapability))
       && (!item.freelanceOnly || this.authService.isFreelanceWorkspace());
   }
 }

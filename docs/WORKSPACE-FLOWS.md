@@ -214,3 +214,19 @@ for the same FreelanceOwner without issuing a second login or changing the JWT r
 An optional-feature or quota response with HTTP `402` stays with the screen that requested it. The
 global interceptor no longer opens the plan picker. The screen shows loading/error/retry state, and
 the user can deliberately open the platform subscription screen when an upgrade is wanted.
+
+### Issue #84 — Gym and FreelanceCoach workspace experience
+
+1. Login and workspace selection return the selected `workspaceType` and `capabilities` snapshot.
+2. `AuthService` stores that snapshot. The shell chooses `Gym Management` or `Coaching Studio`
+   and the sidebar filters every item by both permission and capability.
+3. A Gym owner enters the owner dashboard and keeps the complete gym navigation. A FreelanceCoach
+   owner enters the coach dashboard and sees clients, programs, nutrition, progress, appointments,
+   finance, reports, profile, and the limited assistant-team area.
+4. A direct URL to a feature unavailable in the selected workspace is intercepted by the parent
+   owner guard and routed to `/workspace-unavailable?capability=...`; no feature API is called.
+5. If a stale client or another caller reaches the API, the Backend remains authoritative and
+   returns HTTP 403 with `WORKSPACE_CAPABILITY_NOT_AVAILABLE`.
+
+Switching tenants recalculates the snapshot and route surface. Tenant IDs, workspace type, and
+permissions from the browser are never treated as a security boundary.

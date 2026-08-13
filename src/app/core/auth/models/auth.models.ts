@@ -53,6 +53,83 @@ export const Permissions = {
   ManageTenantBilling: 'ManageTenantBilling'
 } as const;
 
+export type WorkspaceCapability =
+  | 'GymExperience' | 'FreelanceExperience' | 'GymFacilities' | 'GymAttendance'
+  | 'GymStaff' | 'GymInventory' | 'GymPOS' | 'GymGateAccess'
+  | 'GymMembershipCards' | 'GymMembershipPlans' | 'GymSettings' | 'GymReports'
+  | 'FreelanceTeam' | 'CoachingClients' | 'CoachingPrograms' | 'CoachingNutrition'
+  | 'CoachingProgress' | 'CoachingAppointments' | 'CoachingFinance'
+  | 'CoachingReports' | 'WorkspaceBilling' | 'WorkspaceSettings' | 'WorkspaceBackups';
+
+export const WorkspaceCapabilities = {
+  GymExperience: 'GymExperience',
+  FreelanceExperience: 'FreelanceExperience',
+  GymFacilities: 'GymFacilities',
+  GymAttendance: 'GymAttendance',
+  GymStaff: 'GymStaff',
+  GymInventory: 'GymInventory',
+  GymPOS: 'GymPOS',
+  GymGateAccess: 'GymGateAccess',
+  GymMembershipCards: 'GymMembershipCards',
+  GymMembershipPlans: 'GymMembershipPlans',
+  GymSettings: 'GymSettings',
+  GymReports: 'GymReports',
+  FreelanceTeam: 'FreelanceTeam',
+  CoachingClients: 'CoachingClients',
+  CoachingPrograms: 'CoachingPrograms',
+  CoachingNutrition: 'CoachingNutrition',
+  CoachingProgress: 'CoachingProgress',
+  CoachingAppointments: 'CoachingAppointments',
+  CoachingFinance: 'CoachingFinance',
+  CoachingReports: 'CoachingReports',
+  WorkspaceBilling: 'WorkspaceBilling',
+  WorkspaceSettings: 'WorkspaceSettings',
+  WorkspaceBackups: 'WorkspaceBackups'
+} as const satisfies Record<WorkspaceCapability, WorkspaceCapability>;
+
+export function capabilitiesForWorkspace(workspaceType?: number): WorkspaceCapability[] {
+  if (workspaceType === 2) {
+    return [
+      WorkspaceCapabilities.FreelanceExperience,
+      WorkspaceCapabilities.FreelanceTeam,
+      WorkspaceCapabilities.CoachingClients,
+      WorkspaceCapabilities.CoachingPrograms,
+      WorkspaceCapabilities.CoachingNutrition,
+      WorkspaceCapabilities.CoachingProgress,
+      WorkspaceCapabilities.CoachingAppointments,
+      WorkspaceCapabilities.CoachingFinance,
+      WorkspaceCapabilities.CoachingReports,
+      WorkspaceCapabilities.WorkspaceBilling,
+      WorkspaceCapabilities.WorkspaceSettings,
+      WorkspaceCapabilities.WorkspaceBackups
+    ];
+  }
+
+  return [
+    WorkspaceCapabilities.GymExperience,
+    WorkspaceCapabilities.CoachingClients,
+    WorkspaceCapabilities.CoachingPrograms,
+    WorkspaceCapabilities.CoachingNutrition,
+    WorkspaceCapabilities.CoachingProgress,
+    WorkspaceCapabilities.CoachingAppointments,
+    WorkspaceCapabilities.CoachingFinance,
+    WorkspaceCapabilities.CoachingReports,
+    WorkspaceCapabilities.GymFacilities,
+    WorkspaceCapabilities.GymAttendance,
+    WorkspaceCapabilities.GymStaff,
+    WorkspaceCapabilities.GymInventory,
+    WorkspaceCapabilities.GymPOS,
+    WorkspaceCapabilities.GymGateAccess,
+    WorkspaceCapabilities.GymMembershipCards,
+    WorkspaceCapabilities.GymMembershipPlans,
+    WorkspaceCapabilities.GymSettings,
+    WorkspaceCapabilities.GymReports,
+    WorkspaceCapabilities.WorkspaceBilling,
+    WorkspaceCapabilities.WorkspaceSettings,
+    WorkspaceCapabilities.WorkspaceBackups
+  ];
+}
+
 // Login request. The gym is identified by `subdomain` (new backend) and/or
 // `tenantId` (current backend) — we send both for forward compatibility.
 export interface LoginRequest {
@@ -135,6 +212,8 @@ export interface AuthResponse {
   roles?: string[];
   permissions?: Permission[];
   tenantId: string;
+  workspaceType?: number;
+  capabilities?: WorkspaceCapability[];
   accessToken: string;
   expiresAt: string;
   mustChangePassword?: boolean;
@@ -152,6 +231,7 @@ export interface UserInfo {
   mustChangePassword?: boolean;
   /** Present after identity-first workspace selection; absent for legacy sessions. */
   workspaceType?: number;
+  capabilities?: WorkspaceCapability[];
 }
 
 // Decoded JWT token

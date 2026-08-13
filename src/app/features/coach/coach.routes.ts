@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { permissionGuard } from '../../core/auth/guards/permission.guard';
-import { Permissions } from '../../core/auth/models/auth.models';
+import { Permissions, WorkspaceCapabilities } from '../../core/auth/models/auth.models';
+import { workspaceCapabilityGuard } from '../../core/auth/guards/workspace-capability.guard';
 
 export const COACH_ROUTES: Routes = [
   {
@@ -28,6 +29,36 @@ export const COACH_ROUTES: Routes = [
     canActivate: [permissionGuard(Permissions.ManageClientSubscriptions)],
     loadComponent: () => import('../owner/subscriptions/subscriptions-list.component').then(m => m.SubscriptionsListComponent),
     title: 'اشتراكات العملاء'
+  },
+  {
+    path: 'finance',
+    canActivate: [workspaceCapabilityGuard(WorkspaceCapabilities.CoachingFinance), permissionGuard(Permissions.ManageFinance)],
+    loadComponent: () => import('../owner/payments/payments-list.component').then(m => m.PaymentsListComponent),
+    title: 'Coach finance'
+  },
+  {
+    path: 'reports',
+    canActivate: [workspaceCapabilityGuard(WorkspaceCapabilities.CoachingReports), permissionGuard(Permissions.ViewReports)],
+    loadComponent: () => import('./reports/coach-reports.component').then(m => m.CoachReportsComponent),
+    title: 'Coach reports'
+  },
+  {
+    path: 'subscription',
+    canActivate: [workspaceCapabilityGuard(WorkspaceCapabilities.WorkspaceBilling), permissionGuard(Permissions.ManageTenantBilling)],
+    loadComponent: () => import('../owner/subscription/my-subscription.component').then(m => m.MySubscriptionComponent),
+    title: 'Coaching subscription'
+  },
+  {
+    path: 'subscription/invoices',
+    canActivate: [workspaceCapabilityGuard(WorkspaceCapabilities.WorkspaceBilling), permissionGuard(Permissions.ManageTenantBilling)],
+    loadComponent: () => import('../owner/subscription/subscription-invoices.component').then(m => m.SubscriptionInvoicesComponent),
+    title: 'Coaching invoices'
+  },
+  {
+    path: 'settings',
+    canActivate: [workspaceCapabilityGuard(WorkspaceCapabilities.WorkspaceSettings)],
+    loadComponent: () => import('./settings/coach-settings.component').then(m => m.CoachSettingsComponent),
+    title: 'Coaching settings'
   },
   {
     path: 'workout-programs',

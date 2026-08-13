@@ -301,3 +301,20 @@ The client service must use `/api/client/my-progress` for the trainee progress r
 
 This is a frontend behavior correction. The Backend API contract and Platform Admin screens are
 unchanged; the Backend still owns subscription and feature authorization.
+
+## Issue #84 — Workspace-specific shell and access states
+
+| Screen/route | Gym behavior | FreelanceCoach behavior | Loading/empty/error/blocked state |
+|---|---|---|---|
+| Shared shell/sidebar | Shows Gym Management and gym operational navigation | Shows Coaching Studio and coaching navigation; Gym-only items are removed | Navigation is calculated from the selected capability snapshot; no invalid item is rendered |
+| `/coach/dashboard` | Available to coach-capable Gym members | Primary owner landing screen | Existing dashboard loading/error state remains visible; API errors do not create a blank panel |
+| `/coach/finance` | Available only when the existing finance permission/plan allows it | Coaching finance entry using the shared payments component | Shared component handles loading, empty, retry, and API error states |
+| `/coach/reports` | Coach/client operational reports remain available to coach-capable Gym users | Dedicated customer and income summary using coaching report APIs | Shows loading, retry, error, and a clear empty-client state |
+| `/coach/subscription` | Gym owner continues through the owner billing route | Dedicated coaching subscription route reusing the shared billing component with coaching labels | Billing component keeps loading/error/payment-review states and hides branch/employee limits for FreelanceCoach |
+| `/coach/settings` | Gym settings remain on the Gym settings route | Dedicated coaching workspace settings screen links to profile and billing without exposing Gym settings | Shows current workspace context and available capability count |
+| `/workspace-unavailable` | Used only for a missing capability or stale direct URL | Explains that the feature belongs to Gym workspaces and links back to the coaching dashboard | Explicit blocked state; no feature API is invoked |
+| `/owner/clients/:id`, `/owner/coaches/:id` | Owner detail routes now resolve to dedicated detail components | Not exposed by FreelanceCoach navigation | Detail component shows loading, not-found/API error, and a back action |
+
+Every owner lazy route has a capability-aware parent guard. The guard is not a replacement for
+the backend authorization policy. The frontend build/test changes are task-branch only until
+release and production verification.

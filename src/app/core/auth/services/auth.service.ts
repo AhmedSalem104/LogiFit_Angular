@@ -20,6 +20,8 @@ import {
   UserRoleValues,
   Permission,
   Permissions,
+  WorkspaceCapability,
+  capabilitiesForWorkspace,
   BACK_OFFICE_ROLES,
   COACH_ROLES,
   DecodedToken
@@ -35,10 +37,12 @@ export class AuthService {
   private currentUser = signal<UserInfo | null>(null);
   private token = signal<string | null>(null);
   private permissionsSig = signal<Permission[]>([]);
+  private capabilitiesSig = signal<WorkspaceCapability[]>([]);
 
   // Public readonly signals
   readonly user = this.currentUser.asReadonly();
   readonly permissions = this.permissionsSig.asReadonly();
+  readonly capabilities = this.capabilitiesSig.asReadonly();
   readonly isAuthenticated = computed(() => !!this.token() && !!this.currentUser());
   readonly userRole = computed(() => this.currentUser()?.role ?? null);
   readonly isOwner = computed(() => this.userRole() === UserRole.Owner);
@@ -58,6 +62,7 @@ export class AuthService {
     this.token.set(this.loadTokenFromStorage());
     this.currentUser.set(this.loadUserFromStorage());
     this.permissionsSig.set(this.loadPermissionsFromStorage());
+    this.capabilitiesSig.set(this.currentUser()?.capabilities ?? capabilitiesForWorkspace(this.currentUser()?.workspaceType));
 
     // Check token expiration on init
     this.checkTokenExpiration();
@@ -187,6 +192,7 @@ export class AuthService {
   /** Route used for the mandatory first-login password replacement. */
   getPasswordChangeUrlForRole(role: string | number): string {
     const mapped = this.mapRoleToEnum(role);
+    if (mapped === UserRole.Owner && this.isFreelanceWorkspace()) return '/coach/profile';
     if (COACH_ROLES.includes(mapped)) return '/coach/profile';
     if (mapped === UserRole.Client) return '/client/profile';
     return '/owner/profile';
@@ -265,6 +271,11 @@ export class AuthService {
     return permissions.every(p => owned.includes(p));
   }
 
+  /** Returns true only when the selected workspace exposes the capability. */
+  hasCapability(capability: WorkspaceCapability): boolean {
+    return this.capabilitiesSig().includes(capability);
+  }
+
   /**
    * Update user's name in local state and storage
    */
@@ -298,6 +309,7 @@ export class AuthService {
 
   /** Resolve the landing route for a role (panel is shared across role families). */
   private panelHomeForRole(role: UserRole | null): string {
+    if (role === UserRole.Owner && this.isFreelanceWorkspace()) return '/coach/dashboard';
     if (role && COACH_ROLES.includes(role)) return '/coach/dashboard';
     if (role === UserRole.Client) return '/client/dashboard';
     if (role && BACK_OFFICE_ROLES.includes(role) && role !== UserRole.Owner && !this.hasPermission(Permissions.ViewReports)) {
@@ -354,8 +366,13 @@ export class AuthService {
     this.token.set(response.accessToken);
     // Store permissions
     const permissions = response.permissions ?? [];
+    const selectedWorkspaceType = response.workspaceType ?? workspaceType;
+    const capabilities = response.capabilities?.length
+      ? response.capabilities
+      : capabilitiesForWorkspace(selectedWorkspaceType);
     this.storage.setItem(environment.permissionsKey, permissions);
     this.permissionsSig.set(permissions);
+    this.capabilitiesSig.set(capabilities);
 
     // Map primary role + roles[]
     const mappedRole = this.mapRoleToEnum(response.role);
@@ -370,7 +387,8 @@ export class AuthService {
       roles: mappedRoles.length ? mappedRoles : [mappedRole],
       tenantId: response.tenantId,
       mustChangePassword: response.mustChangePassword === true,
-      workspaceType
+      workspaceType: selectedWorkspaceType,
+      capabilities
     };
 
     this.storage.setItem(environment.userKey, userInfo);
@@ -398,6 +416,7 @@ export class AuthService {
     this.token.set(null);
     this.currentUser.set(null);
     this.permissionsSig.set([]);
+    this.capabilitiesSig.set([]);
     this.tenantStatus.clear();
   }
 

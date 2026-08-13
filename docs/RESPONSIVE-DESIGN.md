@@ -77,5 +77,13 @@
 npm run build
 ```
 
+## Workspace navigation split (Issue #84)
+
+The shared sidebar remains responsive at the existing 360/768/1024/1440 breakpoints. Capability
+filtering changes the number of visible groups, not the drawer, hover, pin, or overflow behavior.
+Verify both a Gym owner (full back-office menu) and a FreelanceCoach owner (coaching menu) in RTL
+and LTR, including the blocked-feature screen on a narrow viewport. The workspace subtitle must
+remain readable when the sidebar is collapsed.
+
 تحذيرات حجم مكونات builders وCommonJS الحالية معروفة، لكن أي خطأ TypeScript أو
 فشل build يمنع الدمج.
