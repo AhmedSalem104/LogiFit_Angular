@@ -27,7 +27,8 @@ describe('IdentityLoginComponent', () => {
     component.form.setValue({ email: 'user@example.com', password: 'StrongPassword1!' });
     component.submit();
     expect(onboarding.identityLogin).toHaveBeenCalledWith('user@example.com', 'StrongPassword1!');
-    expect(component.result()).toEqual(response);
+    expect(component.result()).toBeNull();
+    expect(component.error()).toContain('لا توجد مساحة عمل');
   });
 
   it('selects the only active workspace without waiting for the selection screen', () => {
@@ -48,6 +49,55 @@ describe('IdentityLoginComponent', () => {
 
     expect(onboarding.selectWorkspace).toHaveBeenCalledWith('selection', 'gym-1');
     expect(component.error()).toBe('');
+  });
+
+  it('enters the only active workspace even when another application is pending', () => {
+    const workspace = {
+      workspaceId: 'freelance-1', name: 'Top Coaching', identifier: 'topcoaching', workspaceType: 2,
+      workspaceStatus: 1, role: 'Owner'
+    };
+    const identityResponse = {
+      workspaceSelectionToken: 'selection', expiresAt: '2099-01-01', activeWorkspaces: [workspace],
+      pendingApplications: [{ applicationId: 'application-1', applicationType: 2, status: 3, submittedAt: null }],
+      requiresWorkspaceSelection: true
+    };
+    onboarding.identityLogin.and.returnValue(of(identityResponse));
+    onboarding.selectWorkspace.and.returnValue(of({ accessToken: 'access', tenantId: 'freelance-1', role: 'Owner' } as any));
+
+    const component = fixture.componentInstance;
+    component.form.setValue({ email: 'owner@example.com', password: 'StrongPassword1!' });
+    component.submit();
+
+    expect(onboarding.selectWorkspace).toHaveBeenCalledWith('selection', 'freelance-1');
+    expect(onboarding.reissueTrackingSessions).not.toHaveBeenCalled();
+  });
+
+  it('opens the only pending application directly without showing a context screen', () => {
+    const application = { applicationId: 'application-1', applicationType: 2, status: 3, submittedAt: null };
+    const identityResponse = {
+      workspaceSelectionToken: 'selection', expiresAt: '2099-01-01', activeWorkspaces: [],
+      pendingApplications: [application], requiresWorkspaceSelection: false
+    };
+    onboarding.identityLogin.and.returnValue(of(identityResponse));
+    onboarding.reissueTrackingSessions.and.returnValue(of([{ applicationId: 'application-1', trackingToken: 'tracking', expiresAt: '2099-01-01', status: 3 }]));
+
+    const component = fixture.componentInstance;
+    component.form.setValue({ email: 'owner@example.com', password: 'StrongPassword1!' });
+    component.submit();
+
+    expect(onboarding.reissueTrackingSessions).toHaveBeenCalledWith('selection');
+    expect(onboarding.saveTrackingToken).toHaveBeenCalledWith('tracking');
+    expect(component.result()).toEqual(identityResponse);
+  });
+
+  it('returns to the login form with a clear error when no destination exists', () => {
+    const component = fixture.componentInstance;
+    component.form.setValue({ email: 'user@example.com', password: 'StrongPassword1!' });
+    component.submit();
+
+    expect(component.result()).toBeNull();
+    expect(component.error()).toContain('لا توجد مساحة عمل');
+    expect(fixture.nativeElement.textContent).not.toContain('ابدأ باستخدام LogicFit');
   });
 
   it('does not expose a phone or OTP login surface', () => {
