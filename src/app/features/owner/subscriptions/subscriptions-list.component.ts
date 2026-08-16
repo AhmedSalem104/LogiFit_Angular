@@ -12,7 +12,7 @@ import { InputSwitchModule } from 'primeng/inputswitch';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { Observable } from 'rxjs';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -1381,10 +1381,12 @@ export class SubscriptionsListComponent implements OnInit {
   private ownerService = inject(OwnerService);
   private notificationService = inject(NotificationService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   loading = signal(true);
   errorMessage = signal('');
   plansError = signal<string | null>(null);
+  plansLoading = signal(false);
   clientsError = signal<string | null>(null);
   detailError = signal<string | null>(null);
   saving = signal(false);
@@ -1412,6 +1414,7 @@ export class SubscriptionsListComponent implements OnInit {
   createOnly = false;
   newClient = { fullName: '', phoneNumber: '', email: '', password: '' };
   showNewClientPassword = false;
+  private pendingCreateDialog = false;
 
   subscriptionForm = {
     clientId: '',
@@ -1506,19 +1509,31 @@ export class SubscriptionsListComponent implements OnInit {
   }
 
   private loadPlans(): void {
+    this.plansLoading.set(true);
     this.plansError.set(null);
     this.ownerService.getSubscriptionPlans(true).subscribe({
       next: (data) => {
         this.plans.set(data);
         this.planOptions = data.map(p => ({ label: `${p.name} - ${p.price} جنيه`, value: p.id }));
         this.planFilterOptions = data.map(p => ({ label: p.name, value: p.id }));
+        this.plansLoading.set(false);
+        if (this.pendingCreateDialog && data.length) {
+          this.pendingCreateDialog = false;
+          queueMicrotask(() => this.openSubscriptionDialog());
+        }
       },
       error: (err) => {
         const message = err?.translatedMessage || err?.error?.detail || err?.error?.message || 'تعذر تحميل باقات الاشتراك';
+        this.plansLoading.set(false);
+        this.pendingCreateDialog = false;
         this.plansError.set(message);
         this.notificationService.error(message);
       }
     });
+  }
+
+  goToPlans(): void {
+    this.router.navigate(['/owner/subscription-plans']);
   }
 
   private loadClients(): void {
@@ -1597,8 +1612,14 @@ export class SubscriptionsListComponent implements OnInit {
 
   // ==================== Subscription Dialog ====================
   openSubscriptionDialog(): void {
+    if (this.plansLoading()) {
+      this.pendingCreateDialog = true;
+      this.notificationService.info('جاري تحميل الباقات. سيتم فتح نموذج الاشتراك تلقائياً بعد اكتمال التحميل');
+      return;
+    }
     if (!this.plans().length) {
-      this.notificationService.warn('لا يمكن إنشاء اشتراك قبل تحميل باقات الاشتراك');
+      this.notificationService.warn(this.plansError() || 'لا توجد باقة اشتراك نشطة. أنشئ باقة أولاً من شاشة خطط الاشتراك');
+      if (!this.plansError()) this.goToPlans();
       return;
     }
     // The first subscription flow must be able to create the first client.
@@ -1660,7 +1681,7 @@ export class SubscriptionsListComponent implements OnInit {
       },
       error: (err: any) => {
         this.saving.set(false);
-        const msg = err.error?.message || 'حدث خطأ أثناء إنشاء الاشتراك';
+        const msg = err.error?.message || err.error?.detail || err.translatedMessage || 'حدث خطأ أثناء إنشاء الاشتراك';
         this.notificationService.error(msg);
       }
     });
