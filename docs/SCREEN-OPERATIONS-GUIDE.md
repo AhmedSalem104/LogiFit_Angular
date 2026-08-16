@@ -364,3 +364,41 @@ aggregate APIs; the client screen uses the authenticated self-service check-in c
 are not a security boundary: tenant, assignment, membership, ownership, and active-plan checks remain
 server-side. These additions are merged into Tenant UI `main`; release and post-release health
 verification remain deployment steps.
+
+## TOP-GYM screen consolidation (follow-up 2026-08-17)
+
+### `/owner/clients` — المشتركين (canonical entry)
+
+This is the only primary Gym screen for member registration and list operations. It contains the
+member table, search/status filters, membership/expiry/balance columns, and row actions. `إضافة
+مشترك` opens one responsive three-stage dialog:
+
+1. بيانات المشترك: full name, phone, optional email/gender/birth date, registration date, and notes.
+2. العضوية والدفع: active plan, start date, payment method, amount paid, discount and payment notes;
+   loading/empty/error plan states are explicit. The operator must actively choose the no-membership
+   option if the record is intentionally deferred.
+3. مراجعة وحفظ: a read-only summary and one save button. Success navigates to `/owner/clients/:id`;
+   failure states that the transaction was not completed and keeps the dialog actionable.
+
+The dialog does not ask for a client password. The Backend generates the client credential according
+to its existing policy. The client list uses `POST /api/clients/onboard`, so a selected membership
+and its first payment are committed in the same server transaction.
+
+### Canonical area screens
+
+| Screen | Role/type | Purpose | What it replaces in primary navigation |
+|---|---|---|---|
+| `/owner/management` | Gym | Branches, facilities, coaches, staff, attendance, gate, classes and POS entry cards | Separate sidebar groups for every management sub-route |
+| `/owner/finance` | Gym | Membership ledger, plans, payments, invoices and expenses entry cards | Repeated finance/subscription links |
+| `/coach/library` | Gym/FreelanceCoach | Exercises, foods and muscles entry cards | Three parallel library sections |
+| `/coach/trainees` | Gym/FreelanceCoach | External trainees for Gym; clients for FreelanceCoach | Ambiguous “trainees” label in both workspaces |
+
+Detailed routes remain protected and usable from the area cards, member row actions, or existing
+bookmarks. They are not duplicated in the primary sidebar. The legacy operations dashboard/report
+URLs redirect to the canonical dashboard/reports pages.
+
+### Required responsive checks
+
+The onboarding dialog must be verified at `360x800`, `768x1024`, `1024x768`, and `1440x900`: three
+steps remain understandable, two-column fields collapse on mobile, footer actions remain reachable,
+and no horizontal page overflow is introduced. The area hubs use a one-column card grid on mobile.

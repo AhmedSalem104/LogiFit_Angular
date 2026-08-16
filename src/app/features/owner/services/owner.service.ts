@@ -32,7 +32,7 @@ export interface ClientProfile {
 export interface CreateClientRequest {
   email?: string;
   phoneNumber: string;
-  password: string;
+  password?: string;
   fullName: string;
   gender?: number;
   birthDate?: string;

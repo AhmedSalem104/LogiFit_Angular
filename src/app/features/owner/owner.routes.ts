@@ -3,12 +3,17 @@ import { featureGuard } from '../../core/auth/guards/feature.guard';
 import { permissionGuard } from '../../core/auth/guards/permission.guard';
 import { Permissions } from '../../core/auth/models/auth.models';
 import { freelanceWorkspaceGuard } from '../../core/auth/guards/freelance-workspace.guard';
+import { FeatureHubComponent, GYM_FINANCE_HUB, GYM_MANAGEMENT_HUB } from '../../shared/components/feature-hub/feature-hub.component';
 
 export const ownerRoutes: Routes = [
   // Main
   { path: 'dashboard', canActivate: [permissionGuard(Permissions.ViewReports)], loadComponent: () => import('./dashboard/owner-dashboard.component').then(m => m.OwnerDashboardComponent), title: 'لوحة التحكم - LogicFit' },
   { path: 'profile', loadComponent: () => import('./profile/owner-profile.component').then(m => m.OwnerProfileComponent), title: 'الملف الشخصي - LogicFit' },
-  { path: 'operations', canActivate: [permissionGuard(Permissions.ViewReports)], loadComponent: () => import('./operations-dashboard/operations-dashboard.component').then(m => m.OperationsDashboardComponent), title: 'لوحة التشغيل - LogicFit' },
+  // TOP-GYM has one dashboard tab. Keep the legacy URL recoverable without
+  // exposing a second dashboard screen in the product navigation.
+  { path: 'operations', redirectTo: 'dashboard', pathMatch: 'full' },
+  { path: 'management', canActivate: [permissionGuard(Permissions.ViewMembers)], component: FeatureHubComponent, data: { hub: GYM_MANAGEMENT_HUB }, title: 'إدارة الجيم - LogicFit' },
+  { path: 'finance', canActivate: [permissionGuard(Permissions.ManageFinance)], component: FeatureHubComponent, data: { hub: GYM_FINANCE_HUB }, title: 'المالية والاشتراكات - LogicFit' },
 
   // Members
   { path: 'clients/:id', canActivate: [permissionGuard(Permissions.ViewMembers)], loadComponent: () => import('./clients/client-details.component').then(m => m.ClientDetailsComponent), title: 'Client details' },
@@ -59,7 +64,9 @@ export const ownerRoutes: Routes = [
 
   // Reports
   { path: 'reports', canActivate: [permissionGuard(Permissions.ViewReports)], loadComponent: () => import('./reports/reports.component').then(m => m.ReportsComponent), title: 'Reports access' },
-  { path: 'operations-reports', canActivate: [permissionGuard(Permissions.ViewReports)], loadComponent: () => import('./operations-dashboard/operations-reports.component').then(m => m.OperationsReportsComponent), title: 'التقارير التشغيلية' },
+  // Reports are one canonical area; the former operations-only report URL is
+  // retained as a safe redirect for bookmarks.
+  { path: 'operations-reports', redirectTo: 'reports', pathMatch: 'full' },
 
   // Platform Subscription & Billing (اشتراك الصالة في المنصة)
   { path: 'subscription', canActivate: [permissionGuard(Permissions.ManageTenantBilling)], loadComponent: () => import('./subscription/my-subscription.component').then(m => m.MySubscriptionComponent), title: 'اشتراك الصالة' },

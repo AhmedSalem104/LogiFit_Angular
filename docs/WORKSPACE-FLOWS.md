@@ -278,18 +278,22 @@ steps.
 
 ### Exact TOP-GYM subscriber journey (2026-08-17)
 
-The Tenant UI presents the subscriber workflow in the same order as the TOP-GYM specification.
-The order is deliberate and is the contract for the Gym owner experience:
+The Tenant UI now follows the TOP-GYM specification with one canonical member entry point and a
+single three-stage dialog. The order is the contract for the Gym owner experience:
 
-1. **Member onboarding/list** — `/owner/clients`. Create the Member identity and keep the list,
-   search, status, membership, expiry, balance, coach, and actions in one place. The create dialog
-   creates the Member first; it does not force a plan selection in step one.
-2. **Membership/subscription/payment** — `/owner/subscriptions?clientId={id}&create=1`. Select the
-   known plan, period, start date, discount, amount paid, payment method, and save the membership.
-   The server remains the source of truth for price, dates, payment ledger, receipt, and status.
-3. **Member profile/overview** — `/owner/clients/{id}`. The composite overview loads the member,
-   memberships/payments, programs, diet plans, measurements, sessions, meal logs, and daily
-   readiness without opening separate duplicate profile pages.
+1. **Member onboarding/list** — `/owner/clients`. The list owns search, status, membership, expiry,
+   balance, coach, and row actions. `إضافة مشترك` opens the canonical dialog; the operator is not
+   sent to a second generic person screen.
+2. **Membership/subscription/payment** — stage 2 of `app-member-onboarding-dialog`. It loads active
+   plans, accepts the plan, start/registration date, discount, amount paid, payment method, and
+   notes, and allows an explicitly chosen no-membership path for an external/member record that
+   will be completed later.
+3. **Review/save** — stage 3 submits `POST /api/clients/onboard` once. The Backend transaction
+   creates the member and, when selected, the membership, payment ledger entry, and card together.
+   A failure returns the operator to an actionable error and does not leave a half-created flow.
+4. **Member profile/overview** — `/owner/clients/{id}` after a successful response. The composite
+   overview loads the member, memberships/payments, programs, diet plans, measurements, sessions,
+   meal logs, and daily readiness without opening separate duplicate profile pages.
 4. **Workout programming/execution** — `/coach/workout-programs/create?clientId={id}` for the
    three-stage builder (basic information, program structure, review/save). Execution history is
    shown in the member overview and trainee detail screens.
@@ -304,16 +308,24 @@ The order is deliberate and is the contract for the Gym owner experience:
 8. **Reports** — `/owner/reports`. Open after the member context has been reviewed; aggregate and
    financial/operational reports remain separate from the member profile.
 
-The Gym sidebar has one dedicated `رحلة المشترك` group in this same order. Plan-catalog management,
-staff, branches, attendance, inventory, POS, and other Gym operations remain available in their own
-groups after the journey. FreelanceCoach never receives this Gym-only group; its coaching navigation
-continues to use the shared coaching components and `Coaching*` capabilities.
+The primary sidebar now exposes one area per product concept instead of duplicate feature links:
+
+- Gym: dashboard, members, external trainees, training/nutrition/progress, Gym management, finance
+  and memberships, library, reports, settings.
+- FreelanceCoach: dashboard, clients, training programs, nutrition, progress, sessions, payments,
+  reports, assistant team, library, settings.
+
+Legacy detail routes remain available for existing bookmarks and row actions, but are not displayed
+as parallel primary screens. `/owner/operations` redirects to the single dashboard, and
+`/owner/operations-reports` redirects to the single reports area. FreelanceCoach cannot reach Gym
+membership routes through the coaching navigation; the workspace capability guard remains the first
+frontend boundary and the Backend remains authoritative.
 
 ### API mapping and boundaries
 
 | Journey stage | UI API calls | Boundary |
 |---|---|---|
-| Member list/onboarding | `GET /api/clients`, `POST /api/clients/onboard` | Member identity is created once; duplicate/tenant rules stay server-side. |
+| Member list/onboarding | `GET /api/clients`, `GET /api/subscriptions/plans`, `POST /api/clients/onboard` | The three-stage dialog sends one compound request; duplicate/tenant/transaction rules stay server-side. |
 | Membership/payment | `GET /api/subscriptions/plans`, `GET /api/subscriptions`, `POST /api/subscriptions`, `POST /api/subscriptions/{id}/payment` | Price, balance, status, receipt, renew/freeze/cancel are server-owned. |
 | Profile/overview | `GET /api/clients/{id}/training-overview` | The server filters by tenant and returns the composite view. |
 | Workout | `GET/POST/PUT/DELETE /api/workoutprograms*`, `/api/workoutsessions*` | Nested program saves are transactional; execution is member-scoped. |

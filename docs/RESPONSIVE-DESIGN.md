@@ -95,3 +95,15 @@ drawer. The change is limited to link and section order; it does not change draw
 breakpoints, hover expansion, pin persistence, search behavior, or overflow rules. Verify the
 workflow order for both Gym and FreelanceCoach at 360, 768, 1024, and 1440 widths in RTL and LTR.
 In collapsed mode every ordered item must remain identifiable by its icon tooltip/title.
+
+## TOP-GYM canonical areas and member dialog (2026-08-17)
+
+The primary sidebar is intentionally short: one link represents each product area, while detailed
+operations open from the area hub or from the member profile. The consolidation must not change the
+existing drawer, hover, pin, or RTL/LTR behavior. Check the Gym and FreelanceCoach variants at all
+four required widths.
+
+The member onboarding dialog uses three stages. At `360px` and `480px` the step labels may stack
+under their number, the form becomes one column, and the action footer remains visible after scroll.
+At tablet and desktop widths the form uses two columns and the price summary uses three columns.
+Loading, no-plan, API-error, and saving states must never render a blank dialog.

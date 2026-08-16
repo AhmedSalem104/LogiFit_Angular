@@ -13,8 +13,9 @@ import { ExportMenuComponent, ExportFormat } from '../../../shared/components/ex
 import { ExportService } from '../../../core/services/export.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { OwnerService, Client } from '../services/owner.service';
-import { ClientSubscription, StatusLabels, SubscriptionStatus } from '../services/owner.service';
+import { ClientSubscription, OnboardClientRequest, StatusLabels, SubscriptionPlan, SubscriptionStatus } from '../services/owner.service';
 import { PersonFormDialogComponent, PersonFormValue, PersonFormInitial } from '../../../shared/components/person-form-dialog/person-form-dialog.component';
+import { MemberOnboardingDialogComponent, MemberOnboardingValue } from './member-onboarding-dialog.component';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import Swal from 'sweetalert2';
@@ -53,7 +54,8 @@ interface ClientDisplay {
     PageHeaderComponent,
     LoadingSkeletonComponent,
     ExportMenuComponent,
-    PersonFormDialogComponent
+    PersonFormDialogComponent,
+    MemberOnboardingDialogComponent
   ],
   template: `
     <div class="clients-page">
@@ -296,7 +298,18 @@ interface ClientDisplay {
         </p-table>
       </div>
 
+      <app-member-onboarding-dialog
+        [open]="dialogOpen() && dialogMode() === 'add'"
+        [saving]="dialogSaving()"
+        [plans]="membershipPlans()"
+        [plansLoading]="plansLoading()"
+        [plansError]="plansError()"
+        (save)="onMemberOnboardingSave($event)"
+        (cancel)="closeDialog()"
+      ></app-member-onboarding-dialog>
+
       <app-person-form-dialog
+        *ngIf="dialogMode() === 'edit'"
         [open]="dialogOpen()"
         [mode]="dialogMode()"
         entityLabel="عميل"
@@ -337,9 +350,9 @@ interface ClientDisplay {
     .member-flow__heading > i { color: #2563eb; font-size: 1.3rem; margin-top: .3rem; }
     .eyebrow { color: #2563eb; font-size: .78rem; font-weight: 700; }
 
-    .member-flow__steps {
+  .member-flow__steps {
       display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
+      grid-template-columns: repeat(8, minmax(0, 1fr));
       gap: .5rem;
       list-style: none;
       padding: 0;
@@ -587,6 +600,9 @@ export class ClientsListComponent implements OnInit {
   dialogSaving = signal(false);
   dialogInitial = signal<PersonFormInitial | null>(null);
   private editingId: string | null = null;
+  membershipPlans = signal<SubscriptionPlan[]>([]);
+  plansLoading = signal(false);
+  plansError = signal<string | null>(null);
 
   ngOnInit(): void {
     this.loadClients();
@@ -708,7 +724,24 @@ export class ClientsListComponent implements OnInit {
     this.editingId = null;
     this.dialogMode.set('add');
     this.dialogInitial.set(null);
+    this.loadMembershipPlans();
     this.dialogOpen.set(true);
+  }
+
+  private loadMembershipPlans(): void {
+    this.plansLoading.set(true);
+    this.plansError.set(null);
+    this.ownerService.getSubscriptionPlans(true).subscribe({
+      next: plans => {
+        this.membershipPlans.set(plans);
+        this.plansLoading.set(false);
+      },
+      error: err => {
+        this.membershipPlans.set([]);
+        this.plansLoading.set(false);
+        this.plansError.set(err?.translatedMessage || err?.error?.detail || err?.error?.message || 'تعذر تحميل الباقات. أعد المحاولة بعد التحقق من الاتصال.');
+      }
+    });
   }
 
   viewClient(client: ClientDisplay): void {
@@ -772,7 +805,6 @@ export class ClientsListComponent implements OnInit {
       this.dialogOpen.set(false);
       this.notificationService.success(msg);
       this.loadClients();
-      if (clientId) this.offerNextMemberStep(clientId);
     };
     const fail = (err: any) => {
       this.dialogSaving.set(false);
@@ -780,10 +812,10 @@ export class ClientsListComponent implements OnInit {
     };
 
     if (this.dialogMode() === 'add') {
-      this.onboardWithOptionalMembership(value, done, fail);
-      /*
-      }).subscribe({ next: () => done('تمت إضافة العميل بنجاح'), error: fail });
-      */
+      // Add mode is handled by the three-stage member dialog below. Keeping
+      // this branch defensive prevents the old generic dialog from creating a
+      // member without the documented membership/payment decision.
+      fail({ translatedMessage: 'استخدم تدفق إضافة المشترك الموحّد.' });
     } else if (this.editingId) {
       this.ownerService.updateClient(this.editingId, {
         fullName: value.fullName,
@@ -795,38 +827,38 @@ export class ClientsListComponent implements OnInit {
     }
   }
 
-  private onboardWithOptionalMembership(value: PersonFormValue, done: (msg: string, clientId?: string) => void, fail: (err: any) => void): void {
-    // The documented journey keeps onboarding separate from membership/payment:
-    // create the Member first, then open the membership screen as step two.
-    // This also prevents a plan-catalog failure from blocking member creation.
-    this.ownerService.onboardClient({ ...value, password: value.password!, membership: null }).subscribe({
-      next: (response) => done('تم إنشاء المشترك. الخطوة التالية هي العضوية والدفع.', this.readClientId(response)),
-      error: fail
+  onMemberOnboardingSave(value: MemberOnboardingValue): void {
+    this.dialogSaving.set(true);
+    const request: OnboardClientRequest = {
+      fullName: value.fullName,
+      phoneNumber: value.phoneNumber,
+      email: value.email,
+      gender: value.gender,
+      birthDate: value.birthDate,
+      // The backend generates a password when the operator does not provide
+      // one. Member onboarding should not expose an unnecessary password field.
+      membership: value.membership
+    };
+
+    this.ownerService.onboardClient(request).subscribe({
+      next: response => {
+        const clientId = this.readClientId(response);
+        this.dialogSaving.set(false);
+        this.dialogOpen.set(false);
+        this.notificationService.success(value.membership ? 'تم إنشاء المشترك والعضوية وتسجيل الدفعة.' : 'تم إنشاء المشترك بدون عضوية.');
+        this.loadClients();
+        if (clientId) this.router.navigate(['/owner/clients', clientId]);
+      },
+      error: err => {
+        this.dialogSaving.set(false);
+        this.notificationService.error(err?.translatedMessage || err?.error?.detail || err?.error?.message || 'تعذر إنشاء المشترك. لم يتم حفظ أي جزء من العملية.');
+      }
     });
   }
 
   private readClientId(response: unknown): string | undefined {
     const result = response as { clientId?: string; ClientId?: string } | null;
     return result?.clientId || result?.ClientId;
-  }
-
-  private offerNextMemberStep(clientId: string): void {
-    Swal.fire({
-      title: 'تم إنشاء المشترك',
-      text: 'الخطوة التالية في المواصفة هي إضافة العضوية والدفع، ويمكنك فتح الملف لمتابعة التدريب والتغذية.',
-      showDenyButton: true,
-      showCancelButton: true,
-      confirmButtonText: 'إضافة العضوية والدفع',
-      denyButtonText: 'فتح ملف المشترك',
-      cancelButtonText: 'البقاء في القائمة',
-      reverseButtons: true
-    }).then(result => {
-      if (result.isConfirmed) {
-        this.router.navigate(['/owner/subscriptions'], { queryParams: { clientId, create: 1 } });
-      } else if (result.isDenied) {
-        this.router.navigate(['/owner/clients', clientId]);
-      }
-    });
   }
 
   deleteClient(client: ClientDisplay): void {
