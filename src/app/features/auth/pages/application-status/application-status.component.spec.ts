@@ -13,7 +13,8 @@ describe('ApplicationStatusComponent tracking recovery', () => {
 
   beforeEach(() => {
     onboarding = jasmine.createSpyObj<FreelanceOnboardingService>('FreelanceOnboardingService', [
-      'getTrackingToken', 'getTrackingStatus', 'clearTrackingToken',
+      'getTrackingToken', 'getTrackingStatus', 'clearTrackingToken', 'uploadPaymentProof',
+      'updateRequestedFields', 'resubmit',
     ]);
     router = jasmine.createSpyObj<Router>('Router', ['navigate']);
 
@@ -107,5 +108,48 @@ describe('ApplicationStatusComponent tracking recovery', () => {
       replaceUrl: true,
     });
     component.ngOnDestroy();
+  });
+
+  it('uploads the proof and excludes the special PaymentProof field from JSON completion data', () => {
+    const application = trackingStatus({
+      status: ApplicationRequestStatus.NeedsMoreInformation,
+      paymentRequestId: 'payment-1',
+      paymentStatus: 1,
+      paymentProofVersion: 0,
+      requestedFields: ['WorkspaceName', 'PaymentProof'],
+    });
+    onboarding.uploadPaymentProof.and.returnValue(of({
+      applicationId: application.applicationId,
+      version: 1,
+      originalFileName: 'receipt.png',
+      contentType: 'image/png',
+      sizeBytes: 10,
+    }));
+    onboarding.updateRequestedFields.and.returnValue(of(application));
+    onboarding.resubmit.and.returnValue(of(trackingStatus({ status: ApplicationRequestStatus.Submitted })));
+    onboarding.getTrackingStatus.and.returnValue(of(trackingStatus({ status: ApplicationRequestStatus.Submitted })));
+    const proofFile = new File(['proof'], 'receipt.png', { type: 'image/png' });
+    component.proofFile = proofFile;
+    component.form.controls.WorkspaceName.setValue('Axis Gym');
+
+    component.saveAndResubmit(application);
+
+    expect(onboarding.uploadPaymentProof).toHaveBeenCalledWith(proofFile);
+    expect(onboarding.updateRequestedFields).toHaveBeenCalledWith({ WorkspaceName: 'Axis Gym' });
+    expect(onboarding.resubmit).toHaveBeenCalled();
+    expect(component.error()).toBe('');
+  });
+
+  it('shows the proof action when a platform-created workspace has no proof yet', () => {
+    const application = trackingStatus({
+      applicationType: 1,
+      status: ApplicationRequestStatus.NeedsMoreInformation,
+      paymentRequestId: 'payment-1',
+      paymentStatus: 1,
+      paymentProofVersion: 0,
+      requestedFields: ['WorkspaceName'],
+    });
+
+    expect(component.requiresPaymentProof(application)).toBeTrue();
   });
 });

@@ -2477,6 +2477,14 @@ Generated: `2026-08-13 15:38 UTC`  |  Total endpoints: **396**
 - **Inputs:** No request input.
 - **Declared response:** typeof(ApplicationTrackingStatusDto), StatusCodes.Status200OK
 
+#### `POST /api/workspace-applications/tracking/payment-proof` - `UploadTrackingPaymentProof`
+
+- **Access:** Anonymous route protected by `X-Application-Tracking-Token`
+- **Inputs:** Multipart form `proof`: JPG, PNG, or PDF up to 10 MB.
+- **Declared response:** typeof(ApplicationPaymentProofUploadedDto), StatusCodes.Status200OK
+- **Purpose:** Stores a retained private proof version for the token's own Gym/FreelanceCoach
+  application; the client does not submit a PaymentRequestId or receive a storage key.
+
 ### WorkspaceClientJoinCodes
 
 #### `POST /api/workspace/client-join-codes` - `Generate`

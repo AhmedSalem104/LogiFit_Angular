@@ -84,7 +84,9 @@ export interface ApplicationTrackingStatus {
   submittedAt: string | null;
   reviewedAt: string | null;
   workspaceType?: WorkspaceType | null;
+  paymentRequestId?: string | null;
   paymentStatus?: number | null;
+  paymentProofVersion?: number;
   workspaceStatus?: number | null;
   subscriptionStatus?: number | null;
   databaseStatus?: number | null;
