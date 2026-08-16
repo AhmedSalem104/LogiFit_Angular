@@ -388,10 +388,17 @@ and its first payment are committed in the same server transaction.
 
 | Screen | Role/type | Purpose | What it replaces in primary navigation |
 |---|---|---|---|
-| `/owner/management` | Gym | Branches, facilities, coaches, staff, attendance, gate, classes and POS entry cards | Separate sidebar groups for every management sub-route |
-| `/owner/finance` | Gym | Membership ledger, plans, payments, invoices and expenses entry cards | Repeated finance/subscription links |
+| `/owner/management` | Gym | Branches, facilities, coaches, staff, gate, classes and POS entry cards | Separate sidebar groups for every management sub-route |
+| `/owner/attendance` | Gym | Attendance and check-in operations | Attendance hidden inside unrelated management navigation |
+| `/owner/expenses` | Gym | Expense entry and monthly financial refresh | Finance hub as a mandatory extra step |
+| `/owner/finance` | Gym | Compatibility area for membership ledger, plans, payments, invoices and expenses | Not a primary sidebar screen; membership actions start from the member profile and expenses use `/owner/expenses` |
 | `/coach/library` | Gym/FreelanceCoach | Exercises, foods and muscles entry cards | Three parallel library sections |
 | `/coach/trainees` | Gym/FreelanceCoach | External trainees for Gym; clients for FreelanceCoach | Ambiguous “trainees” label in both workspaces |
+
+The primary sidebar follows the TOP-GYM tabs: dashboard, members, trainees, management, attendance,
+expenses, library, and reports. Workout programs, nutrition plans, measurements, sessions, and
+membership/payment actions remain detail operations opened from the selected member/client or from
+its row actions; they are not repeated as top-level links.
 
 Detailed routes remain protected and usable from the area cards, member row actions, or existing
 bookmarks. They are not duplicated in the primary sidebar. The legacy operations dashboard/report

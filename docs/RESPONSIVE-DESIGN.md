@@ -98,10 +98,13 @@ In collapsed mode every ordered item must remain identifiable by its icon toolti
 
 ## TOP-GYM canonical areas and member dialog (2026-08-17)
 
-The primary sidebar is intentionally short: one link represents each product area, while detailed
-operations open from the area hub or from the member profile. The consolidation must not change the
-existing drawer, hover, pin, or RTL/LTR behavior. Check the Gym and FreelanceCoach variants at all
-four required widths.
+The primary sidebar is intentionally short and follows the TOP-GYM tabs: dashboard, members,
+trainees, management, attendance, expenses, library, and reports. For FreelanceCoach, the same
+shell presents clients, payments/debts, sessions/appointments, library, reports, and the assistant
+team. Detailed training, nutrition, measurement, membership, and payment operations open from the
+selected member/client or its row actions. The consolidation must not change the existing drawer,
+hover, pin, or RTL/LTR behavior. Check the Gym and FreelanceCoach variants at all four required
+widths.
 
 The member onboarding dialog uses three stages. At `360px` and `480px` the step labels may stack
 under their number, the form becomes one column, and the action footer remains visible after scroll.

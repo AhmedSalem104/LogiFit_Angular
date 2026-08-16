@@ -30,13 +30,13 @@ describe('sidebar navigation ordering', () => {
       group('Sessions', ['/coach/appointments'])
     ], 'FreelanceCoach');
 
-    expect(ordered.map(section => section.title)).toEqual(['Clients', 'Sessions', 'Coaching', 'Team', 'Profile']);
+    expect(ordered.map(section => section.title)).toEqual(['Clients', 'Coaching', 'Sessions', 'Team', 'Profile']);
     expect(ordered[0].items.map(navItem => navItem.route)).toEqual([
       '/coach/trainees',
-      '/coach/workout-programs',
-      '/coach/diet-plans'
+      '/coach/diet-plans',
+      '/coach/workout-programs'
     ]);
-    expect(ordered[2].items.map(navItem => navItem.route)).toEqual([
+    expect(ordered[1].items.map(navItem => navItem.route)).toEqual([
       '/coach/finance',
       '/coach/reports',
       '/coach/settings'
@@ -63,10 +63,10 @@ describe('sidebar navigation ordering', () => {
     expect(ordered.map(section => section.title)).toEqual(['Members', 'Journey', 'Reports', 'Subscriptions']);
     expect(ordered[1].items.map(navItem => navItem.route)).toEqual([
       '/coach/trainees',
-      '/coach/workout-programs',
+      '/coach/appointments',
       '/coach/diet-plans',
       '/coach/measurements',
-      '/coach/appointments'
+      '/coach/workout-programs'
     ]);
   });
 });

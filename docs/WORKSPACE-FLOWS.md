@@ -244,12 +244,15 @@ resolve to `/workspace-unavailable` without invoking their feature API.
 
 ### Issue #88 - sidebar workflow order
 
-After role and capability filtering, the sidebar applies a stable workspace-specific order:
+After role and capability filtering, the sidebar applies the TOP-GYM tab order:
 
-- Gym: dashboard, operations, members/coaches, memberships, attendance, facilities, group
-  classes, finance, inventory/POS, reports, staff/payroll, settings, subscription, profile.
-- FreelanceCoach: dashboard, clients, workout and nutrition programs, measurements, sessions and
-  communication, payments and reports, assistant team, settings, subscription, profile.
+- Gym: dashboard, members, external trainees, management, attendance, expenses, library, reports,
+  settings, platform subscription, profile.
+- FreelanceCoach: dashboard, clients, payments/debts, sessions/appointments, assistant team,
+  library, reports, settings, platform subscription, profile.
+
+Training, nutrition, measurements, and member sessions are opened from the selected member/client
+profile or its row actions. They are not duplicated as primary sidebar screens.
 
 This changes presentation only. It preserves the existing shared routes, capability guards,
 permission checks, and backend tenant isolation. A new route not yet listed in the order map keeps
@@ -294,26 +297,28 @@ single three-stage dialog. The order is the contract for the Gym owner experienc
 4. **Member profile/overview** — `/owner/clients/{id}` after a successful response. The composite
    overview loads the member, memberships/payments, programs, diet plans, measurements, sessions,
    meal logs, and daily readiness without opening separate duplicate profile pages.
-4. **Workout programming/execution** — `/coach/workout-programs/create?clientId={id}` for the
+5. **Workout programming/execution** — `/coach/workout-programs/create?clientId={id}` for the
    three-stage builder (basic information, program structure, review/save). Execution history is
    shown in the member overview and trainee detail screens.
-5. **Nutrition/meal logging** — `/coach/diet-plans/create?clientId={id}` for the three-stage
+6. **Nutrition/meal logging** — `/coach/diet-plans/create?clientId={id}` for the three-stage
    nutrition builder and meal structure. The signed-in member records meal logs through the client
    execution screen; the owner/coach overview reads the saved logs and totals.
-6. **Measurements/progress** — `/coach/measurements?clientId={id}`. The client is preselected and
+7. **Measurements/progress** — `/coach/measurements?clientId={id}`. The client is preselected and
    the screen supports the measurement history and CRUD flow without losing the member context.
-7. **Daily readiness/sessions** — the member overview fragment `#readiness` and the trainee detail
+8. **Daily readiness/sessions** — the member overview fragment `#readiness` and the trainee detail
    screen. Daily check-ins are CRUD-enabled; workout sessions remain tied to the selected member
    and are displayed with the activity timeline.
-8. **Reports** — `/owner/reports`. Open after the member context has been reviewed; aggregate and
+9. **Reports** — `/owner/reports`. Open after the member context has been reviewed; aggregate and
    financial/operational reports remain separate from the member profile.
 
-The primary sidebar now exposes one area per product concept instead of duplicate feature links:
+The primary sidebar now matches the file's eight product tabs instead of exposing every detail page:
 
-- Gym: dashboard, members, external trainees, training/nutrition/progress, Gym management, finance
-  and memberships, library, reports, settings.
-- FreelanceCoach: dashboard, clients, training programs, nutrition, progress, sessions, payments,
-  reports, assistant team, library, settings.
+- Gym: dashboard, members, trainees, management, attendance, expenses, library, reports.
+- FreelanceCoach: dashboard, clients, payments/debts, sessions/appointments, library, reports,
+  assistant team.
+
+Account settings, platform subscription, and profile remain in the account section. Training,
+nutrition, measurements, and detailed payment actions open from the selected member/client context.
 
 Legacy detail routes remain available for existing bookmarks and row actions, but are not displayed
 as parallel primary screens. `/owner/operations` redirects to the single dashboard, and
