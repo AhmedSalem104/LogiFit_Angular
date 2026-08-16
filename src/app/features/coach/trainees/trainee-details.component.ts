@@ -1,5 +1,6 @@
 import { Component, signal, OnInit, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgxChartsModule, Color, ScaleType } from '@swimlane/ngx-charts';
 import { TabViewModule } from 'primeng/tabview';
@@ -24,6 +25,7 @@ interface TraineeProgress {
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     RouterLink,
     NgxChartsModule,
     TabViewModule,
@@ -228,16 +230,36 @@ interface TraineeProgress {
 
           <!-- Daily readiness tab -->
           <p-tabPanel header="الاستعداد اليومي">
+            <div class="tab-toolbar">
+              <div><strong>سجل المتابعة اليومية</strong><small>النوم، الإجهاد، الألم، المزاج والوزن</small></div>
+              <button type="button" class="btn btn-primary" (click)="openCheckinEditor()"><i class="pi pi-plus"></i> إضافة متابعة</button>
+            </div>
             <div class="measurements-table">
               <table>
-                <thead><tr><th>التاريخ</th><th>الاستعداد</th><th>النوم</th><th>الإجهاد</th><th>ألم العضلات</th><th>ملاحظات</th></tr></thead>
+                <thead><tr><th>التاريخ</th><th>الاستعداد</th><th>النوم</th><th>الإجهاد</th><th>ألم العضلات</th><th>ملاحظات</th><th>إجراءات</th></tr></thead>
                 <tbody>
                   @for (checkin of checkins(); track checkin.id) {
-                    <tr><td>{{ formatDate(checkin.checkinDate) }}</td><td>{{ checkin.readinessScore ?? '-' }}%</td><td>{{ checkin.sleepHours ?? '-' }} ساعة</td><td>{{ checkin.fatigue ?? '-' }}/5</td><td>{{ checkin.soreness ?? '-' }}/5</td><td>{{ checkin.notes || '-' }}</td></tr>
-                  } @empty { <tr><td colspan="6" class="empty-row">لا توجد Check-ins مسجلة</td></tr> }
+                    <tr><td>{{ formatDate(checkin.checkinDate) }}</td><td>{{ checkin.readinessScore ?? '-' }}%</td><td>{{ checkin.sleepHours ?? '-' }} ساعة</td><td>{{ checkin.fatigue ?? '-' }}/5</td><td>{{ checkin.soreness ?? '-' }}/5</td><td>{{ checkin.notes || '-' }}</td><td class="row-actions"><button type="button" class="link-button" (click)="editCheckin(checkin)">تعديل</button><button type="button" class="link-button danger" (click)="deleteCheckin(checkin)">حذف</button></td></tr>
+                  } @empty { <tr><td colspan="7" class="empty-row">لا توجد Check-ins مسجلة</td></tr> }
                 </tbody>
               </table>
             </div>
+            @if (checkinDialogOpen()) {
+              <section class="checkin-editor" aria-label="تحرير المتابعة اليومية">
+                <div class="editor-header"><div><h3>{{ editingCheckin() ? 'تعديل المتابعة اليومية' : 'إضافة متابعة يومية' }}</h3><p>احفظ السجل داخل ملف المشترك ليظهر في التقدم والتنبيهات.</p></div><button type="button" class="link-button" (click)="closeCheckinEditor()">إلغاء</button></div>
+                <div class="checkin-form-grid">
+                  <label>التاريخ<input type="date" [(ngModel)]="checkinForm.checkinDate"></label>
+                  <label>النوم بالساعات<input type="number" min="0" max="24" [(ngModel)]="checkinForm.sleepHours"></label>
+                  <label>الإجهاد من 5<input type="number" min="0" max="5" [(ngModel)]="checkinForm.fatigue"></label>
+                  <label>ألم العضلات من 5<input type="number" min="0" max="5" [(ngModel)]="checkinForm.soreness"></label>
+                  <label>التوتر من 5<input type="number" min="0" max="5" [(ngModel)]="checkinForm.stress"></label>
+                  <label>المزاج من 5<input type="number" min="0" max="5" [(ngModel)]="checkinForm.mood"></label>
+                  <label>الوزن<input type="number" min="0" [(ngModel)]="checkinForm.bodyweightKg"></label>
+                  <label class="full-field">ملاحظات<textarea rows="2" [(ngModel)]="checkinForm.notes"></textarea></label>
+                </div>
+                <div class="editor-actions"><button type="button" class="btn" (click)="closeCheckinEditor()">إلغاء</button><button type="button" class="btn btn-primary" [disabled]="checkinSaving()" (click)="saveCheckin()">{{ checkinSaving() ? 'جاري الحفظ...' : 'حفظ المتابعة' }}</button></div>
+              </section>
+            }
           </p-tabPanel>
 
           <!-- Programs Tab -->
@@ -491,6 +513,21 @@ interface TraineeProgress {
       gap: 1.5rem;
     }
 
+    .tab-toolbar, .editor-header, .editor-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .tab-toolbar { margin-bottom: 1rem; }
+    .tab-toolbar strong, .tab-toolbar small { display: block; }
+    .tab-toolbar small, .editor-header p { color: var(--text-muted); font-size: .82rem; margin: .25rem 0 0; }
+    .checkin-editor { margin-top: 1rem; padding: 1rem; border: 1px solid #bfdbfe; border-radius: 14px; background: #eff6ff; }
+    .editor-header h3 { margin: 0; font-size: 1rem; }
+    .checkin-form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin-top: 1rem; }
+    .checkin-form-grid label { display: grid; gap: .3rem; color: var(--text-secondary); font-size: .82rem; }
+    .checkin-form-grid input, .checkin-form-grid textarea { width: 100%; border: 1px solid var(--border-color); border-radius: 8px; padding: .55rem; background: var(--bg-primary); color: var(--text-primary); font: inherit; }
+    .checkin-form-grid .full-field { grid-column: 1 / -1; }
+    .editor-actions { justify-content: flex-start; margin-top: 1rem; }
+    .link-button { border: 0; padding: .2rem .35rem; background: transparent; color: #2563eb; cursor: pointer; font: inherit; }
+    .link-button.danger { color: #dc2626; }
+    .row-actions { white-space: nowrap; }
+
     .measurements-table {
       overflow-x: auto;
 
@@ -703,6 +740,8 @@ interface TraineeProgress {
       .charts-grid {
         grid-template-columns: 1fr;
       }
+
+      .checkin-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   `]
 })
@@ -721,6 +760,19 @@ export class TraineeDetailsComponent implements OnInit {
   sessions = signal<any[]>([]);
   measurementDialogOpen = signal(false);
   savingMeasurement = signal(false);
+  checkinDialogOpen = signal(false);
+  editingCheckin = signal<AthleteCheckin | null>(null);
+  checkinSaving = signal(false);
+  checkinForm = {
+    checkinDate: this.today(),
+    sleepHours: null as number | null,
+    fatigue: null as number | null,
+    soreness: null as number | null,
+    stress: null as number | null,
+    mood: null as number | null,
+    bodyweightKg: null as number | null,
+    notes: ''
+  };
 
   weightColorScheme: Color = {
     name: 'weight',
@@ -845,6 +897,76 @@ export class TraineeDetailsComponent implements OnInit {
     });
   }
 
+  today(): string { return new Date().toISOString().slice(0, 10); }
+
+  openCheckinEditor(checkin?: AthleteCheckin): void {
+    this.editingCheckin.set(checkin || null);
+    this.checkinForm = {
+      checkinDate: checkin?.checkinDate?.slice(0, 10) || this.today(),
+      sleepHours: checkin?.sleepHours ?? null,
+      fatigue: checkin?.fatigue ?? null,
+      soreness: checkin?.soreness ?? null,
+      stress: checkin?.stress ?? null,
+      mood: checkin?.mood ?? null,
+      bodyweightKg: checkin?.bodyweightKg ?? null,
+      notes: checkin?.notes || ''
+    };
+    this.checkinDialogOpen.set(true);
+  }
+
+  editCheckin(checkin: AthleteCheckin): void { this.openCheckinEditor(checkin); }
+
+  closeCheckinEditor(): void {
+    this.checkinDialogOpen.set(false);
+    this.editingCheckin.set(null);
+    this.checkinSaving.set(false);
+  }
+
+  saveCheckin(): void {
+    const clientId = this.getClientId();
+    if (!clientId || !this.checkinForm.checkinDate) {
+      this.notificationService.error('تعذر تحديد المشترك أو تاريخ المتابعة.');
+      return;
+    }
+
+    const payload = Object.fromEntries(Object.entries(this.checkinForm).filter(([, value]) => value !== null && value !== '')) as Partial<AthleteCheckin>;
+    this.checkinSaving.set(true);
+    const editing = this.editingCheckin();
+    const onSuccess = (result?: string): void => {
+      this.checkinSaving.set(false);
+      this.closeCheckinEditor();
+      if (editing) {
+        this.checkins.update(rows => rows.map(row => row.id === editing.id ? { ...row, ...payload } as AthleteCheckin : row));
+      } else {
+        const created: AthleteCheckin = { id: result || crypto.randomUUID(), clientId, ...payload } as AthleteCheckin;
+        this.checkins.update(rows => [created, ...rows]);
+      }
+      this.notificationService.success(editing ? 'تم تحديث المتابعة اليومية.' : 'تم تسجيل المتابعة اليومية.');
+    };
+    const onError = (error: any): void => {
+      this.checkinSaving.set(false);
+      this.notificationService.error(error?.translatedMessage || error?.error?.message || 'تعذر حفظ المتابعة اليومية.');
+    };
+
+    if (editing) {
+      this.coachService.updateAthleteCheckin(clientId, editing.id, payload).subscribe({ next: () => onSuccess(), error: onError });
+    } else {
+      this.coachService.createAthleteCheckin(clientId, payload).subscribe({ next: result => onSuccess(result), error: onError });
+    }
+  }
+
+  deleteCheckin(checkin: AthleteCheckin): void {
+    const clientId = this.getClientId();
+    if (!clientId || !window.confirm('هل تريد حذف سجل المتابعة هذا؟')) return;
+    this.coachService.deleteAthleteCheckin(clientId, checkin.id).subscribe({
+      next: () => {
+        this.checkins.update(rows => rows.filter(row => row.id !== checkin.id));
+        this.notificationService.success('تم حذف المتابعة اليومية.');
+      },
+      error: (error) => this.notificationService.error(error?.translatedMessage || error?.error?.message || 'تعذر حذف المتابعة اليومية.')
+    });
+  }
+
   getInitials(name: string): string {
     return name.split(' ').map(n => n[0]).slice(0, 2).join('');
   }
@@ -881,7 +1003,7 @@ export class TraineeDetailsComponent implements OnInit {
   }
 
   private getClientId(): string | null {
-    return this.trainee()?.clientId || null;
+    return this.trainee()?.clientId || this.route.snapshot.paramMap.get('id');
   }
 
   openWorkoutBuilder(): void {

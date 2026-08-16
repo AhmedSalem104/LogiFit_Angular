@@ -18,8 +18,6 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { PasswordFieldComponent } from '../../../shared/components/password-field/password-field.component';
 import { CoachService, Trainee, CreateTraineeResult } from '../services/coach.service';
-import { OwnerService } from '../../owner/services/owner.service';
-import Swal from 'sweetalert2';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -52,9 +50,9 @@ import Swal from 'sweetalert2';
 
     <div class="trainees-page">
       <app-page-header
-        title="المتدربين"
-        subtitle="إدارة ومتابعة المتدربين"
-        [breadcrumbs]="[{label: 'لوحة التحكم', route: '/coach/dashboard'}, {label: 'المتدربين'}]"
+        title="إدارة التدريب والتغذية"
+        subtitle="المتدربون والعملاء المرتبطون بخطط التدريب والتغذية والمتابعة"
+        [breadcrumbs]="[{label: 'لوحة التحكم', route: '/coach/dashboard'}, {label: 'إدارة التدريب والتغذية'}]"
       >
         <button class="btn btn-primary" (click)="openAddDialog()">
           <i class="pi pi-plus"></i>
@@ -1198,7 +1196,6 @@ import Swal from 'sweetalert2';
 })
 export class TraineesListComponent implements OnInit {
   private coachService = inject(CoachService);
-  private ownerService = inject(OwnerService);
   private fb = inject(FormBuilder);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
@@ -1379,7 +1376,12 @@ export class TraineesListComponent implements OnInit {
   }
 
   openAddDialog(): void {
-    this.router.navigate(['/coach/subscriptions'], { queryParams: { create: 1 } });
+    this.editingTrainee = null;
+    this.traineeForm.reset({
+      fullName: '', phoneNumber: '', email: '', gender: 0, birthDate: null,
+      heightCm: null, weightKg: null, activityLevel: 'Moderate', fitnessGoal: '', medicalHistory: ''
+    });
+    this.showAddDialog = true;
   }
 
   openEditDialog(trainee: Trainee): void {
@@ -1485,13 +1487,11 @@ export class TraineesListComponent implements OnInit {
         medicalHistory: formValue.medicalHistory || undefined
       };
 
-      const generatedPassword = `Lf${Math.random().toString(36).slice(2, 10)}!`;
-      const selectedPlanId = window.prompt('Optional membership plan ID (leave empty to create without membership):', '');
-      const membership = selectedPlanId ? { planId: selectedPlanId, startDate: new Date().toISOString().slice(0, 10), issueCard: true } : null;
-
       console.log('Creating trainee with data:', JSON.stringify(traineeData, null, 2));
 
-      this.coachService.onboardTrainee({ fullName: traineeData.clientName, phoneNumber: traineeData.clientPhone, email: traineeData.clientEmail, gender: traineeData.gender, birthDate: traineeData.birthDate, password: generatedPassword, membership }).subscribe({
+      // An external trainee is a valid Client with coaching data and no gym
+      // membership. Membership is a separate step in the documented flow.
+      this.coachService.createTrainee(traineeData).subscribe({
         next: (result: CreateTraineeResult) => {
           this.saving.set(false);
           this.showAddDialog = false;

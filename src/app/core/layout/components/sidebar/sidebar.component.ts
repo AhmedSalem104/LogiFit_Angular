@@ -15,6 +15,7 @@ export interface NavItem {
   permission?: Permission | Permission[];
   badge?: number;
   freelanceOnly?: boolean;
+  gymOnly?: boolean;
 }
 
 export interface NavGroup {
@@ -33,11 +34,17 @@ const GYM_NAVIGATION_ORDER: readonly string[] = [
   '/owner/dashboard',
   '/owner/operations',
   '/owner/clients',
+  '/owner/subscriptions',
+  '/coach/trainees',
+  '/coach/workout-programs',
+  '/coach/diet-plans',
+  '/coach/measurements',
+  '/coach/appointments',
+  '/owner/reports',
+  '/owner/subscription-plans',
   '/owner/coaches',
   '/owner/membership-cards',
   '/owner/gate-access',
-  '/owner/subscription-plans',
-  '/owner/subscriptions',
   '/owner/attendance',
   '/owner/branches',
   '/owner/rooms',
@@ -990,23 +997,27 @@ export class SidebarComponent {
       ]
     },
     {
-      title: 'إدارة الأعضاء',
+      title: 'الفريق والدخول',
       roles: [UserRole.Owner],
       items: [
-        { label: 'العملاء', icon: 'pi-users', route: '/owner/clients', roles: [UserRole.Owner], permission: 'ViewMembers' },
-        { label: 'المدربين', icon: 'pi-id-card', route: '/owner/coaches', roles: [UserRole.Owner], permission: 'ManageCoaches' },
+        { label: 'المدربون', icon: 'pi-id-card', route: '/owner/coaches', roles: [UserRole.Owner], permission: 'ManageCoaches', gymOnly: true },
         { label: 'فريق المدرب الحر', icon: 'pi-users', route: '/owner/freelance-team', roles: [UserRole.Owner], permission: 'ManageCoaches', freelanceOnly: true },
-        { label: 'بطاقات العضوية', icon: 'pi-qrcode', route: '/owner/membership-cards', roles: [UserRole.Owner], permission: 'ManageMembers' },
-        { label: 'الدخول والحضور والموظفون', icon: 'pi-sign-in', route: '/owner/gate-access', roles: [UserRole.Owner], permission: 'ManageAttendance' },
+        { label: 'بطاقات العضوية', icon: 'pi-qrcode', route: '/owner/membership-cards', roles: [UserRole.Owner], permission: 'ManageMembers', gymOnly: true },
+        { label: 'الدخول والحضور والموظفون', icon: 'pi-sign-in', route: '/owner/gate-access', roles: [UserRole.Owner], permission: 'ManageAttendance', gymOnly: true },
       ]
     },
     {
-      title: 'الاشتراكات',
+      title: 'العضويات والاشتراكات',
       roles: [UserRole.Owner],
       items: [
-        { label: 'خطط الاشتراك', icon: 'pi-wallet', route: '/owner/subscription-plans', roles: [UserRole.Owner], permission: 'ManageClientSubscriptions' },
-        { label: 'الاشتراكات', icon: 'pi-list', route: '/owner/subscriptions', roles: [UserRole.Owner], permission: 'ManageClientSubscriptions' },
-        { label: 'الحضور', icon: 'pi-clock', route: '/owner/attendance', roles: [UserRole.Owner], permission: 'ManageAttendance' },
+        { label: 'الباقات وخطط العضوية', icon: 'pi-wallet', route: '/owner/subscription-plans', roles: [UserRole.Owner], permission: 'ManageClientSubscriptions', gymOnly: true },
+      ]
+    },
+    {
+      title: 'الحضور والانصراف',
+      roles: [UserRole.Owner],
+      items: [
+        { label: 'الحضور', icon: 'pi-clock', route: '/owner/attendance', roles: [UserRole.Owner], permission: 'ManageAttendance', gymOnly: true },
       ]
     },
     {
@@ -1141,7 +1152,6 @@ export class SidebarComponent {
       roles: [UserRole.Owner],
       permission: 'ViewReports',
       items: [
-        { label: 'التقارير العامة', icon: 'pi-chart-bar', route: '/owner/reports', roles: [UserRole.Owner], permission: 'ViewReports' },
         { label: 'التقارير التشغيلية', icon: 'pi-chart-line', route: '/owner/operations-reports', roles: [UserRole.Owner], permission: 'ViewReports' },
       ]
     },
@@ -1177,6 +1187,20 @@ export class SidebarComponent {
         { label: 'تقارير العملاء والدخل', icon: 'pi-chart-line', route: '/coach/reports', roles: [UserRole.Coach], permission: 'ViewReports' },
         { label: 'اشتراك مساحة التدريب', icon: 'pi-star', route: '/coach/subscription', roles: [UserRole.Coach], permission: 'ManageTenantBilling' },
         { label: 'إعدادات مساحة التدريب', icon: 'pi-cog', route: '/coach/settings', roles: [UserRole.Coach], permission: 'ManageSettings' },
+      ]
+    },
+    {
+      title: '\u0631\u062d\u0644\u0629 \u0627\u0644\u0645\u0634\u062a\u0631\u0643',
+      roles: [UserRole.Owner],
+      items: [
+        { label: '\u0627\u0644\u0645\u0634\u062a\u0631\u0643\u0648\u0646', icon: 'pi-users', route: '/owner/clients', roles: [UserRole.Owner], permission: 'ViewMembers', gymOnly: true },
+        { label: '\u0627\u0644\u0639\u0636\u0648\u064a\u0627\u062a \u0648\u0627\u0644\u0645\u062f\u0641\u0648\u0639\u0627\u062a', icon: 'pi-credit-card', route: '/owner/subscriptions', roles: [UserRole.Owner], permission: 'ManageClientSubscriptions', gymOnly: true },
+        { label: '\u0627\u0644\u0645\u062a\u062f\u0631\u0628\u0648\u0646 \u0648\u0627\u0644\u062a\u062f\u0631\u064a\u0628', icon: 'pi-bolt', route: '/coach/trainees', roles: [UserRole.Owner], gymOnly: true },
+        { label: '\u0628\u0631\u0627\u0645\u062c \u0627\u0644\u062a\u0645\u0631\u064a\u0646', icon: 'pi-calendar', route: '/coach/workout-programs', roles: [UserRole.Owner], gymOnly: true },
+        { label: '\u062e\u0637\u0637 \u0627\u0644\u062a\u063a\u0630\u064a\u0629', icon: 'pi-heart', route: '/coach/diet-plans', roles: [UserRole.Owner], gymOnly: true },
+        { label: '\u0627\u0644\u0642\u064a\u0627\u0633\u0627\u062a \u0648\u0627\u0644\u062a\u0642\u062f\u0645', icon: 'pi-chart-line', route: '/coach/measurements', roles: [UserRole.Owner], gymOnly: true },
+        { label: '\u0627\u0644\u062c\u0644\u0633\u0627\u062a \u0648\u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f', icon: 'pi-calendar-plus', route: '/coach/appointments', roles: [UserRole.Owner], gymOnly: true },
+        { label: '\u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631', icon: 'pi-chart-bar', route: '/owner/reports', roles: [UserRole.Owner], permission: 'ViewReports', gymOnly: true },
       ]
     }
   ];
@@ -1253,6 +1277,7 @@ export class SidebarComponent {
     return this.matchesPanel(item.roles)
       && this.matchesPermission(item.permission)
       && (!requiredCapability || this.authService.hasCapability(requiredCapability))
-      && (!item.freelanceOnly || this.authService.isFreelanceWorkspace());
+      && (!item.freelanceOnly || this.authService.isFreelanceWorkspace())
+      && (!item.gymOnly || !this.authService.isFreelanceWorkspace());
   }
 }

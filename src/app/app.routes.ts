@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/guards/auth.guard';
 import { guestGuard } from './core/auth/guards/guest.guard';
-import { ownerGuard, coachGuard, clientGuard } from './core/auth/guards/role.guard';
+import { ownerGuard, ownerOrCoachGuard, clientGuard } from './core/auth/guards/role.guard';
 import { workspaceRouteCapabilityGuard } from './core/auth/guards/workspace-capability.guard';
 
 export const routes: Routes = [
@@ -16,7 +16,10 @@ export const routes: Routes = [
   ] },
   { path: 'auth', canActivate: [guestGuard], loadComponent: () => import('./core/layout/auth-layout/auth-layout.component').then(m => m.AuthLayoutComponent), loadChildren: () => import('./features/auth/auth.routes').then(m => m.authRoutes) },
   { path: 'owner', canActivate: [authGuard, ownerGuard, workspaceRouteCapabilityGuard], loadComponent: () => import('./core/layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent), loadChildren: () => import('./features/owner/owner.routes').then(m => m.ownerRoutes) },
-  { path: 'coach', canActivate: [authGuard, coachGuard, workspaceRouteCapabilityGuard], loadComponent: () => import('./core/layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent), loadChildren: () => import('./features/coach/coach.routes').then(m => m.COACH_ROUTES) },
+  // Gym owners use the same coaching components as coaches for the member
+  // journey. Workspace capabilities still decide which coaching routes are
+  // valid, and the backend remains the final authorization boundary.
+  { path: 'coach', canActivate: [authGuard, ownerOrCoachGuard, workspaceRouteCapabilityGuard], loadComponent: () => import('./core/layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent), loadChildren: () => import('./features/coach/coach.routes').then(m => m.COACH_ROUTES) },
   { path: 'client', canActivate: [authGuard, clientGuard], loadComponent: () => import('./core/layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent), loadChildren: () => import('./features/client/client.routes').then(m => m.clientRoutes) },
   { path: 'gym-unavailable', loadComponent: () => import('./features/tenant/gym-unavailable/gym-unavailable.component').then(m => m.GymUnavailableComponent) },
   { path: 'workspace-unavailable', canActivate: [authGuard], loadComponent: () => import('./features/tenant/workspace-unavailable/workspace-unavailable.component').then(m => m.WorkspaceUnavailableComponent) },

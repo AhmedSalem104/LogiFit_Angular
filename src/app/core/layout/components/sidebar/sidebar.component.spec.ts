@@ -17,7 +17,7 @@ describe('sidebar navigation ordering', () => {
       group('Finance', ['/owner/payments', '/owner/invoices'])
     ], 'Gym');
 
-    expect(ordered.map(section => section.title)).toEqual(['Dashboard', 'Members', 'Finance', 'Reports']);
+    expect(ordered.map(section => section.title)).toEqual(['Dashboard', 'Members', 'Reports', 'Finance']);
     expect(ordered[0].items.map(navItem => navItem.route)).toEqual(['/owner/dashboard', '/owner/operations']);
   });
 
@@ -50,5 +50,23 @@ describe('sidebar navigation ordering', () => {
     ], 'Gym');
 
     expect(ordered.map(section => section.title)).toEqual(['First', 'Second']);
+  });
+
+  it('places the Gym member journey after membership and before operations', () => {
+    const ordered = orderNavGroupsForWorkspace([
+      group('Reports', ['/owner/reports']),
+      group('Journey', ['/coach/appointments', '/coach/diet-plans', '/coach/trainees', '/coach/measurements', '/coach/workout-programs']),
+      group('Subscriptions', ['/owner/subscriptions', '/owner/subscription-plans']),
+      group('Members', ['/owner/clients'])
+    ], 'Gym');
+
+    expect(ordered.map(section => section.title)).toEqual(['Members', 'Subscriptions', 'Journey', 'Reports']);
+    expect(ordered[2].items.map(navItem => navItem.route)).toEqual([
+      '/coach/trainees',
+      '/coach/workout-programs',
+      '/coach/diet-plans',
+      '/coach/measurements',
+      '/coach/appointments'
+    ]);
   });
 });

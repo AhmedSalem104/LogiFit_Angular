@@ -13,7 +13,10 @@ import { ExportMenuComponent, ExportFormat } from '../../../shared/components/ex
 import { ExportService } from '../../../core/services/export.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { OwnerService, Client } from '../services/owner.service';
+import { ClientSubscription, StatusLabels, SubscriptionStatus } from '../services/owner.service';
 import { PersonFormDialogComponent, PersonFormValue, PersonFormInitial } from '../../../shared/components/person-form-dialog/person-form-dialog.component';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 
 // Display interface for table
@@ -24,7 +27,14 @@ interface ClientDisplay {
   email: string;
   isActive: boolean;
   hasActiveSubscription: boolean;
+  subscriptionPlanName?: string;
+  subscriptionStatus?: number;
   subscriptionEndDate?: string;
+  remainingDays?: number;
+  totalAmount?: number;
+  amountPaid?: number;
+  remainingAmount?: number;
+  freezeCount?: number;
   assignedCoachName?: string;
 }
 
@@ -48,9 +58,9 @@ interface ClientDisplay {
   template: `
     <div class="clients-page">
       <app-page-header
-        title="العملاء"
-        subtitle="إدارة عملاء الصالة"
-        [breadcrumbs]="[{label: 'لوحة التحكم', route: '/owner/dashboard'}, {label: 'العملاء'}]"
+        title="المشتركون"
+        subtitle="إدارة الأعضاء والعضويات والمدفوعات والمتابعة"
+        [breadcrumbs]="[{label: 'لوحة التحكم', route: '/owner/dashboard'}, {label: 'المشتركون'}]"
       >
         <div class="header-actions">
           <app-export-menu
@@ -59,10 +69,40 @@ interface ClientDisplay {
           ></app-export-menu>
           <button class="btn btn-primary" data-tour="add-client" (click)="openAddDialog()">
             <i class="pi pi-plus"></i>
-            <span>إضافة عميل</span>
+            <span>إضافة مشترك</span>
           </button>
         </div>
       </app-page-header>
+
+      <section class="member-flow card" aria-label="رحلة المشترك">
+        <div class="member-flow__heading">
+          <div>
+            <span class="eyebrow">رحلة المشترك</span>
+            <h2>من التسجيل إلى المتابعة</h2>
+            <p>نفّذ الرحلة بالترتيب الموثق؛ كل مرحلة تفتح الشاشة المناسبة وتحافظ على بيانات المرحلة السابقة.</p>
+          </div>
+          <i class="pi pi-arrow-left" aria-hidden="true"></i>
+        </div>
+        <ol class="member-flow__steps">
+          <li class="active"><span>1</span><strong>إنشاء المشترك والقائمة</strong></li>
+          <li><span>2</span><strong>العضوية والاشتراك والدفع</strong></li>
+          <li><span>3</span><strong>الملف والنظرة العامة</strong></li>
+          <li><span>4</span><strong>التدريب والتنفيذ</strong></li>
+          <li><span>5</span><strong>التغذية وتسجيل الوجبات</strong></li>
+          <li><span>6</span><strong>القياسات والتقدم</strong></li>
+          <li><span>7</span><strong>الجاهزية اليومية والجلسات</strong></li>
+          <li><span>8</span><strong>التقارير</strong></li>
+        </ol>
+      </section>
+
+      <div class="state-card warning-state" *ngIf="!loading() && membershipError()" role="status">
+        <i class="pi pi-info-circle"></i>
+        <div>
+          <strong>تفاصيل العضوية غير مكتملة</strong>
+          <p>{{ membershipError() }}</p>
+          <button type="button" class="btn btn-primary" (click)="loadClients()">إعادة تحميل العضويات</button>
+        </div>
+      </div>
 
       <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
         <i class="pi pi-exclamation-triangle"></i>
@@ -77,11 +117,11 @@ interface ClientDisplay {
       <div class="stats-row" *ngIf="!errorMessage()">
         <div class="mini-stat">
           <span class="mini-stat__value">{{ clients().length }}</span>
-          <span class="mini-stat__label">إجمالي العملاء</span>
+          <span class="mini-stat__label">إجمالي المشتركين</span>
         </div>
         <div class="mini-stat">
           <span class="mini-stat__value">{{ activeClientsCount() }}</span>
-          <span class="mini-stat__label">عملاء نشطين</span>
+          <span class="mini-stat__label">مشتركون نشطون</span>
         </div>
         <div class="mini-stat">
           <span class="mini-stat__value">{{ subscribedClientsCount() }}</span>
@@ -147,7 +187,9 @@ interface ClientDisplay {
               <th>العميل</th>
               <th>رقم الهاتف</th>
               <th>الحالة</th>
-              <th>الاشتراك</th>
+              <th>العضوية</th>
+              <th>الانتهاء</th>
+              <th>الحساب</th>
               <th>المدرب</th>
               <th>الإجراءات</th>
             </tr>
@@ -173,14 +215,31 @@ interface ClientDisplay {
                 ></p-tag>
               </td>
               <td>
-                <p-tag
-                  *ngIf="client.hasActiveSubscription"
-                  value="مشترك"
-                  severity="info"
-                ></p-tag>
-                <span *ngIf="!client.hasActiveSubscription" class="no-subscription">
-                  لا يوجد اشتراك
-                </span>
+                <div class="membership-cell">
+                  <strong>{{ client.subscriptionPlanName || 'بدون عضوية' }}</strong>
+                  <p-tag
+                    [value]="membershipStatusLabel(client)"
+                    [severity]="membershipStatusSeverity(client)"
+                  ></p-tag>
+                  <small *ngIf="client.freezeCount">تجميد: {{ client.freezeCount }}</small>
+                </div>
+              </td>
+              <td>
+                <div class="expiry-cell" *ngIf="client.subscriptionEndDate; else noExpiry">
+                  <strong>{{ client.subscriptionEndDate | date:'dd/MM/yyyy' }}</strong>
+                  <small [class.warning-text]="(client.remainingDays ?? 0) <= 7 && (client.remainingDays ?? 0) >= 0">
+                    {{ client.remainingDays !== undefined ? (client.remainingDays + ' يوم') : '—' }}
+                  </small>
+                </div>
+                <ng-template #noExpiry><span class="no-subscription">—</span></ng-template>
+              </td>
+              <td>
+                <div class="account-cell" *ngIf="client.totalAmount !== undefined; else noAccount">
+                  <strong>{{ client.amountPaid || 0 | number:'1.0-0' }} / {{ client.totalAmount || 0 | number:'1.0-0' }}</strong>
+                  <small *ngIf="(client.remainingAmount || 0) > 0" class="warning-text">متبقي {{ client.remainingAmount | number:'1.0-0' }}</small>
+                  <small *ngIf="!(client.remainingAmount || 0)" class="paid-text">مدفوع بالكامل</small>
+                </div>
+                <ng-template #noAccount><span class="no-subscription">—</span></ng-template>
               </td>
               <td>{{ client.assignedCoachName || '-' }}</td>
               <td>
@@ -201,6 +260,20 @@ interface ClientDisplay {
                   ></button>
                   <button
                     pButton
+                    icon="pi pi-credit-card"
+                    class="p-button-text p-button-sm"
+                    (click)="openSubscription(client)"
+                    pTooltip="العضوية والدفع"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-bolt"
+                    class="p-button-text p-button-sm"
+                    (click)="openTraining(client)"
+                    pTooltip="التدريب والمتابعة"
+                  ></button>
+                  <button
+                    pButton
                     icon="pi pi-trash"
                     class="p-button-text p-button-danger p-button-sm"
                     (click)="deleteClient(client)"
@@ -212,7 +285,7 @@ interface ClientDisplay {
           </ng-template>
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="6">
+              <td colspan="8">
                 <div class="empty-state">
                   <i class="pi pi-users"></i>
                   <p>لا يوجد عملاء</p>
@@ -244,6 +317,63 @@ interface ClientDisplay {
       gap: 1rem;
       margin-bottom: 1.5rem;
     }
+
+    .member-flow {
+      margin-bottom: 1.5rem;
+      padding: 1.25rem 1.5rem;
+      background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+      border-color: #bfdbfe;
+    }
+
+    .member-flow__heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .member-flow__heading h2 { margin: .3rem 0; font-size: 1.15rem; color: #0f172a; }
+    .member-flow__heading p { margin: 0; color: #475569; font-size: .88rem; }
+    .member-flow__heading > i { color: #2563eb; font-size: 1.3rem; margin-top: .3rem; }
+    .eyebrow { color: #2563eb; font-size: .78rem; font-weight: 700; }
+
+    .member-flow__steps {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: .5rem;
+      list-style: none;
+      padding: 0;
+      margin: 1.25rem 0 0;
+    }
+
+    .member-flow__steps li {
+      display: grid;
+      justify-items: center;
+      gap: .35rem;
+      text-align: center;
+      color: #64748b;
+      font-size: .78rem;
+    }
+
+    .member-flow__steps li span {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      color: #475569;
+      font-weight: 700;
+    }
+
+    .member-flow__steps li.active { color: #1d4ed8; }
+    .member-flow__steps li.active span { background: #2563eb; color: #fff; }
+
+    .membership-cell, .expiry-cell, .account-cell { display: grid; gap: .25rem; }
+    .membership-cell strong, .expiry-cell strong, .account-cell strong { color: var(--text-primary); }
+    .membership-cell small, .expiry-cell small, .account-cell small { color: var(--text-muted); font-size: .75rem; }
+    .warning-text { color: #b45309 !important; font-weight: 600; }
+    .paid-text { color: #15803d !important; }
 
     .mini-stat {
       flex: 1;
@@ -420,6 +550,8 @@ interface ClientDisplay {
         flex-direction: column;
       }
 
+      .member-flow__steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
       .filters-row {
         flex-direction: column;
         align-items: stretch;
@@ -443,6 +575,7 @@ export class ClientsListComponent implements OnInit {
 
   loading = signal(true);
   errorMessage = signal<string | null>(null);
+  membershipError = signal<string | null>(null);
   searchTerm = '';
   statusFilter: 'all' | 'active' | 'inactive' = 'all';
 
@@ -463,10 +596,18 @@ export class ClientsListComponent implements OnInit {
     this.loading.set(true);
     this.errorMessage.set(null);
 
-    this.ownerService.getClients().subscribe({
-      next: (data) => {
-        const mappedClients = this.mapClientsForDisplay(data);
-        this.clients.set(mappedClients);
+    this.membershipError.set(null);
+    forkJoin({
+      clients: this.ownerService.getClients(),
+      subscriptions: this.ownerService.getSubscriptions().pipe(
+        catchError((err) => {
+          this.membershipError.set(err?.translatedMessage || 'تعذر تحميل تفاصيل العضويات والحسابات؛ يمكنك إعادة المحاولة.');
+          return of([] as ClientSubscription[]);
+        })
+      )
+    }).subscribe({
+      next: ({ clients, subscriptions }) => {
+        this.clients.set(this.mapClientsForDisplay(clients, subscriptions));
         this.loading.set(false);
       },
       error: (err) => {
@@ -483,7 +624,15 @@ export class ClientsListComponent implements OnInit {
   /**
    * Map API response to display format
    */
-  private mapClientsForDisplay(clients: Client[]): ClientDisplay[] {
+  private mapClientsForDisplay(clients: Client[], subscriptions: ClientSubscription[] = []): ClientDisplay[] {
+    const membershipByClient = new Map<string, ClientSubscription>();
+    for (const subscription of subscriptions) {
+      const current = membershipByClient.get(subscription.clientId);
+      if (!current || this.subscriptionRank(subscription) > this.subscriptionRank(current)) {
+        membershipByClient.set(subscription.clientId, subscription);
+      }
+    }
+
     return clients.map(client => ({
       id: client.id,
       fullName: client.profile?.fullName || client.fullName || 'غير محدد',
@@ -491,9 +640,23 @@ export class ClientsListComponent implements OnInit {
       email: client.email || '',
       isActive: client.isActive ?? true,
       hasActiveSubscription: client.hasActiveSubscription ?? false,
-      subscriptionEndDate: client.subscriptionEndDate,
+      subscriptionPlanName: membershipByClient.get(client.id)?.planName,
+      subscriptionStatus: membershipByClient.get(client.id)?.status,
+      subscriptionEndDate: membershipByClient.get(client.id)?.endDate || client.subscriptionEndDate,
+      remainingDays: membershipByClient.get(client.id)?.remainingDays,
+      totalAmount: membershipByClient.get(client.id)?.totalAmount,
+      amountPaid: membershipByClient.get(client.id)?.amountPaid,
+      remainingAmount: membershipByClient.get(client.id)?.remainingAmount,
+      freezeCount: membershipByClient.get(client.id)?.freezes?.filter(freeze => freeze.isActive !== false).length,
       assignedCoachName: client.assignedCoachName
     }));
+  }
+
+  private subscriptionRank(subscription: ClientSubscription): number {
+    const statusWeight = subscription.status === SubscriptionStatus.Active ? 3 : subscription.status === SubscriptionStatus.Suspended ? 2 : 1;
+    const parsedDate = subscription.endDate ? new Date(subscription.endDate).getTime() : 0;
+    const dateWeight = Number.isFinite(parsedDate) ? parsedDate : 0;
+    return statusWeight * 10 ** 15 + dateWeight;
   }
 
   // Computed stats
@@ -542,12 +705,37 @@ export class ClientsListComponent implements OnInit {
   }
 
   openAddDialog(): void {
-    this.router.navigate(['/owner/subscriptions'], { queryParams: { create: 1 } });
+    this.editingId = null;
+    this.dialogMode.set('add');
+    this.dialogInitial.set(null);
+    this.dialogOpen.set(true);
   }
 
   viewClient(client: ClientDisplay): void {
     // Navigate to client details
     this.router.navigate(['/owner/clients', client.id]);
+  }
+
+  openSubscription(client: ClientDisplay): void {
+    this.router.navigate(['/owner/subscriptions'], { queryParams: { clientId: client.id, create: 1 } });
+  }
+
+  openTraining(client: ClientDisplay): void {
+    this.router.navigate(['/owner/clients', client.id]);
+  }
+
+  membershipStatusLabel(client: ClientDisplay): string {
+    if (!client.subscriptionStatus) return 'بدون عضوية';
+    return StatusLabels[client.subscriptionStatus] || 'غير محدد';
+  }
+
+  membershipStatusSeverity(client: ClientDisplay): 'success' | 'info' | 'warning' | 'danger' | 'secondary' {
+    if (!client.subscriptionStatus) return 'secondary';
+    if (client.subscriptionStatus === SubscriptionStatus.Active) return 'success';
+    if (client.subscriptionStatus === SubscriptionStatus.Suspended) return 'warning';
+    if (client.subscriptionStatus === SubscriptionStatus.Cancelled) return 'danger';
+    if (client.subscriptionStatus === SubscriptionStatus.Trial) return 'info';
+    return 'secondary';
   }
 
   editClient(client: ClientDisplay): void {
@@ -579,11 +767,12 @@ export class ClientsListComponent implements OnInit {
 
   onDialogSave(value: PersonFormValue): void {
     this.dialogSaving.set(true);
-    const done = (msg: string) => {
+    const done = (msg: string, clientId?: string) => {
       this.dialogSaving.set(false);
       this.dialogOpen.set(false);
       this.notificationService.success(msg);
       this.loadClients();
+      if (clientId) this.offerNextMemberStep(clientId);
     };
     const fail = (err: any) => {
       this.dialogSaving.set(false);
@@ -606,17 +795,37 @@ export class ClientsListComponent implements OnInit {
     }
   }
 
-  private onboardWithOptionalMembership(value: PersonFormValue, done: (msg: string) => void, fail: (err: any) => void): void {
-    this.ownerService.getSubscriptionPlans(true).subscribe({
-      next: plans => {
-        const options = plans.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-        Swal.fire({ title: 'Membership (optional)', html: `<select id="onboard-plan" class="swal2-select"><option value="">Without membership</option>${options}</select><input id="onboard-start" type="date" class="swal2-input" value="${new Date().toISOString().slice(0,10)}">`, showCancelButton: true, confirmButtonText: 'Create', cancelButtonText: 'Cancel', preConfirm: () => ({ planId: (document.getElementById('onboard-plan') as HTMLSelectElement).value, startDate: (document.getElementById('onboard-start') as HTMLInputElement).value }) }).then(result => {
-          if (!result.isConfirmed) { this.dialogSaving.set(false); return; }
-          const membership = result.value.planId ? { planId: result.value.planId, startDate: result.value.startDate, issueCard: true } : null;
-          this.ownerService.onboardClient({ ...value, password: value.password!, membership }).subscribe({ next: () => done('Client created successfully'), error: fail });
-        });
-      },
-      error: () => this.ownerService.onboardClient({ ...value, password: value.password!, membership: null }).subscribe({ next: () => done('Client created successfully'), error: fail })
+  private onboardWithOptionalMembership(value: PersonFormValue, done: (msg: string, clientId?: string) => void, fail: (err: any) => void): void {
+    // The documented journey keeps onboarding separate from membership/payment:
+    // create the Member first, then open the membership screen as step two.
+    // This also prevents a plan-catalog failure from blocking member creation.
+    this.ownerService.onboardClient({ ...value, password: value.password!, membership: null }).subscribe({
+      next: (response) => done('تم إنشاء المشترك. الخطوة التالية هي العضوية والدفع.', this.readClientId(response)),
+      error: fail
+    });
+  }
+
+  private readClientId(response: unknown): string | undefined {
+    const result = response as { clientId?: string; ClientId?: string } | null;
+    return result?.clientId || result?.ClientId;
+  }
+
+  private offerNextMemberStep(clientId: string): void {
+    Swal.fire({
+      title: 'تم إنشاء المشترك',
+      text: 'الخطوة التالية في المواصفة هي إضافة العضوية والدفع، ويمكنك فتح الملف لمتابعة التدريب والتغذية.',
+      showDenyButton: true,
+      showCancelButton: true,
+      confirmButtonText: 'إضافة العضوية والدفع',
+      denyButtonText: 'فتح ملف المشترك',
+      cancelButtonText: 'البقاء في القائمة',
+      reverseButtons: true
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.router.navigate(['/owner/subscriptions'], { queryParams: { clientId, create: 1 } });
+      } else if (result.isDenied) {
+        this.router.navigate(['/owner/clients', clientId]);
+      }
     });
   }
 

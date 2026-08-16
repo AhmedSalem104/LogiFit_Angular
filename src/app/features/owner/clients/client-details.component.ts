@@ -31,6 +31,27 @@ import { ClientTrainingOverview, OwnerService } from '../services/owner.service'
           </span>
         </header>
 
+        <section class="journey-card" aria-label="رحلة المشترك">
+          <div class="journey-header">
+            <div>
+              <span class="eyebrow">رحلة المشترك</span>
+              <h2>المتابعة بالترتيب الموثق</h2>
+              <p>كل خطوة تفتح الشاشة والـAPI الخاص بها دون فقد بيانات الخطوات السابقة.</p>
+            </div>
+            <span class="journey-state">{{ journeyState() }}</span>
+          </div>
+          <ol class="journey-steps">
+            <li class="complete"><a routerLink="/owner/clients"><span>1</span><strong>المشترك والقائمة</strong><small>تم إنشاء الهوية</small></a></li>
+            <li [class.complete]="overview()!.subscriptions.length > 0"><a routerLink="/owner/subscriptions" [queryParams]="{ clientId: overview()!.client.id, create: overview()!.subscriptions.length ? null : 1 }"><span>2</span><strong>العضوية والدفع</strong><small>{{ overview()!.subscriptions.length ? 'مسجلة' : 'إضافة الآن' }}</small></a></li>
+            <li class="complete"><a [routerLink]="['/owner/clients', overview()!.client.id]"><span>3</span><strong>الملف والنظرة العامة</strong><small>البيانات والتقدم</small></a></li>
+            <li [class.complete]="overview()!.workoutPrograms.length > 0"><a routerLink="/coach/workout-programs/create" [queryParams]="{ clientId: overview()!.client.id }"><span>4</span><strong>التدريب والتنفيذ</strong><small>{{ overview()!.workoutPrograms.length ? 'لديه برنامج' : 'إنشاء برنامج' }}</small></a></li>
+            <li [class.complete]="overview()!.dietPlans.length > 0"><a routerLink="/coach/diet-plans/create" [queryParams]="{ clientId: overview()!.client.id }"><span>5</span><strong>التغذية والوجبات</strong><small>{{ overview()!.dietPlans.length ? 'لديه خطة' : 'إنشاء خطة' }}</small></a></li>
+            <li [class.complete]="overview()!.measurements.length > 0"><a routerLink="/coach/measurements" [queryParams]="{ clientId: overview()!.client.id }"><span>6</span><strong>القياسات والتقدم</strong><small>{{ overview()!.measurements.length ? 'محدثة' : 'تسجيل قياس' }}</small></a></li>
+            <li [class.complete]="overview()!.workoutSessions.length > 0 || overview()!.checkins.length > 0"><a [routerLink]="['/owner/clients', overview()!.client.id]" fragment="readiness"><span>7</span><strong>الجاهزية والجلسات</strong><small>{{ overview()!.workoutSessions.length || overview()!.checkins.length ? 'نشاط مسجل' : 'بدء المتابعة' }}</small></a></li>
+            <li><a routerLink="/owner/reports"><span>8</span><strong>التقارير</strong><small>عرض المؤشرات</small></a></li>
+          </ol>
+        </section>
+
         <section class="summary-grid" aria-label="ملخص المشترك">
           <article><span>الاشتراك الحالي</span><strong>{{ activeSubscriptionLabel() }}</strong></article>
           <article><span>البرامج التدريبية</span><strong>{{ overview()!.workoutPrograms.length }}</strong></article>
@@ -39,11 +60,15 @@ import { ClientTrainingOverview, OwnerService } from '../services/owner.service'
         </section>
 
         <section class="card quick-actions">
-          <div><h2>إجراءات المتابعة</h2><p>أنشئ أو راجع خطة المشترك من نفس الملف دون فقدان سجل القياسات أو الجلسات.</p></div>
+          <div><h2>الخطوة التالية</h2><p>اتبع الترتيب الموثق: العضوية والدفع، الملف، التدريب والتنفيذ، التغذية والوجبات، القياسات، الجاهزية والجلسات، ثم التقارير.</p></div>
           <div class="actions">
-            <a class="btn primary" [routerLink]="['/coach/workout-programs/create']" [queryParams]="{ clientId: overview()!.client.id }">برنامج تدريب</a>
-            <a class="btn nutrition" [routerLink]="['/coach/diet-plans/create']" [queryParams]="{ clientId: overview()!.client.id }">خطة تغذية</a>
-            <a class="btn" routerLink="/owner/subscriptions" [queryParams]="{ clientId: overview()!.client.id }">إدارة الاشتراك</a>
+            <a class="btn" routerLink="/owner/subscriptions" [queryParams]="{ clientId: overview()!.client.id, create: overview()!.subscriptions.length ? null : 1 }">2. العضوية والدفع</a>
+            <a class="btn" [routerLink]="['/owner/clients', overview()!.client.id]">3. ملف المشترك</a>
+            <a class="btn primary" [routerLink]="['/coach/workout-programs/create']" [queryParams]="{ clientId: overview()!.client.id }">4. التدريب والتنفيذ</a>
+            <a class="btn nutrition" [routerLink]="['/coach/diet-plans/create']" [queryParams]="{ clientId: overview()!.client.id }">5. التغذية والوجبات</a>
+            <a class="btn" routerLink="/coach/measurements" [queryParams]="{ clientId: overview()!.client.id }">6. القياسات والتقدم</a>
+            <a class="btn" [routerLink]="['/owner/clients', overview()!.client.id]" fragment="readiness">7. الجاهزية والجلسات</a>
+            <a class="btn" routerLink="/owner/reports">8. التقارير</a>
           </div>
         </section>
 
@@ -110,7 +135,7 @@ import { ClientTrainingOverview, OwnerService } from '../services/owner.service'
             } @else { <div class="empty">لا توجد قياسات مسجلة.</div> }
           </article>
 
-          <article class="card">
+          <article class="card" id="readiness">
             <div class="section-heading"><h2>الاستعداد اليومي</h2><span class="muted">Check-ins</span></div>
             @if (overview()!.checkins.length) {
               <div class="list compact">
@@ -131,6 +156,20 @@ import { ClientTrainingOverview, OwnerService } from '../services/owner.service'
     .details-page { max-width: 1180px; margin: 0 auto; padding: 2rem; color: #0f172a; }
     .back-link { display: inline-flex; gap: .5rem; align-items: center; color: #2563eb; text-decoration: none; margin-bottom: 1.5rem; }
     .page-header, .section-heading, .quick-actions { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+    .journey-card { margin-bottom: 1rem; padding: 1.25rem; border: 1px solid #bfdbfe; border-radius: 1rem; background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%); }
+    .journey-header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+    .journey-header h2 { margin: .3rem 0; font-size: 1.08rem; }
+    .journey-header p { margin: .3rem 0 0; }
+    .journey-state { padding: .35rem .7rem; border-radius: 999px; color: #1d4ed8; background: #dbeafe; white-space: nowrap; font-size: .82rem; font-weight: 600; }
+    .journey-steps { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: .5rem; list-style: none; padding: 0; margin: 1.25rem 0 0; }
+    .journey-steps li { min-width: 0; text-align: center; }
+    .journey-steps a { display: grid; justify-items: center; gap: .25rem; height: 100%; padding: .55rem .25rem; border-radius: .75rem; color: #64748b; text-decoration: none; }
+    .journey-steps a:hover { background: rgba(255,255,255,.8); color: #1d4ed8; }
+    .journey-steps span { display: grid; place-items: center; width: 29px; height: 29px; border-radius: 50%; background: #e2e8f0; color: #475569; font-weight: 700; }
+    .journey-steps strong { font-size: .78rem; }
+    .journey-steps small { font-size: .7rem; }
+    .journey-steps li.complete a { color: #166534; }
+    .journey-steps li.complete span { color: #fff; background: #16a34a; }
     .page-header { margin-bottom: 1.5rem; } .eyebrow, .muted, small, article span { color: #64748b; font-size: .85rem; }
     h1 { margin: .35rem 0; } p { margin: .35rem 0; color: #64748b; } h2 { margin: 0; font-size: 1.08rem; } a { color: #2563eb; text-decoration: none; }
     .status, .badge { padding: .35rem .7rem; border-radius: 999px; color: #166534; background: #dcfce7; white-space: nowrap; } .status.inactive, .badge.warn { color: #991b1b; background: #fee2e2; }
@@ -144,7 +183,9 @@ import { ClientTrainingOverview, OwnerService } from '../services/owner.service'
     .table-wrap { overflow-x: auto; margin-top: .8rem; } table { width: 100%; border-collapse: collapse; } th, td { text-align: right; padding: .65rem .4rem; border-bottom: 1px solid #e2e8f0; font-size: .85rem; } th { color: #64748b; font-weight: 500; } .score { color: #0f766e; font-weight: 700; }
     .activity-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin-top: .9rem; } .activity-grid div { display: grid; gap: .2rem; justify-items: center; padding: .8rem; background: #f8fafc; border-radius: .7rem; } .activity-grid i { color: #2563eb; font-size: 1.1rem; } .activity-grid strong { font-size: 1.25rem; }
     .empty { color: #64748b; padding: 1rem 0; } .state { padding: 2rem; text-align: center; border-radius: 1rem; background: #fff; } .error { color: #991b1b; background: #fef2f2; } .error p { color: inherit; } .compact { margin-top: .3rem; }
-    @media (max-width: 800px) { .details-page { padding: 1rem; } .summary-grid, .two-columns, .plan-grid { grid-template-columns: 1fr 1fr; } .quick-actions, .page-header { flex-direction: column; } } @media (max-width: 520px) { .summary-grid, .two-columns, .plan-grid, .facts, .activity-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) { .journey-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    @media (max-width: 800px) { .details-page { padding: 1rem; } .summary-grid, .two-columns, .plan-grid { grid-template-columns: 1fr 1fr; } .quick-actions, .page-header, .journey-header { flex-direction: column; } }
+    @media (max-width: 520px) { .summary-grid, .two-columns, .plan-grid, .facts, .activity-grid, .journey-steps { grid-template-columns: 1fr 1fr; } }
   `]
 })
 export class ClientDetailsComponent implements OnInit {
@@ -168,6 +209,16 @@ export class ClientDetailsComponent implements OnInit {
   }
 
   displayName(): string { const client = this.overview()?.client; return client?.profile?.fullName || client?.fullName || 'مشترك'; }
+  journeyState(): string {
+    const data = this.overview();
+    if (!data) return 'جاري التحميل';
+    if (!data.subscriptions.length) return 'الخطوة التالية: العضوية والاشتراك والدفع';
+    if (!data.workoutPrograms.length) return 'الخطوة التالية: التدريب والتنفيذ';
+    if (!data.dietPlans.length) return 'الخطوة التالية: التغذية وتسجيل الوجبات';
+    if (!data.measurements.length) return 'الخطوة التالية: القياسات والتقدم';
+    if (!data.workoutSessions.length && !data.checkins.length) return 'الخطوة التالية: الجاهزية اليومية والجلسات';
+    return 'الرحلة مكتملة ويمكن مراجعة التقارير';
+  }
   activeSubscriptionLabel(): string { const active = this.overview()?.subscriptions.find(s => s.status === 1 || s.status === 3); return active?.planName || 'لا يوجد اشتراك نشط'; }
   subscriptionStatus(status: number): string { return ({ 1: 'نشط', 2: 'مجمّد', 3: 'تجريبي', 4: 'منتهي', 5: 'ملغي' } as Record<number, string>)[status] || 'غير معروف'; }
   planStatus(status?: number): string { return ({ 1: 'نشط', 2: 'مؤرشف', 3: 'مسودة', 4: 'متوقف', 5: 'مكتمل' } as Record<number, string>)[status || 0] || 'غير محدد'; }

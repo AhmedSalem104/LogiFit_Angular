@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { coachGuard } from './role.guard';
+import { coachGuard, ownerOrCoachGuard } from './role.guard';
 
 describe('roleGuard freelance workspace behavior', () => {
   it('allows a FreelanceOwner to open coach routes in a freelance workspace', () => {
@@ -25,6 +25,30 @@ describe('roleGuard freelance workspace behavior', () => {
 
     expect(result).toBeTrue();
     expect(auth.hasRole).not.toHaveBeenCalled();
+    expect(router.createUrlTree).not.toHaveBeenCalled();
+  });
+
+  it('allows a Gym owner to open the shared coaching routes', () => {
+    const auth = {
+      isAuthenticated: jasmine.createSpy().and.returnValue(true),
+      isFreelanceWorkspace: jasmine.createSpy().and.returnValue(false),
+      isOwner: jasmine.createSpy().and.returnValue(true),
+      hasRole: jasmine.createSpy().and.returnValue(true),
+      getRedirectUrl: jasmine.createSpy().and.returnValue('/owner/dashboard')
+    };
+    const router = { createUrlTree: jasmine.createSpy() };
+
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: AuthService, useValue: auth },
+        { provide: Router, useValue: router }
+      ]
+    });
+
+    const result = TestBed.runInInjectionContext(() => ownerOrCoachGuard({} as never, {} as never));
+
+    expect(result).toBeTrue();
+    expect(auth.hasRole).toHaveBeenCalled();
     expect(router.createUrlTree).not.toHaveBeenCalled();
   });
 });
