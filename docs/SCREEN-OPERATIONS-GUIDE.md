@@ -362,5 +362,5 @@ route guard and backend authorization.
 The owner overview and subscription screen use the shared service contracts; the coach builders use
 aggregate APIs; the client screen uses the authenticated self-service check-in contract. UI controls
 are not a security boundary: tenant, assignment, membership, ownership, and active-plan checks remain
-server-side. These additions are on the task branch until merge, release, and post-release health
-verification.
+server-side. These additions are merged into Tenant UI `main`; release and post-release health
+verification remain deployment steps.
