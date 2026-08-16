@@ -48,7 +48,7 @@ import { IdentitySignInResponse, IdentityWorkspace, PendingApplication, Workspac
             }
           </div>
         }
-        @if (!result()!.activeWorkspaces.length && result()!.pendingApplications.length) {
+        @if (result()!.pendingApplications.length) {
           <h2 class="section-title">طلبات قيد المتابعة</h2>
           <div class="cards">
             @for (application of result()!.pendingApplications; track application.applicationId) {
