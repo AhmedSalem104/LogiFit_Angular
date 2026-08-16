@@ -187,6 +187,72 @@ export interface ClientSubscription {
   freezes?: SubscriptionFreeze[];
   planDetails?: SubscriptionPlan;
   renewalHistory?: RenewalHistoryItem[];
+  payments?: SubscriptionPayment[];
+}
+
+export interface SubscriptionPayment {
+  id: string;
+  subscriptionId?: string;
+  amount: number;
+  method?: number;
+  methodName?: string;
+  receivedAt: string;
+  receivedByName?: string;
+  receiptNumber?: string;
+  notes?: string;
+  referenceNumber?: string;
+}
+
+export interface ClientTrainingOverview {
+  client: Client;
+  subscriptions: ClientSubscription[];
+  workoutPrograms: Array<{
+    id: string;
+    name: string;
+    status?: number;
+    startDate?: string;
+    endDate?: string;
+    routines?: Array<{ id?: string; name?: string; dayOfWeek?: number; exercises?: Array<{ exerciseName?: string; sets?: number; repsMin?: number; repsMax?: number }> }>;
+  }>;
+  dietPlans: Array<{
+    id: string;
+    name: string;
+    status?: number;
+    startDate?: string;
+    endDate?: string;
+    targetCalories?: number;
+    meals?: Array<{ name?: string; items?: Array<{ foodName?: string; assignedQuantity?: number; servingUnit?: string; calcCalories?: number }> }>;
+  }>;
+  measurements: Array<{
+    id: string;
+    dateRecorded: string;
+    weightKg?: number;
+    bodyFatPercent?: number;
+    heightCm?: number;
+    chestCm?: number;
+    waistCm?: number;
+    hipsCm?: number;
+    armsCm?: number;
+    thighsCm?: number;
+    notes?: string;
+  }>;
+  checkins: Array<{
+    id: string;
+    checkinDate: string;
+    readinessScore?: number;
+    sleepHours?: number;
+    fatigue?: number;
+    soreness?: number;
+    stress?: number;
+    mood?: number;
+    notes?: string;
+  }>;
+  workoutSessions: Array<{ id: string; routineName?: string; startedAt: string; endedAt?: string; totalVolumLifted?: number }>;
+  mealLogs: Array<{ id: string; mealName?: string; foodName?: string; consumedQuantity?: number; unit?: string; calories?: number; consumedAt: string }>;
+  completedWorkoutSessions?: number;
+  lastMeasurementAt?: string;
+  lastCheckinAt?: string;
+  lastActivityAt?: string;
 }
 
 export interface RenewalHistoryItem {
@@ -385,6 +451,10 @@ export class OwnerService {
 
   getClientById(id: string): Observable<Client> {
     return this.http.get<Client>(`${this.apiUrl}/clients/${id}`);
+  }
+
+  getClientTrainingOverview(id: string): Observable<ClientTrainingOverview> {
+    return this.http.get<ClientTrainingOverview>(`${this.apiUrl}/clients/${id}/training-overview`);
   }
 
   createClient(data: CreateClientRequest): Observable<string> {

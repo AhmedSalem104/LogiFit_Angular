@@ -42,6 +42,11 @@ export const clientRoutes: Routes = [
     title: 'تقدمي'
   },
   {
+    path: 'check-ins',
+    loadComponent: () => import('./checkins/my-checkins.component').then(m => m.MyCheckinsComponent),
+    title: 'استعدادي اليومي'
+  },
+  {
     path: 'my-subscriptions',
     loadComponent: () => import('./subscriptions/my-subscriptions.component').then(m => m.MySubscriptionsComponent),
     title: 'اشتراكاتي'

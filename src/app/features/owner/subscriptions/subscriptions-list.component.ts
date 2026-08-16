@@ -733,6 +733,21 @@ import Swal from 'sweetalert2';
               </div>
             </div>
 
+            <!-- Immutable payment ledger -->
+            @if (detailSubscription.payments && detailSubscription.payments.length > 0) {
+              <div class="detail-section">
+                <h4><i class="pi pi-receipt"></i> سجل الدفعات والإيصالات</h4>
+                <div class="payment-ledger">
+                  @for (payment of detailSubscription.payments; track payment.id) {
+                    <div class="ledger-row">
+                      <div><strong>{{ payment.amount | number:'1.0-2' }} جنيه</strong><small>{{ payment.receivedAt | date:'dd/MM/yyyy HH:mm' }} · {{ payment.receivedByName || 'النظام' }}</small></div>
+                      <div><span>{{ payment.methodName || getPaymentLabel(payment.method) }}</span><small>إيصال: {{ payment.receiptNumber || '—' }}</small></div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
             <!-- Freezes -->
             @if (detailSubscription.freezes && detailSubscription.freezes.length > 0) {
               <div class="detail-section">
@@ -1315,6 +1330,12 @@ import Swal from 'sweetalert2';
       gap: 0.75rem;
     }
 
+    .payment-ledger { display: flex; flex-direction: column; gap: .5rem; }
+    .ledger-row { display: flex; justify-content: space-between; gap: 1rem; padding: .75rem; background: var(--bg-secondary); border-radius: 8px; font-size: .85rem; }
+    .ledger-row > div { display: grid; gap: .2rem; }
+    .ledger-row > div:last-child { justify-items: end; color: var(--text-secondary); }
+    .ledger-row small { color: var(--text-muted); }
+
     .freeze-item, .renewal-item {
       display: flex;
       align-items: center;
@@ -1399,6 +1420,7 @@ export class SubscriptionsListComponent implements OnInit {
   selectedPlanFilter: string | null = null;
   showExpiringOnly = false;
   private searchTimeout: any;
+  private preselectedClientId: string | null = null;
 
   // Dialogs
   subscriptionDialogVisible = false;
@@ -1474,6 +1496,7 @@ export class SubscriptionsListComponent implements OnInit {
 
   ngOnInit(): void {
     this.createOnly = this.route.snapshot.queryParamMap.get('create') === '1';
+    this.preselectedClientId = this.route.snapshot.queryParamMap.get('clientId');
     if (this.createOnly) this.newClientMode = true;
     this.loadData();
     if (this.createOnly) queueMicrotask(() => this.openSubscriptionDialog());
@@ -1545,6 +1568,9 @@ export class SubscriptionsListComponent implements OnInit {
           label: c.fullName || c.profile?.fullName || c.phoneNumber || '',
           value: c.id
         }));
+        if (this.preselectedClientId && !this.subscriptionDialogVisible) {
+          queueMicrotask(() => this.openSubscriptionDialog());
+        }
       },
       error: (err) => {
         const message = err?.translatedMessage || err?.error?.detail || err?.error?.message || 'تعذر تحميل قائمة العملاء';
@@ -1625,11 +1651,12 @@ export class SubscriptionsListComponent implements OnInit {
     // The first subscription flow must be able to create the first client.
     // Do not block the dialog just because the client list is empty or still
     // unavailable; default to the new-client path in that case.
-    this.newClientMode = this.createOnly || !this.clients().length || !!this.clientsError();
+    const selectedExistingClient = this.preselectedClientId && this.clients().some(c => c.id === this.preselectedClientId);
+    this.newClientMode = !selectedExistingClient && (this.createOnly || !this.clients().length || !!this.clientsError());
     this.showNewClientPassword = false;
     this.newClient = { fullName: '', phoneNumber: '', email: '', password: '' };
     this.subscriptionForm = {
-      clientId: '',
+      clientId: selectedExistingClient ? this.preselectedClientId! : '',
       planId: '',
       startDate: new Date(),
       paymentMethod: 0,

@@ -117,6 +117,8 @@ export interface WorkoutProgram {
   daysPerWeek?: number;
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
   goal?: string;
+  notes?: string;
+  version?: number;
   status?: number; // Backend: Active=1, Archived=2, Draft=3
   isActive?: boolean;
   assignedTraineesCount?: number;
@@ -130,6 +132,7 @@ export interface WorkoutRoutine {
   id?: string;
   name: string;
   dayOfWeek: number; // 0=Sunday, 1=Monday, etc.
+  notes?: string;
   exercises: RoutineExercise[];
 }
 
@@ -160,6 +163,8 @@ export interface CreateWorkoutProgramRequest {
   difficulty?: string;
   daysPerWeek?: number;
   status?: number;
+  notes?: string;
+  expectedVersion?: number;
   routines?: WorkoutRoutineInput[];
 }
 
@@ -167,6 +172,7 @@ export interface WorkoutRoutineInput {
   id?: string;
   name: string;
   dayOfWeek: number;
+  notes?: string;
   exercises: WorkoutRoutineExerciseInput[];
 }
 
@@ -219,6 +225,11 @@ export interface DietPlan {
   targetProtein?: number;
   targetCarbs?: number;
   targetFats?: number;
+  calorieGoal?: string;
+  calorieAdjustment?: number;
+  calculatorMetadata?: string;
+  notes?: string;
+  version?: number;
   // Frontend compatibility aliases
   totalCalories?: number;
   proteinGrams?: number;
@@ -239,6 +250,7 @@ export interface DietMeal {
   mealName?: string; // Legacy compatibility
   orderIndex: number;
   time?: string;
+  notes?: string;
   items: DietMealItem[];
 }
 
@@ -247,6 +259,9 @@ export interface DietMealItem {
   foodId: number;
   foodName?: string;
   assignedQuantity: number;
+  servingUnit?: string;
+  notes?: string;
+  foodServingSizeSnapshot?: number;
   unit?: string;
   // API calculated values (read-only from server)
   calcCalories?: number;
@@ -348,6 +363,7 @@ export interface BodyMeasurement {
   // Measurements
   weightKg?: number;
   weight?: number; // Legacy alias
+  heightCm?: number;
   height?: number;
   skeletalMuscleMass?: number;
   bodyFatMass?: number;
@@ -358,12 +374,17 @@ export interface BodyMeasurement {
   visceralFatLevel?: number;
   // Body measurements
   chest?: number;
+  chestCm?: number;
   waist?: number;
+  waistCm?: number;
   hips?: number;
+  hipsCm?: number;
   bicepsLeft?: number;
   bicepsRight?: number;
   thighLeft?: number;
   thighRight?: number;
+  armsCm?: number;
+  thighsCm?: number;
   // Photos
   inbodyImageUrl?: string;
   frontPhotoUrl?: string;
@@ -576,6 +597,62 @@ export interface ClientSubscription {
   salesCoachId?: string;
   salesCoachName?: string;
   freezes?: SubscriptionFreeze[];
+  payments?: SubscriptionPayment[];
+}
+
+export interface SubscriptionPayment {
+  id: string;
+  subscriptionId?: string;
+  amount: number;
+  method?: number;
+  methodName?: string;
+  receivedAt: string;
+  receivedByName?: string;
+  receiptNumber?: string;
+  notes?: string;
+  referenceNumber?: string;
+}
+
+export interface AthleteCheckin {
+  id: string;
+  tenantId?: string;
+  clientId: string;
+  clientName?: string;
+  checkinDate: string;
+  sleepHours?: number;
+  sleepQuality?: number;
+  fatigue?: number;
+  soreness?: number;
+  stress?: number;
+  mood?: number;
+  restingHeartRate?: number;
+  hrv?: number;
+  bodyweightKg?: number;
+  notes?: string;
+  readinessScore?: number;
+}
+
+export interface ClientTrainingOverview {
+  client: Trainee;
+  subscriptions: ClientSubscription[];
+  workoutPrograms: WorkoutProgram[];
+  dietPlans: DietPlan[];
+  measurements: BodyMeasurement[];
+  checkins: AthleteCheckin[];
+  workoutSessions: WorkoutSession[];
+  mealLogs: Array<{
+    id: string;
+    mealName?: string;
+    foodName?: string;
+    consumedQuantity?: number;
+    unit?: string;
+    calories?: number;
+    consumedAt: string;
+  }>;
+  completedWorkoutSessions?: number;
+  lastMeasurementAt?: string;
+  lastCheckinAt?: string;
+  lastActivityAt?: string;
 }
 
 // ==================== Muscles Interfaces ====================
@@ -684,8 +761,11 @@ export class CoachService {
   }
 
   // Workout Programs
-  getWorkoutPrograms(status?: number): Observable<WorkoutProgram[]> {
-    const query = status === undefined ? '' : `?status=${status}`;
+  getWorkoutPrograms(status?: number, clientId?: string): Observable<WorkoutProgram[]> {
+    const params: string[] = [];
+    if (status !== undefined) params.push(`status=${status}`);
+    if (clientId) params.push(`clientId=${encodeURIComponent(clientId)}`);
+    const query = params.length ? `?${params.join('&')}` : '';
     return this.http.get<WorkoutProgram[]>(`${this.apiUrl}/workoutprograms${query}`);
   }
 
@@ -761,8 +841,11 @@ export class CoachService {
   }
 
   // Diet Plans
-  getDietPlans(status?: number): Observable<DietPlan[]> {
-    const query = status === undefined ? '' : `?status=${status}`;
+  getDietPlans(status?: number, clientId?: string): Observable<DietPlan[]> {
+    const params: string[] = [];
+    if (status !== undefined) params.push(`status=${status}`);
+    if (clientId) params.push(`clientId=${encodeURIComponent(clientId)}`);
+    const query = params.length ? `?${params.join('&')}` : '';
     return this.http.get<DietPlan[]>(`${this.apiUrl}/dietplans${query}`);
   }
 
@@ -873,6 +956,31 @@ export class CoachService {
 
   deleteMeasurement(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/bodymeasurements/${id}`);
+  }
+
+  // Daily coaching check-ins (different from gym attendance)
+  getAthleteCheckins(clientId: string, fromDate?: string, toDate?: string): Observable<AthleteCheckin[]> {
+    const params: string[] = [];
+    if (fromDate) params.push(`fromDate=${encodeURIComponent(fromDate)}`);
+    if (toDate) params.push(`toDate=${encodeURIComponent(toDate)}`);
+    const query = params.length ? `?${params.join('&')}` : '';
+    return this.http.get<AthleteCheckin[]>(`${this.apiUrl}/clients/${clientId}/checkins${query}`);
+  }
+
+  createAthleteCheckin(clientId: string, checkin: Partial<AthleteCheckin>): Observable<string> {
+    return this.http.post<string>(`${this.apiUrl}/clients/${clientId}/checkins`, checkin);
+  }
+
+  updateAthleteCheckin(clientId: string, id: string, checkin: Partial<AthleteCheckin>): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/clients/${clientId}/checkins/${id}`, checkin);
+  }
+
+  deleteAthleteCheckin(clientId: string, id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/clients/${clientId}/checkins/${id}`);
+  }
+
+  getClientTrainingOverview(clientId: string): Observable<ClientTrainingOverview> {
+    return this.http.get<ClientTrainingOverview>(`${this.apiUrl}/clients/${clientId}/training-overview`);
   }
 
   // ==================== Profile API ====================

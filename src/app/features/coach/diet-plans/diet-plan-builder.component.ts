@@ -2740,6 +2740,7 @@ export class DietPlanBuilderComponent implements OnInit {
 
   isEditMode = false;
   planId: string | null = null;
+  private loadedVersion?: number;
   private presetClientId: string | null = null;
   saving = signal(false);
   dataLoading = signal(true);
@@ -2820,6 +2821,10 @@ export class DietPlanBuilderComponent implements OnInit {
     status: [1], // Backend: Active=1, Archived=2, Draft=3
     name: ['', Validators.required],
     description: [''],
+    notes: [''],
+    calorieGoal: [''],
+    calorieAdjustment: [null],
+    calculatorMetadata: [''],
     totalCalories: [2500, Validators.required],
     proteinGrams: [180, Validators.required],
     carbsGrams: [250, Validators.required],
@@ -2828,9 +2833,9 @@ export class DietPlanBuilderComponent implements OnInit {
     meals: this.fb.array([])
   });
 
-  // DietPlanStatus enum: Draft=0, Active=1, Archived=2
+  // Keep the values aligned with the backend PlanStatus enum.
   statusOptions = [
-    { label: 'مسودة', value: 0 },
+    { label: 'مسودة', value: 3 },
     { label: 'نشط', value: 1 },
     { label: 'مؤرشف', value: 2 }
   ];
@@ -3017,7 +3022,7 @@ export class DietPlanBuilderComponent implements OnInit {
     const quantity = foodControl.get('quantity')?.value || 0;
     const food = this.foods().find(f => f.id === foodId);
     if (!food) return 0;
-    return Math.round((food.proteinPer100g * quantity) / 100);
+    return Math.round((food.proteinPer100g * quantity) / this.getFoodServingSize(food));
   }
 
   getFoodCarbs(mealIndex: number, foodIndex: number): number {
@@ -3026,7 +3031,7 @@ export class DietPlanBuilderComponent implements OnInit {
     const quantity = foodControl.get('quantity')?.value || 0;
     const food = this.foods().find(f => f.id === foodId);
     if (!food) return 0;
-    return Math.round((food.carbsPer100g * quantity) / 100);
+    return Math.round((food.carbsPer100g * quantity) / this.getFoodServingSize(food));
   }
 
   getFoodFat(mealIndex: number, foodIndex: number): number {
@@ -3035,7 +3040,7 @@ export class DietPlanBuilderComponent implements OnInit {
     const quantity = foodControl.get('quantity')?.value || 0;
     const food = this.foods().find(f => f.id === foodId);
     if (!food) return 0;
-    return Math.round(((food.fatPer100g || food.fatsPer100g || 0) * quantity) / 100);
+    return Math.round(((food.fatPer100g || food.fatsPer100g || 0) * quantity) / this.getFoodServingSize(food));
   }
 
   getRemainingProtein(): number {
@@ -3299,12 +3304,17 @@ export class DietPlanBuilderComponent implements OnInit {
           status: plan.status ?? 1,
           name: plan.name,
           description: plan.description,
+          notes: plan.notes || '',
+          calorieGoal: plan.calorieGoal || '',
+          calorieAdjustment: plan.calorieAdjustment ?? null,
+          calculatorMetadata: plan.calculatorMetadata || '',
           totalCalories: plan.targetCalories ?? plan.totalCalories ?? 0,
           proteinGrams: plan.targetProtein ?? plan.proteinGrams ?? 0,
           carbsGrams: plan.targetCarbs ?? plan.carbsGrams ?? 0,
           fatGrams: plan.targetFats ?? plan.fatGrams ?? 0,
           mealsPerDay: plan.meals?.length ?? plan.mealsPerDay ?? 3
         });
+        this.loadedVersion = plan.version;
 
         // Clear existing meals first
         while (this.mealsArray.length > 0) {
@@ -3357,6 +3367,7 @@ export class DietPlanBuilderComponent implements OnInit {
       name: [name],
       time: [time],
       orderIndex: [orderIndex],
+      notes: [''],
       foods: this.fb.array([])
     });
     this.mealsArray.push(mealGroup);
@@ -3370,6 +3381,7 @@ export class DietPlanBuilderComponent implements OnInit {
       name: [mealData.mealName || mealData.name || ''],
       time: [mealData.time || ''],
       orderIndex: [mealData.orderIndex ?? this.mealsArray.length],
+      notes: [mealData.notes || ''],
       foods: this.fb.array([])
     });
 
@@ -3387,7 +3399,8 @@ export class DietPlanBuilderComponent implements OnInit {
           foodId: [foodIdValue, Validators.required],
           // Backend uses 'assignedQuantity', Frontend uses 'quantity'
           quantity: [food.assignedQuantity ?? food.quantity ?? 100, Validators.required],
-          unit: [food.unit || 'g'],
+          unit: [food.servingUnit || food.unit || 'g'],
+          notes: [food.notes || ''],
           calories: [food.calcCalories ?? food.calories ?? 0],
           protein: [food.calcProtein ?? food.protein ?? 0],
           carbs: [food.calcCarbs ?? food.carbs ?? 0],
@@ -3421,6 +3434,7 @@ export class DietPlanBuilderComponent implements OnInit {
       foodId: ['', Validators.required],
       quantity: [100, Validators.required],
       unit: ['g'],
+      notes: [''],
       calories: [0],
       protein: [0],
       carbs: [0],
@@ -3441,10 +3455,10 @@ export class DietPlanBuilderComponent implements OnInit {
       const quantity = foodControl.get('quantity')?.value || 100;
       foodControl.patchValue({
         unit: food.servingUnit || 'g',
-        calories: Math.round((food.caloriesPer100g * quantity) / 100),
-        protein: Math.round((food.proteinPer100g * quantity) / 100),
-        carbs: Math.round((food.carbsPer100g * quantity) / 100),
-        fat: Math.round(((food.fatPer100g || food.fatsPer100g || 0) * quantity) / 100)
+        calories: Math.round((food.caloriesPer100g * quantity) / this.getFoodServingSize(food)),
+        protein: Math.round((food.proteinPer100g * quantity) / this.getFoodServingSize(food)),
+        carbs: Math.round((food.carbsPer100g * quantity) / this.getFoodServingSize(food)),
+        fat: Math.round(((food.fatPer100g || food.fatsPer100g || 0) * quantity) / this.getFoodServingSize(food))
       });
 
       // Check if limit reached after selection
@@ -3460,10 +3474,10 @@ export class DietPlanBuilderComponent implements OnInit {
 
     if (food) {
       foodControl.patchValue({
-        calories: Math.round((food.caloriesPer100g * quantity) / 100),
-        protein: Math.round((food.proteinPer100g * quantity) / 100),
-        carbs: Math.round((food.carbsPer100g * quantity) / 100),
-        fat: Math.round(((food.fatPer100g || food.fatsPer100g || 0) * quantity) / 100)
+        calories: Math.round((food.caloriesPer100g * quantity) / this.getFoodServingSize(food)),
+        protein: Math.round((food.proteinPer100g * quantity) / this.getFoodServingSize(food)),
+        carbs: Math.round((food.carbsPer100g * quantity) / this.getFoodServingSize(food)),
+        fat: Math.round(((food.fatPer100g || food.fatsPer100g || 0) * quantity) / this.getFoodServingSize(food))
       });
 
       // Check if limit reached after update
@@ -3482,9 +3496,13 @@ export class DietPlanBuilderComponent implements OnInit {
     const quantity = foodControl?.get('quantity')?.value || 0;
     const food = this.foods().find(f => f.id === foodId);
     if (food) {
-      return Math.round((food.caloriesPer100g * quantity) / 100);
+      return Math.round((food.caloriesPer100g * quantity) / this.getFoodServingSize(food));
     }
     return 0;
+  }
+
+  private getFoodServingSize(food: Food): number {
+    return food.servingSize && food.servingSize > 0 ? food.servingSize : 100;
   }
 
   getFoodCaloriesFromOption(foodId: string): number {
@@ -3541,9 +3559,9 @@ export class DietPlanBuilderComponent implements OnInit {
       const foodsHtml = meal.foods.map((f: any) => {
         const food = this.foods().find(fd => fd.id === f.foodId);
         const calories = this.getFoodCaloriesForPreview(f.foodId, f.quantity);
-        const protein = food ? Math.round((food.proteinPer100g * f.quantity) / 100) : 0;
-        const carbs = food ? Math.round((food.carbsPer100g * f.quantity) / 100) : 0;
-        const fats = food ? Math.round(((food.fatPer100g || food.fatsPer100g || 0) * f.quantity) / 100) : 0;
+        const protein = food ? Math.round((food.proteinPer100g * f.quantity) / this.getFoodServingSize(food)) : 0;
+        const carbs = food ? Math.round((food.carbsPer100g * f.quantity) / this.getFoodServingSize(food)) : 0;
+        const fats = food ? Math.round(((food.fatPer100g || food.fatsPer100g || 0) * f.quantity) / this.getFoodServingSize(food)) : 0;
         return `
           <tr>
             <td style="font-weight: 500;">${food?.name || '-'}</td>
@@ -4066,7 +4084,7 @@ export class DietPlanBuilderComponent implements OnInit {
   getFoodCaloriesForPreview(foodId: string, quantity: number): number {
     const food = this.foods().find(f => f.id === foodId);
     if (food) {
-      return Math.round((food.caloriesPer100g * quantity) / 100);
+      return Math.round((food.caloriesPer100g * quantity) / this.getFoodServingSize(food));
     }
     return 0;
   }
@@ -4165,6 +4183,10 @@ export class DietPlanBuilderComponent implements OnInit {
       clientId: value.clientId,
       name: value.name,
       description: value.description || undefined,
+      notes: value.notes || undefined,
+      calorieGoal: value.calorieGoal || undefined,
+      calorieAdjustment: value.calorieAdjustment ?? undefined,
+      calculatorMetadata: value.calculatorMetadata || undefined,
       startDate: toDate(value.startDate) || new Date().toISOString().split('T')[0],
       endDate: toDate(value.endDate) || undefined,
       status: Number(value.status ?? 1),
@@ -4173,15 +4195,19 @@ export class DietPlanBuilderComponent implements OnInit {
       targetProtein: Number(value.proteinGrams || 0),
       targetCarbs: Number(value.carbsGrams || 0),
       targetFats: Number(value.fatGrams || 0),
+      ...(this.isEditMode && this.loadedVersion !== undefined ? { expectedVersion: this.loadedVersion } : {}),
       meals: (value.meals || []).map((meal: any, mealIndex: number) => ({
         ...(meal.id ? { id: meal.id } : {}),
         name: meal.name || `وجبة ${mealIndex + 1}`,
         orderIndex: Number(meal.orderIndex ?? mealIndex),
         time: meal.time || undefined,
+        notes: meal.notes || undefined,
         items: (meal.foods || []).map((food: any) => ({
           ...(food.id ? { id: food.id } : {}),
           foodId: Number(food.foodId),
-          assignedQuantity: Number(food.quantity || 0)
+          assignedQuantity: Number(food.quantity || 0),
+          servingUnit: food.unit || undefined,
+          notes: food.notes || undefined
         }))
       }))
     };

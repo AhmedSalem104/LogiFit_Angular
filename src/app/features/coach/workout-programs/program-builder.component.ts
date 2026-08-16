@@ -2337,6 +2337,7 @@ export class ProgramBuilderComponent implements OnInit {
 
   isEditMode = false;
   programId: string | null = null;
+  private loadedVersion?: number;
   private presetClientId: string | null = null;
   saving = signal(false);
   dataLoading = signal(true);
@@ -2380,6 +2381,7 @@ export class ProgramBuilderComponent implements OnInit {
     startDate: [new Date(), Validators.required],
     name: ['', Validators.required],
     description: [''],
+    notes: [''],
     goal: ['muscle_building', Validators.required],
     difficulty: ['intermediate', Validators.required],
     status: [1],
@@ -2702,6 +2704,7 @@ export class ProgramBuilderComponent implements OnInit {
           startDate: startDate || new Date(),
           name: program.name,
           description: program.description,
+          notes: program.notes || '',
           goal: program.goal || 'muscle_building',
           difficulty: program.difficulty || 'intermediate',
           status: program.status ?? 1,
@@ -2709,6 +2712,7 @@ export class ProgramBuilderComponent implements OnInit {
             ?? this.calculateDurationWeeks(startDate, program.endDate),
           daysPerWeek: program.routines?.length ?? program.daysPerWeek ?? 4
         });
+        this.loadedVersion = program.version;
 
         // Clear existing days first
         while (this.daysArray.length > 0) {
@@ -2782,6 +2786,7 @@ export class ProgramBuilderComponent implements OnInit {
       id: [''],
       name: [name],
       dayOfWeek: [dayOfWeek],
+      notes: [''],
       exercises: this.fb.array([])
     });
     this.daysArray.push(dayGroup);
@@ -2794,6 +2799,7 @@ export class ProgramBuilderComponent implements OnInit {
       id: [dayData.id || ''],
       name: [dayData.name || ''],
       dayOfWeek: [dayData.dayOfWeek ?? 0],
+      notes: [dayData.notes || ''],
       exercises: this.fb.array([])
     });
 
@@ -3810,16 +3816,19 @@ export class ProgramBuilderComponent implements OnInit {
       clientId: value.clientId,
       name: value.name,
       description: value.description || undefined,
+      notes: value.notes || undefined,
       goal: value.goal || undefined,
       difficulty: value.difficulty || undefined,
       daysPerWeek: Number(value.daysPerWeek || value.days?.length || 0),
       status: Number(value.status ?? 1),
       startDate: startDate.toISOString().split('T')[0],
       endDate: endDate.toISOString().split('T')[0],
+      ...(this.isEditMode && this.loadedVersion !== undefined ? { expectedVersion: this.loadedVersion } : {}),
       routines: (value.days || []).map((day: any, index: number) => ({
         ...(day.id ? { id: day.id } : {}),
         name: day.name || `اليوم ${index + 1}`,
         dayOfWeek: Number(day.dayOfWeek ?? index),
+        notes: day.notes || undefined,
         exercises: (day.exercises || []).map((exercise: any) => {
           const reps = parseReps(exercise.reps);
           return {

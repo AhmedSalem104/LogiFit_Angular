@@ -1116,6 +1116,7 @@ export class SidebarComponent {
       items: [
         { label: 'قياساتي', icon: 'pi-chart-line', route: '/client/my-measurements', roles: [UserRole.Client] },
         { label: 'تقدمي', icon: 'pi-chart-bar', route: '/client/my-progress', roles: [UserRole.Client] },
+        { label: 'استعدادي اليومي', icon: 'pi-heart-fill', route: '/client/check-ins', roles: [UserRole.Client] },
         { label: 'اشتراكاتي', icon: 'pi-wallet', route: '/client/my-subscriptions', roles: [UserRole.Client] },
         { label: 'مواعيدي', icon: 'pi-calendar-plus', route: '/client/appointments', roles: [UserRole.Client] },
       ]
