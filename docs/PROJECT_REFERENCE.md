@@ -459,5 +459,5 @@ The Tenant UI implementation follows Backend Issue #313 while reusing the shared
 - Shared `CoachService`, `OwnerService`, and `ClientService` contracts expose the server overview,
   payment history, measurements, and check-in endpoints; no mock success state is used.
 
-These changes are on the Issue #102 task branch until PR review, merge, release, and health
-verification. Platform Admin is unaffected.
+These changes are merged into `main` through Tenant UI PR #103. Production release and health
+verification remain deployment steps. Platform Admin is unaffected.

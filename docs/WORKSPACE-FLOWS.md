@@ -272,5 +272,6 @@ server responds.
 
 Every stage must render loading, empty, blocked, and error states. A member cannot execute another
 client's plan, and a coach cannot manage an unassigned client; those rules are enforced by the
-Backend in addition to the route and capability guards. This flow is task-branch only until the
-Backend and Tenant UI PRs are merged and released.
+Backend in addition to the route and capability guards. This flow is merged into the Backend
+`develop` and Tenant UI `main` targets; production release and health verification remain deployment
+steps.
