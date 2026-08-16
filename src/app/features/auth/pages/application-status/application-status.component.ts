@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal }
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { concatMap, Subscription, timer } from 'rxjs';
+import { concatMap, of, Subscription, timer } from 'rxjs';
 import { FreelanceOnboardingService } from '../../../../core/freelance/services/freelance-onboarding.service';
 import { ApplicationRequestStatus, ApplicationTrackingStatus } from '../../../../core/freelance/models/freelance.models';
 
@@ -35,10 +35,26 @@ interface ActivationStep {
           <div class="information-request"><b>طلب الإدارة:</b><p>{{ application.informationRequest || 'يرجى استكمال البيانات المطلوبة.' }}</p></div>
           <form [formGroup]="form" (ngSubmit)="saveAndResubmit(application)">
             @for (field of application.requestedFields; track field) {
-              <label>{{ fieldLabel(field) }}
-                @if (isLongText(field)) { <textarea class="form-input" rows="4" [formControlName]="field"></textarea> }
-                @else { <input class="form-input" [type]="field.includes('Color') ? 'color' : 'text'" [formControlName]="field" /> }
-              </label>
+              @if (field !== 'PaymentProof') {
+                <label>{{ fieldLabel(field) }}
+                  @if (isLongText(field)) { <textarea class="form-input" rows="4" [formControlName]="field"></textarea> }
+                  @else { <input class="form-input" [type]="field.includes('Color') ? 'color' : 'text'" [formControlName]="field" /> }
+                </label>
+              }
+            }
+            @if (requiresPaymentProof(application)) {
+              <div class="proof-request">
+                <strong><i class="pi pi-image"></i> إثبات الدفع مطلوب</strong>
+                <span>ارفع صورة الإيصال أو ملف PDF ليتمكن فريق الإدارة من التحقق من الدفع.</span>
+                <label>صورة أو ملف إثبات الدفع *
+                  <input class="form-input" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" (change)="onProofSelected($event)" />
+                </label>
+                @if (proofFileName) { <small class="proof-file"><i class="pi pi-paperclip"></i> {{ proofFileName }}</small> }
+                <small>الأنواع المسموحة: JPG وPNG وPDF — الحد الأقصى 10 ميجابايت.</small>
+                @if ((application.paymentProofVersion || 0) > 0 && application.requestedFields.includes('PaymentProof')) {
+                  <small>سيُحفظ الرفع كإصدار جديد مع الاحتفاظ بالإصدارات السابقة.</small>
+                }
+              </div>
             }
             @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
             <button class="btn btn-primary w-full" [disabled]="saving()">{{ saving() ? 'جارٍ إعادة التقديم...' : 'حفظ وإعادة تقديم الطلب' }}</button>
@@ -72,7 +88,7 @@ interface ActivationStep {
     </section>
   `,
   styles: [`
-    .status-page h2 { margin:0 0 1rem; color:var(--text-primary); font-size:1.7rem; }.status-card,.information-request { padding:1rem; border:1px solid var(--border-color); border-radius:10px; background:var(--bg-primary); }.status-card.needs-info { border-color:#f59e0b; }.status-card h3 { margin:.55rem 0 .25rem; color:var(--text-primary); }.badge { display:inline-block; padding:.25rem .55rem; border-radius:999px; background:rgba(37,99,235,.1); color:#1d4ed8; font-size:.8rem; font-weight:700; }.muted { color:var(--text-secondary); }.information-request { margin-top:1rem; color:var(--text-primary); line-height:1.7; }.information-request p { margin:.25rem 0 0; } form { display:grid; gap:.85rem; margin-top:1rem; } label { display:grid; gap:.35rem; color:var(--text-primary); font-size:.9rem; font-weight:600; }.form-input { width:100%; box-sizing:border-box; min-height:42px; padding:.65rem .75rem; border:1px solid var(--border-color); border-radius:8px; color:var(--text-primary); background:var(--bg-primary); font:inherit; }.btn { display:inline-flex; align-items:center; justify-content:center; min-height:46px; padding:0 1rem; border:0; border-radius:8px; text-decoration:none; font:inherit; font-weight:700; cursor:pointer; }.btn-primary { background:#2563eb; color:#fff; }.btn-secondary { border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); }.btn:disabled { opacity:.65; cursor:not-allowed; }.status-actions { display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1rem; }.error { color:#b91c1c; margin:0; }.status-page > .btn { margin-top:1rem; padding:0 1rem; }
+    .status-page h2 { margin:0 0 1rem; color:var(--text-primary); font-size:1.7rem; }.status-card,.information-request { padding:1rem; border:1px solid var(--border-color); border-radius:10px; background:var(--bg-primary); }.status-card.needs-info { border-color:#f59e0b; }.status-card h3 { margin:.55rem 0 .25rem; color:var(--text-primary); }.badge { display:inline-block; padding:.25rem .55rem; border-radius:999px; background:rgba(37,99,235,.1); color:#1d4ed8; font-size:.8rem; font-weight:700; }.muted { color:var(--text-secondary); }.information-request { margin-top:1rem; color:var(--text-primary); line-height:1.7; }.information-request p { margin:.25rem 0 0; } form { display:grid; gap:.85rem; margin-top:1rem; } label { display:grid; gap:.35rem; color:var(--text-primary); font-size:.9rem; font-weight:600; }.form-input { width:100%; box-sizing:border-box; min-height:42px; padding:.65rem .75rem; border:1px solid var(--border-color); border-radius:8px; color:var(--text-primary); background:var(--bg-primary); font:inherit; }.proof-request { display:grid; gap:.35rem; padding:.85rem; border:1px solid #fbbf24; border-radius:9px; color:#92400e; background:#fffbeb; line-height:1.5; }.proof-request strong { display:flex; align-items:center; gap:.4rem; }.proof-request label { color:var(--text-primary); }.proof-request small,.proof-file { color:#78350f; font-weight:500; }.btn { display:inline-flex; align-items:center; justify-content:center; min-height:46px; padding:0 1rem; border:0; border-radius:8px; text-decoration:none; font:inherit; font-weight:700; cursor:pointer; }.btn-primary { background:#2563eb; color:#fff; }.btn-secondary { border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); }.btn:disabled { opacity:.65; cursor:not-allowed; }.status-actions { display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1rem; }.error { color:#b91c1c; margin:0; }.status-page > .btn { margin-top:1rem; padding:0 1rem; }
   `, `
     .status-heading{display:flex;align-items:center;justify-content:space-between;gap:.6rem}.type-badge,.access-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.28rem .55rem;border-radius:999px;color:#1d4ed8;background:#dbeafe;font-size:.72rem;font-weight:800}.type-badge.freelance{color:#6d28d9;background:#ede9fe}.access-badge{color:#b45309;background:#fef3c7}.access-badge.ready{color:#047857;background:#d1fae5}.activation-card{margin-top:1rem;padding:1rem;border:1px solid var(--border-color);border-radius:10px;background:var(--bg-primary)}.activation-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}.activation-heading h3{margin:0;color:var(--text-primary)}.activation-heading p{margin:.25rem 0 0;color:var(--text-secondary);font-size:.8rem}.activation-timeline{display:grid;grid-template-columns:repeat(6,1fr);gap:.45rem;margin:1rem 0}.activation-step{display:grid;justify-items:center;gap:.35rem;min-width:0;padding:.6rem .35rem;border:1px solid var(--border-color);border-radius:9px;color:var(--text-secondary);background:var(--bg-secondary);text-align:center}.activation-step.done{border-color:#bbf7d0;color:#047857;background:#f0fdf4}.activation-step.current{border-color:#bfdbfe;color:#1d4ed8;background:#eff6ff}.activation-step.blocked{border-color:#fecdd3;color:#b91c1c;background:#fff1f2}.step-marker{display:grid;place-items:center;width:1.8rem;height:1.8rem;border-radius:50%;background:rgba(148,163,184,.14)}.activation-step strong{font-size:.72rem}.activation-step small{font-size:.62rem;line-height:1.4}.activation-facts{display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem}.activation-facts>div{padding:.55rem;border:1px solid var(--border-color);border-radius:8px}.activation-facts span,.activation-facts b{display:block}.activation-facts span{color:var(--text-secondary);font-size:.65rem}.activation-facts b{margin-top:.2rem;color:var(--text-primary);font-size:.72rem;line-height:1.45}.activation-message{display:flex;align-items:flex-start;gap:.45rem;margin-top:.7rem;padding:.7rem;border:1px solid #bfdbfe;border-radius:8px;color:#1d4ed8;background:#eff6ff;font-size:.78rem;line-height:1.5}.activation-message.success{border-color:#bbf7d0;color:#047857;background:#f0fdf4}.activation-message.danger{border-color:#fecdd3;color:#b91c1c;background:#fff1f2}@media(max-width:700px){.activation-timeline{grid-template-columns:repeat(3,1fr)}.activation-facts{grid-template-columns:repeat(2,1fr)}.activation-heading{flex-direction:column}}@media(max-width:420px){.activation-timeline{grid-template-columns:repeat(2,1fr)}}
   `],
@@ -90,6 +106,8 @@ export class ApplicationStatusComponent implements OnInit, OnDestroy {
   readonly form = this.fb.group({
     FullName: [''], WorkspaceName: [''], OwnerFullName: [''], BrandName: [''], LogoUrl: [''], PhotoUrl: [''], CoverImageUrl: [''], BackgroundImageUrl: [''], PrimaryColor: ['#2563eb'], SecondaryColor: ['#0f172a'], Bio: [''], Specialties: [''], Certifications: [''], SocialLinks: [''], WelcomeMessage: [''], BookingSettings: [''],
   });
+  proofFile: File | null = null;
+  proofFileName = '';
 
   private refreshSubscription: Subscription | null = null;
   private readonly refreshIntervalMs = 10000;
@@ -178,19 +196,56 @@ export class ApplicationStatusComponent implements OnInit, OnDestroy {
   }
 
   saveAndResubmit(application: ApplicationTrackingStatus): void {
-    this.saving.set(true); this.error.set('');
     const fields: Record<string, unknown> = {};
-    for (const field of application.requestedFields) fields[field] = this.toApiValue(field, this.form.get(field)?.value);
-    this.onboarding.updateRequestedFields(fields).pipe(concatMap(() => this.onboarding.resubmit())).subscribe({
-      next: status => { this.applyStatus(status); this.saving.set(false); },
+    for (const field of application.requestedFields) {
+      if (field !== 'PaymentProof') fields[field] = this.toApiValue(field, this.form.get(field)?.value);
+    }
+    if (this.requiresPaymentProof(application) && !this.proofFile) {
+      this.error.set('أرفق صورة أو ملف إثبات الدفع قبل إعادة إرسال الطلب.');
+      return;
+    }
+    this.saving.set(true); this.error.set('');
+    const upload$ = this.requiresPaymentProof(application) && this.proofFile
+      ? this.onboarding.uploadPaymentProof(this.proofFile)
+      : of<unknown>(null);
+    upload$.pipe(
+      concatMap(() => Object.keys(fields).length ? this.onboarding.updateRequestedFields(fields) : of<unknown>(null)),
+      concatMap(() => this.onboarding.resubmit()),
+      concatMap(() => this.onboarding.getTrackingStatus()),
+    ).subscribe({
+      next: status => { this.applyStatus(status); this.proofFile = null; this.proofFileName = ''; this.saving.set(false); },
       error: err => { this.error.set(err?.translatedMessage || err?.error?.message || 'تعذر حفظ البيانات وإعادة التقديم.'); this.saving.set(false); },
     });
+  }
+
+  requiresPaymentProof(application: ApplicationTrackingStatus): boolean {
+    return application.status === ApplicationRequestStatus.NeedsMoreInformation
+      && !!application.paymentRequestId
+      && application.paymentStatus !== 2
+      && (application.requestedFields.includes('PaymentProof') || (application.paymentProofVersion || 0) === 0);
+  }
+
+  onProofSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+    if (!file) { this.proofFile = null; this.proofFileName = ''; return; }
+    const allowed = ['image/jpeg', 'image/png', 'application/pdf'];
+    if (!allowed.includes(file.type) || file.size <= 0 || file.size > 10 * 1024 * 1024) {
+      this.error.set('اختر ملف JPG أو PNG أو PDF بحجم لا يتجاوز 10 ميجابايت.');
+      input.value = '';
+      this.proofFile = null;
+      this.proofFileName = '';
+      return;
+    }
+    this.error.set('');
+    this.proofFile = file;
+    this.proofFileName = file.name;
   }
 
   fieldLabel(field: string): string { return ({ FullName: 'الاسم الكامل', WorkspaceName: 'اسم مساحة العمل', OwnerFullName: 'اسم المالك', BrandName: 'الاسم التجاري', LogoUrl: 'رابط الشعار', PhotoUrl: 'رابط الصورة الشخصية', CoverImageUrl: 'رابط الغلاف', BackgroundImageUrl: 'رابط الخلفية', PrimaryColor: 'اللون الأساسي', SecondaryColor: 'اللون الثانوي', Bio: 'النبذة', Specialties: 'التخصصات (مفصولة بفواصل)', Certifications: 'الشهادات (مفصولة بفواصل)', SocialLinks: 'روابط التواصل بصيغة JSON', WelcomeMessage: 'رسالة الترحيب', BookingSettings: 'إعدادات الحجز بصيغة JSON' } as Record<string, string>)[field] || field; }
   isLongText(field: string): boolean { return ['Bio', 'WelcomeMessage', 'SocialLinks', 'BookingSettings'].includes(field); }
   statusLabel(status: ApplicationRequestStatus): string { return ({ 1: 'مسودة', 2: 'مُقدّم', 3: 'قيد المراجعة', 4: 'مطلوب استكمال', 5: 'مقبول', 6: 'مرفوض', 7: 'ملغى', 8: 'منتهي' } as Record<number, string>)[status]; }
-  applicationLabel(type: number): string { return type === 2 ? 'طلب مساحة مدرب حر' : 'طلب انضمام إلى مساحة عمل'; }
+  applicationLabel(type: number): string { return type === 2 ? 'طلب مساحة مدرب حر' : type === 1 ? 'طلب إنشاء مساحة جيم' : 'طلب انضمام إلى مساحة عمل'; }
 
   private applyStatus(status: ApplicationTrackingStatus): void {
     this.status.set(status);

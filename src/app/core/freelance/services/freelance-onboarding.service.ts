@@ -15,6 +15,14 @@ import {
   SubmitWorkspaceApplication,
 } from '../models/freelance.models';
 
+export interface ApplicationPaymentProofUploaded {
+  applicationId: string;
+  version: number;
+  originalFileName: string;
+  contentType: string;
+  sizeBytes: number;
+}
+
 /** Public identity and application calls. No tenant JWT is attached to these endpoints. */
 @Injectable({ providedIn: 'root' })
 export class FreelanceOnboardingService {
@@ -120,6 +128,14 @@ export class FreelanceOnboardingService {
 
   updateRequestedFields(fields: Record<string, unknown>, token = this.getTrackingToken()): Observable<ApplicationTrackingStatus> {
     return this.http.patch<ApplicationTrackingStatus>(`${this.applicationsBase}/tracking/fields`, fields, {
+      headers: this.trackingHeaders(token),
+    });
+  }
+
+  uploadPaymentProof(file: File, token = this.getTrackingToken()): Observable<ApplicationPaymentProofUploaded> {
+    const form = new FormData();
+    form.append('proof', file, file.name);
+    return this.http.post<ApplicationPaymentProofUploaded>(`${this.applicationsBase}/tracking/payment-proof`, form, {
       headers: this.trackingHeaders(token),
     });
   }
