@@ -35,6 +35,7 @@ const GYM_NAVIGATION_ORDER: readonly string[] = [
   '/owner/clients',
   '/coach/trainees',
   '/owner/management',
+  '/owner/finance',
   '/owner/attendance',
   '/owner/expenses',
   '/coach/library',
@@ -1185,7 +1186,8 @@ export class SidebarComponent {
     {
       title: 'إدارة الجيم',
       items: [
-        { label: 'الإدارة', icon: 'pi-building', route: '/owner/management', roles: [UserRole.Owner], gymOnly: true, permission: ['ManageBranches', 'ManageCoaches', 'ManageEmployees'] }
+        { label: 'الإدارة', icon: 'pi-building', route: '/owner/management', roles: [UserRole.Owner], gymOnly: true, permission: ['ManageBranches', 'ManageCoaches', 'ManageEmployees'] },
+        { label: 'العضويات والتحصيل', icon: 'pi-wallet', route: '/owner/finance', roles: [UserRole.Owner], gymOnly: true, permission: ['ManageFinance', 'ManageClientSubscriptions'] }
       ]
     },
     {

@@ -10,6 +10,7 @@ export interface FeatureHubItem {
   description: string;
   icon: string;
   route: string;
+  group?: string;
   permission?: Permission | Permission[];
   capability?: WorkspaceCapability;
 }
@@ -44,17 +45,22 @@ export interface FeatureHubConfig {
         <p>اختر العملية المطلوبة من هذه المنطقة. لا توجد شاشات مكررة في القائمة؛ كل بطاقة تقود إلى الوظيفة الأصلية وصلاحياتها.</p>
       </section>
 
-      <div class="hub-grid">
-        @for (item of visibleItems(); track item.route) {
-          <a class="hub-card" [routerLink]="item.route">
-            <span class="hub-icon"><i [class]="'pi ' + item.icon"></i></span>
-            <span class="hub-copy"><strong>{{ item.title }}</strong><small>{{ item.description }}</small></span>
-            <i class="pi pi-arrow-left hub-arrow" aria-hidden="true"></i>
-          </a>
-        } @empty {
-          <div class="empty-state"><i class="pi pi-lock"></i><strong>لا توجد وظيفة متاحة</strong><span>تحقق من دورك وصلاحيات مساحة العمل.</span></div>
-        }
-      </div>
+      @for (section of visibleSections(); track section.title) {
+        <section class="hub-section" [attr.aria-label]="section.title">
+          @if (section.title) { <h2>{{ section.title }}</h2> }
+          <div class="hub-grid">
+            @for (item of section.items; track item.route) {
+              <a class="hub-card" [routerLink]="item.route">
+                <span class="hub-icon"><i [class]="'pi ' + item.icon"></i></span>
+                <span class="hub-copy"><strong>{{ item.title }}</strong><small>{{ item.description }}</small></span>
+                <i class="pi pi-arrow-left hub-arrow" aria-hidden="true"></i>
+              </a>
+            }
+          </div>
+        </section>
+      } @empty {
+        <div class="empty-state"><i class="pi pi-lock"></i><strong>لا توجد وظيفة متاحة</strong><span>تحقق من دورك وصلاحيات مساحة العمل.</span></div>
+      }
     </div>
   `,
   styles: [`
@@ -63,6 +69,8 @@ export interface FeatureHubConfig {
     .eyebrow { color:#2563eb; font-size:.76rem; font-weight:800; }
     h1 { margin:.35rem 0 .35rem; font-size:1.25rem; color:var(--text-primary,#0f172a); }
     .hub-intro p { margin:0; color:var(--text-secondary,#64748b); line-height:1.7; font-size:.88rem; }
+    .hub-section { display:grid; gap:.7rem; margin-bottom:1.25rem; }
+    .hub-section h2 { margin:0; color:var(--text-primary,#0f172a); font-size:1rem; }
     .hub-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem; }
     .hub-card { display:flex; align-items:center; gap:.8rem; min-height:100px; padding:1rem; border:1px solid var(--border-color,#e2e8f0); border-radius:1rem; background:var(--surface-card,#fff); color:inherit; text-decoration:none; box-shadow:0 6px 20px rgba(15,23,42,.05); transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease; }
     .hub-card:hover { transform:translateY(-2px); border-color:#93c5fd; box-shadow:0 12px 28px rgba(37,99,235,.12); }
@@ -89,33 +97,54 @@ export class FeatureHubComponent {
       return permissionOk && (!item.capability || this.auth.hasCapability(item.capability));
     });
   }
+
+  visibleSections(): Array<{ title: string; items: FeatureHubItem[] }> {
+    const sections = new Map<string, FeatureHubItem[]>();
+    for (const item of this.visibleItems()) {
+      const title = item.group || '';
+      const current = sections.get(title) || [];
+      current.push(item);
+      sections.set(title, current);
+    }
+    return Array.from(sections, ([title, items]) => ({ title, items }));
+  }
 }
 
 export const GYM_MANAGEMENT_HUB: FeatureHubConfig = {
   eyebrow: 'إدارة الجيم',
   title: 'إدارة الجيم',
-  subtitle: 'الفروع والفريق والحضور والمرافق في منطقة واحدة.',
+  subtitle: 'الفروع والفريق والحضور والمخزون والحسابات في منطقة واحدة.',
   items: [
-    { title: 'الفروع والقاعات', description: 'إدارة الفروع والقاعات والأجهزة والصيانة.', icon: 'pi-building', route: '/owner/branches', permission: 'ManageBranches', capability: 'GymFacilities' },
-    { title: 'المدربون', description: 'ملفات المدربين وتعيينهم للمشتركين.', icon: 'pi-id-card', route: '/owner/coaches', permission: 'ManageCoaches', capability: 'GymStaff' },
-    { title: 'الموظفون والصلاحيات', description: 'حسابات الفريق والأدوار والوصول.', icon: 'pi-users', route: '/owner/workspace-access', permission: 'ManageEmployees', capability: 'GymStaff' },
-    { title: 'الحضور والانصراف', description: 'تسجيل ومراجعة حضور الأعضاء والفريق.', icon: 'pi-clock', route: '/owner/attendance', permission: 'ManageAttendance', capability: 'GymAttendance' },
-    { title: 'البوابة وبطاقات العضوية', description: 'الدخول والبطاقات والتحقق السريع.', icon: 'pi-qrcode', route: '/owner/gate-access', permission: 'ManageAttendance', capability: 'GymGateAccess' },
-    { title: 'الحصص الجماعية', description: 'أنواع الحصص والجدولة والمدربين.', icon: 'pi-calendar', route: '/owner/group-classes', permission: 'ManageBranches', capability: 'GymFacilities' },
-    { title: 'المخزون ونقطة البيع', description: 'المنتجات والمخزون والمبيعات.', icon: 'pi-shopping-cart', route: '/owner/pos-sales', permission: 'ManagePOS', capability: 'GymPOS' }
+    { group: 'الفروع والمرافق', title: 'الفروع', description: 'إنشاء وتعديل فروع الجيم.', icon: 'pi-building', route: '/owner/branches', permission: 'ManageBranches', capability: 'GymFacilities' },
+    { group: 'الفروع والمرافق', title: 'القاعات والأجهزة والصيانة', description: 'إدارة القاعات والأجهزة وسجل الصيانة.', icon: 'pi-cog', route: '/owner/rooms', permission: 'ManageBranches', capability: 'GymFacilities' },
+    { group: 'الفروع والمرافق', title: 'فتح إدارة الأجهزة والصيانة', description: 'الوصول إلى قوائم الأجهزة والصيانة التفصيلية.', icon: 'pi-wrench', route: '/owner/equipment', permission: 'ManageBranches', capability: 'GymFacilities' },
+    { group: 'الفروع والمرافق', title: 'الصيانة', description: 'متابعة طلبات الصيانة وحالتها.', icon: 'pi-wrench', route: '/owner/maintenance', permission: 'ManageBranches', capability: 'GymFacilities' },
+    { group: 'الفريق والحسابات', title: 'المدربون', description: 'ملفات المدربين وتعيينهم للمشتركين.', icon: 'pi-id-card', route: '/owner/coaches', permission: 'ManageCoaches', capability: 'GymStaff' },
+    { group: 'الفريق والحسابات', title: 'الموظفون', description: 'بيانات الموظفين وحساباتهم داخل الجيم.', icon: 'pi-users', route: '/owner/employees', permission: 'ManageEmployees', capability: 'GymStaff' },
+    { group: 'الفريق والحسابات', title: 'الحسابات والصلاحيات', description: 'الأدوار، الوصول، الورديات والإجازات.', icon: 'pi-key', route: '/owner/workspace-access', permission: 'ManageEmployees', capability: 'GymStaff' },
+    { group: 'الفريق والحسابات', title: 'الرواتب والعمولات', description: 'إدارة الرواتب والعمولات للفريق.', icon: 'pi-wallet', route: '/owner/payroll', permission: ['ManageEmployees', 'ManageFinance'], capability: 'GymStaff' },
+    { group: 'الحضور والدخول', title: 'الحضور والانصراف', description: 'تسجيل ومراجعة حضور الأعضاء والفريق.', icon: 'pi-clock', route: '/owner/attendance', permission: 'ManageAttendance', capability: 'GymAttendance' },
+    { group: 'الحضور والدخول', title: 'البوابة وبطاقات العضوية', description: 'الدخول والبطاقات والتحقق السريع.', icon: 'pi-qrcode', route: '/owner/gate-access', permission: 'ManageAttendance', capability: 'GymGateAccess' },
+    { group: 'الحصص الجماعية', title: 'الحصص والجدولة', description: 'أنواع الحصص ومواعيدها ومدربيها.', icon: 'pi-calendar', route: '/owner/group-classes', permission: 'ManageBranches', capability: 'GymFacilities' },
+    { group: 'الحصص الجماعية', title: 'جدول الحصص', description: 'عرض وتعديل مواعيد الحصص الجماعية.', icon: 'pi-calendar-plus', route: '/owner/class-schedules', permission: 'ManageBranches', capability: 'GymFacilities' },
+    { group: 'المنتجات والمخزون', title: 'المنتجات', description: 'إضافة وتعديل المنتجات وأسعارها.', icon: 'pi-box', route: '/owner/products', permission: 'ManageInventory', capability: 'GymInventory' },
+    { group: 'المنتجات والمخزون', title: 'المخزون', description: 'الكميات والحركات والتنبيهات.', icon: 'pi-database', route: '/owner/stock', permission: 'ManageInventory', capability: 'GymInventory' },
+    { group: 'المنتجات والمخزون', title: 'نقطة البيع', description: 'تنفيذ المبيعات وإصدار الإيصالات.', icon: 'pi-shopping-cart', route: '/owner/pos-sales', permission: 'ManagePOS', capability: 'GymPOS' },
+    { group: 'المنتجات والمخزون', title: 'فئات المنتجات', description: 'تنظيم المنتجات داخل فئات واضحة.', icon: 'pi-tags', route: '/owner/product-categories', permission: 'ManageInventory', capability: 'GymInventory' },
+    { group: 'المنتجات والمخزون', title: 'الموردون', description: 'بيانات الموردين وحركة التوريد.', icon: 'pi-truck', route: '/owner/suppliers', permission: 'ManageInventory', capability: 'GymInventory' }
   ]
 };
 
 export const GYM_FINANCE_HUB: FeatureHubConfig = {
   eyebrow: 'العضويات والمالية',
-  title: 'المالية والاشتراكات',
-  subtitle: 'العضويات والمدفوعات والمصروفات دون فصل المشترك عن حسابه.',
+  title: 'العضويات والتحصيل',
+  subtitle: 'الاشتراكات والباقات والمدفوعات والفواتير في منطقة واضحة.',
   items: [
-    { title: 'العضويات والمدفوعات', description: 'مراجعة العضويات والتحصيل والتجميد والتجديد.', icon: 'pi-credit-card', route: '/owner/subscriptions', permission: 'ManageClientSubscriptions', capability: 'GymExperience' },
-    { title: 'باقات العضوية', description: 'إنشاء وتعديل الباقات المتاحة للمشتركين.', icon: 'pi-wallet', route: '/owner/subscription-plans', permission: 'ManageClientSubscriptions', capability: 'GymMembershipPlans' },
-    { title: 'سجل المدفوعات', description: 'كل التحصيلات والإيصالات في سجل واحد.', icon: 'pi-dollar', route: '/owner/payments', permission: 'ManageFinance', capability: 'GymExperience' },
-    { title: 'الفواتير', description: 'الفواتير والمديونيات وحالات السداد.', icon: 'pi-file', route: '/owner/invoices', permission: 'ManageFinance', capability: 'GymExperience' },
-    { title: 'المصروفات', description: 'تسجيل المصروفات وتصنيفها ومراجعتها.', icon: 'pi-money-bill', route: '/owner/expenses', permission: 'ManageFinance', capability: 'GymExperience' }
+    { group: 'الاشتراكات', title: 'العضويات والمدفوعات', description: 'مراجعة العضويات والتحصيل والتجميد والتجديد.', icon: 'pi-credit-card', route: '/owner/subscriptions', permission: 'ManageClientSubscriptions', capability: 'GymExperience' },
+    { group: 'الاشتراكات', title: 'باقات العضوية', description: 'إنشاء وتعديل الباقات المتاحة للمشتركين.', icon: 'pi-wallet', route: '/owner/subscription-plans', permission: 'ManageClientSubscriptions', capability: 'GymMembershipPlans' },
+    { group: 'التحصيل والفواتير', title: 'سجل المدفوعات', description: 'كل التحصيلات والإيصالات في سجل واحد.', icon: 'pi-dollar', route: '/owner/payments', permission: 'ManageFinance', capability: 'GymExperience' },
+    { group: 'التحصيل والفواتير', title: 'الفواتير والمديونيات', description: 'الفواتير والمديونيات وحالات السداد.', icon: 'pi-file', route: '/owner/invoices', permission: 'ManageFinance', capability: 'GymExperience' },
+    { group: 'التحصيل والفواتير', title: 'فئات المصروفات والكوبونات', description: 'إدارة التصنيفات والكوبونات والضرائب.', icon: 'pi-tags', route: '/owner/expense-categories', permission: 'ManageFinance', capability: 'GymExperience' }
   ]
 };
 
