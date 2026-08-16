@@ -99,10 +99,11 @@ In collapsed mode every ordered item must remain identifiable by its icon toolti
 ## TOP-GYM canonical areas and member dialog (2026-08-17)
 
 The primary sidebar is intentionally short and follows the TOP-GYM tabs: dashboard, members,
-trainees, management, attendance, expenses, library, and reports. For FreelanceCoach, the same
+trainees, management, memberships/collection, attendance, expenses, library, and reports. For FreelanceCoach, the same
 shell presents clients, payments/debts, sessions/appointments, library, reports, and the assistant
 team. Detailed training, nutrition, measurement, membership, and payment operations open from the
-selected member/client or its row actions. The consolidation must not change the existing drawer,
+selected member/client or its row actions. Management and collection hubs must expose their complete
+card sets without horizontal overflow. The consolidation must not change the existing drawer,
 hover, pin, or RTL/LTR behavior. Check the Gym and FreelanceCoach variants at all four required
 widths.
 
