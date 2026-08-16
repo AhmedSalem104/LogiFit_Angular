@@ -41,7 +41,9 @@ export const roleGuard = (allowedRoles: UserRole[]): CanActivateFn => {
 export const ownerGuard: CanActivateFn = roleGuard(BACK_OFFICE_ROLES);
 
 /**
- * Guard for coach routes (Coach + Trainer)
+ * Guard for coach routes. Gym owners enter the shared coaching components
+ * while managing their members; capabilities and API policies still limit
+ * the actual workspace features.
  */
 export const coachGuard: CanActivateFn = roleGuard(COACH_ROLES);
 

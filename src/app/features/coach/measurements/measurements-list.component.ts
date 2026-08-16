@@ -1,6 +1,7 @@
 import { Component, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
@@ -848,6 +849,7 @@ import Swal from 'sweetalert2';
 export class MeasurementsListComponent implements OnInit {
   private coachService = inject(CoachService);
   private notificationService = inject(NotificationService);
+  private route = inject(ActivatedRoute);
 
   loading = signal(true);
   errorMessage = signal<string | null>(null);
@@ -921,6 +923,7 @@ export class MeasurementsListComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.selectedTrainee = this.route.snapshot.queryParamMap.get('clientId');
     this.loadData();
   }
 
@@ -936,8 +939,9 @@ export class MeasurementsListComponent implements OnInit {
         this.referenceError.set(null);
         this.traineeOptions = data.map(t => ({
           label: t.clientName || t.fullName || t.profile?.fullName || '',
-          value: t.id
+          value: t.clientId || t.id
         }));
+        this.filterMeasurements();
       },
       error: () => {
         this.traineeOptions = [];
@@ -949,7 +953,7 @@ export class MeasurementsListComponent implements OnInit {
     this.coachService.getMeasurements().subscribe({
       next: (data) => {
         this.measurements.set(data);
-        this.filteredMeasurements.set(data);
+        this.filterMeasurements();
         this.loading.set(false);
       },
       error: (err) => {

@@ -275,3 +275,51 @@ client's plan, and a coach cannot manage an unassigned client; those rules are e
 Backend in addition to the route and capability guards. This flow is merged into the Backend
 `develop` and Tenant UI `main` targets; production release and health verification remain deployment
 steps.
+
+### Exact TOP-GYM subscriber journey (2026-08-17)
+
+The Tenant UI presents the subscriber workflow in the same order as the TOP-GYM specification.
+The order is deliberate and is the contract for the Gym owner experience:
+
+1. **Member onboarding/list** — `/owner/clients`. Create the Member identity and keep the list,
+   search, status, membership, expiry, balance, coach, and actions in one place. The create dialog
+   creates the Member first; it does not force a plan selection in step one.
+2. **Membership/subscription/payment** — `/owner/subscriptions?clientId={id}&create=1`. Select the
+   known plan, period, start date, discount, amount paid, payment method, and save the membership.
+   The server remains the source of truth for price, dates, payment ledger, receipt, and status.
+3. **Member profile/overview** — `/owner/clients/{id}`. The composite overview loads the member,
+   memberships/payments, programs, diet plans, measurements, sessions, meal logs, and daily
+   readiness without opening separate duplicate profile pages.
+4. **Workout programming/execution** — `/coach/workout-programs/create?clientId={id}` for the
+   three-stage builder (basic information, program structure, review/save). Execution history is
+   shown in the member overview and trainee detail screens.
+5. **Nutrition/meal logging** — `/coach/diet-plans/create?clientId={id}` for the three-stage
+   nutrition builder and meal structure. The signed-in member records meal logs through the client
+   execution screen; the owner/coach overview reads the saved logs and totals.
+6. **Measurements/progress** — `/coach/measurements?clientId={id}`. The client is preselected and
+   the screen supports the measurement history and CRUD flow without losing the member context.
+7. **Daily readiness/sessions** — the member overview fragment `#readiness` and the trainee detail
+   screen. Daily check-ins are CRUD-enabled; workout sessions remain tied to the selected member
+   and are displayed with the activity timeline.
+8. **Reports** — `/owner/reports`. Open after the member context has been reviewed; aggregate and
+   financial/operational reports remain separate from the member profile.
+
+The Gym sidebar has one dedicated `رحلة المشترك` group in this same order. Plan-catalog management,
+staff, branches, attendance, inventory, POS, and other Gym operations remain available in their own
+groups after the journey. FreelanceCoach never receives this Gym-only group; its coaching navigation
+continues to use the shared coaching components and `Coaching*` capabilities.
+
+### API mapping and boundaries
+
+| Journey stage | UI API calls | Boundary |
+|---|---|---|
+| Member list/onboarding | `GET /api/clients`, `POST /api/clients/onboard` | Member identity is created once; duplicate/tenant rules stay server-side. |
+| Membership/payment | `GET /api/subscriptions/plans`, `GET /api/subscriptions`, `POST /api/subscriptions`, `POST /api/subscriptions/{id}/payment` | Price, balance, status, receipt, renew/freeze/cancel are server-owned. |
+| Profile/overview | `GET /api/clients/{id}/training-overview` | The server filters by tenant and returns the composite view. |
+| Workout | `GET/POST/PUT/DELETE /api/workoutprograms*`, `/api/workoutsessions*` | Nested program saves are transactional; execution is member-scoped. |
+| Nutrition | `GET/POST/PUT/DELETE /api/dietplans*`, `GET /api/meal-logs` | Meal-log writes are restricted to the signed-in client; plans and snapshots are server-owned. |
+| Progress/readiness | `/api/bodymeasurements*`, `/api/clients/{id}/checkins*` | Measurement/check-in history is tenant and client scoped. |
+| Reports | `/api/reports/*` | A report entitlement error (HTTP 402) is shown as a retryable/upgrade state, never as a blank page. |
+
+Every stage has a loading, empty, blocked, and error state. A client/member id from the browser is
+only a lookup value; authorization and tenant isolation are enforced by the Backend.

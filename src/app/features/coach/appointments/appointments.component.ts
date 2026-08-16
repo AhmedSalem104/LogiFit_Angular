@@ -1,6 +1,7 @@
 import { Component, signal, OnInit, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
@@ -788,6 +789,7 @@ export class AppointmentsComponent implements OnInit {
   private appointmentsService = inject(AppointmentsService);
   private coachService = inject(CoachService);
   private notificationService = inject(NotificationService);
+  private route = inject(ActivatedRoute);
 
   loading = signal(true);
   saving = signal(false);
@@ -819,6 +821,7 @@ export class AppointmentsComponent implements OnInit {
   };
 
   traineeOptions: { label: string; value: string }[] = [];
+  private requestedClientId: string | null = null;
 
   statusOptions = [
     { label: 'قيد الانتظار', value: 1 },
@@ -837,6 +840,7 @@ export class AppointmentsComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.requestedClientId = this.route.snapshot.queryParamMap.get('clientId');
     this.loadTrainees();
     this.loadAppointments();
   }
@@ -849,6 +853,10 @@ export class AppointmentsComponent implements OnInit {
           label: t.clientName || t.fullName || t.profile?.fullName || '',
           value: t.clientId || t.id
         }));
+        if (this.requestedClientId && this.traineeOptions.some(option => option.value === this.requestedClientId)) {
+          this.appointmentForm.clientId = this.requestedClientId;
+          queueMicrotask(() => this.openCreateDialog());
+        }
       },
       error: () => {
         this.traineeOptions = [];
@@ -915,7 +923,7 @@ export class AppointmentsComponent implements OnInit {
 
   openCreateDialog(): void {
     this.appointmentForm = {
-      clientId: '',
+      clientId: this.requestedClientId || '',
       title: '',
       startTime: null,
       endTime: null,
