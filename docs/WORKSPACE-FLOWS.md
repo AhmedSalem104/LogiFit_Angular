@@ -62,7 +62,7 @@ database mapping. The browser does not receive or submit connection material.
 ### Existing freelance application flow
 
 1. المدرب الحر يفتح `/auth/register-freelance` ويرسل هوية المالك، معرّف المساحة، والهوية البصرية الأساسية. لا يُنشأ JWT ولا مساحة تشغيلية في هذه المرحلة.
-2. ينتقل إلى `/identity/application-status` باستخدام Tracking Token قصير العمر محفوظ في جلسة المتصفح. عند `NeedsMoreInformation` لا يمكنه تعديل سوى الحقول التي طلبتها الإدارة ثم يعيد التقديم.
+2. ينتقل إلى `/identity/application-status` باستخدام Tracking Token قصير العمر محفوظ في جلسة المتصفح. عند `NeedsMoreInformation` لا يمكنه تعديل سوى الحقول التي طلبتها الإدارة ثم يعيد التقديم. طلبا Gym وFreelanceCoach يستخدمان حقول payload المشتركة المسموحة مثل `WorkspaceName` و`BrandName` و`Bio`؛ طلبات العضوية تستخدم `FullName` فقط.
 3. عند انتهاء جلسة المتابعة يعود إلى `/identity/login`: الاستجابة تعيد المساحات النشطة والطلبات المعلقة معًا. يدخل مساحة نشطة واحدة مباشرة، أو يصدر جلسة متابعة جديدة لطلب واحد مباشرة؛ لا يحجب أحدهما الآخر.
 4. بعد اعتماد المنصة يدخل المدرب مساحة واحدة مباشرة من `/identity/login`، ويستلم عندها Access JWT
    بينما يضع الخادم Refresh Token في HttpOnly Cookie، ثم يصل إلى لوحة المالك.
