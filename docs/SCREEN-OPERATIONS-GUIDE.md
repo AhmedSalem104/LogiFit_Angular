@@ -15,7 +15,7 @@
 | الشاشة | الغرض والصلاحية | البيانات والإجراءات | حالات التشغيل |
 |---|---|---|---|
 | `/auth/register-workspace` (وكذلك `/auth/register-gym` و`/auth/register-freelance`) | زائر غير مسجل | نموذج موحد يختار Gym أو FreelanceCoach، يجلب الباقة، يجمع البيانات الأساسية وإثبات الدفع، ثم يرسل الطلب مرة واحدة. | Loading/validation/success/blocked/error واضحة؛ لا Tenant JWT ولا Dashboard قبل اكتمال بوابة التفعيل. |
-| `/identity/login` and `/` | Any global identity | One centered RTL card with Email + Password. It renders active workspaces and detailed pending-application cards using the server lifecycle snapshot: Gym/FreelanceCoach type, payment, workspace, subscription, provisioning, database readiness, current message, and next step. A pending card opens the tracking screen; it never opens the tenant dashboard. A single active workspace with no pending request enters directly. | Identity, membership, destination, and `canAccessDashboard` are backend decisions. `databaseStatusCode=Unassigned/Provisioning/Ready/Unavailable/Failed/Released` is display-only and contains no connection material. Loading/provisioning/blocked/error states remain explicit. The browser never stores a Refresh Token. |
+| `/identity/login` and `/` | Any global identity | One centered RTL card with Email + Password. A single active workspace enters directly, even when another application is pending. With no active workspace and one pending application, tracking opens directly. Only ambiguous results render a compact choice list; the old `اختيار السياق`/empty `ابدأ باستخدام LogicFit` screen is not shown. | Identity, membership, destination, and `canAccessDashboard` are backend decisions. `databaseStatusCode=Unassigned/Provisioning/Ready/Unavailable/Failed/Released` is display-only and contains no connection material. Loading/provisioning/blocked/error states remain explicit. The browser never stores a Refresh Token. |
 | `/identity/register` | Visitor creating a global identity | Full name, unique email, optional phone split into country code and local number, strong password, then a check-email state. The browser submits the optional phone as E.164. | Registration grants no workspace access and no session. The email link must be consumed first; a later successful Phone + OTP verifies the stored phone. Invalid phone format is shown beside the form/API result without storing credentials. |
 | `/identity/phone-security` | Signed-in or workspace-selection identity | Verify the first E.164 phone or change an existing phone using a purpose-bound OTP challenge. | A successful phone change revokes old sessions and requires sign-in again; duplicate/invalid phones and expired/consumed OTPs are shown beside the form. |
 | `/identity/reset-password` | Visitor with an email or verified phone | Choose one-use email link or Phone + OTP, then set a strong new password. | The response does not reveal account existence. Success revokes all existing sessions and returns to unified sign-in. |
@@ -26,10 +26,11 @@
 >
 > **مصدر الحقيقة التقني:** تعريفات المسارات في `src/app/features/**/**.routes.ts`، وعقود الطلب/الاستجابة الدقيقة في [كتالوج الـAPI](API-ENDPOINT-CATALOG.md). لا تُستنتج الصلاحية من ظهور زر في المتصفح: الخادم هو صاحب القرار النهائي.
 
-> **تحديث تدفق الدخول (Issue #217):** شاشة `/identity/login` تستخدم البريد وكلمة المرور فقط. إذا أعاد
-> الخادم مساحة نشطة واحدة بلا طلب معلّق، تنتقل الواجهة مباشرة إلى `POST /api/identity/select-workspace`
-> حتى لو كانت قيمة `requiresWorkspaceSelection` قديمة أو غير متزامنة. وعند وجود أكثر من مساحة أو طلب
-> معلّق، تبقى شاشة اختيار السياق وبطاقات الطلبات ظاهرة بشكل طبيعي.
+> **تحديث تدفق الدخول (Issue #217 / #90):** شاشة `/identity/login` تستخدم البريد وكلمة المرور فقط.
+> إذا أعاد الخادم مساحة نشطة واحدة، تنتقل الواجهة مباشرة إلى `POST /api/identity/select-workspace` حتى
+> لو كانت قيمة `requiresWorkspaceSelection` قديمة أو غير متزامنة. وإذا أعاد طلبًا معلقًا واحدًا بلا
+> مساحة نشطة، تفتح الواجهة المتابعة مباشرة. تظهر قائمة اختيار مختصرة فقط عند تعدد الوجهات؛ لا تظهر
+> شاشة اختيار السياق القديمة ولا حالة `ابدأ باستخدام LogicFit` الفارغة.
 
 ## Issue #248 — شاشة حالة الاشتراك الموحد
 

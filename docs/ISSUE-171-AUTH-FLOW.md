@@ -8,8 +8,9 @@ Status: merged to `main` as PR #58; deployment and Production verification remai
 - Phone is optional contact data during registration; Phone Login is not rendered or called.
 - OTP, Passkey, and WebAuthn controls and browser calls were removed from the tenant UI.
 - Email confirmation and password recovery remain single-use link flows.
-- The server supplies active workspaces and pending applications together. The UI never selects a
-  role or invents a membership.
+- The server supplies active workspaces and pending applications together. One active workspace or
+  one pending application is routed automatically; an explicit compact choice remains only for an
+  ambiguous response. The UI never selects a role or invents a membership.
 - Invitation and client-join screens authenticate the identity first, then submit only the
   server-bound token and workspace-selection token.
 - Error responses are rendered inline and no credential, access token, refresh token, or email
