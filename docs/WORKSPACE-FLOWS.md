@@ -14,11 +14,13 @@
 2. Email calls `POST /api/identity/login`, which returns the active-workspace/pending-application
    context. For an older Active Gym with a pending owner membership, the Backend repairs only that
    owner membership before returning the context.
-3. One active workspace with no pending application is selected directly with
-   `POST /api/identity/select-workspace`; all other mixed states remain visible as separate cards.
-4. A user with no workspace sees Gym, Freelance Workspace and Join Workspace cards. Join opens
-   the email-bound invitation flow; client join codes/QR remain controlled by their backend policy.
-   The frontend never creates a role or membership itself.
+3. One active workspace is selected directly with `POST /api/identity/select-workspace`, even if
+   another application is pending. With no active workspace and one pending application, the UI
+   reissues its tracking session and opens `/identity/application-status` directly.
+4. Only ambiguous responses (multiple active workspaces or multiple pending applications) show a
+   compact choice list. A response with no destination returns to the login form with an inline
+   message; the old `اختيار السياق`/`ابدأ باستخدام LogicFit` screen is not rendered. Registration,
+   invitation, and client join remain separate flows; the frontend never creates a role or membership.
 5. `/auth/login` remains an explicit legacy-gym compatibility route, not the public entry.
 6. A new global identity still uses a one-time email verification link. Password recovery at
    `/identity/reset-password` uses the email-link flow.
@@ -29,7 +31,7 @@
 
 The identity response includes a safe lifecycle snapshot for every pending application: workspace
 type, payment, workspace, subscription, provisioning, and database status code, plus
-`requiredAction`, `nextStep`, and `userMessage`. The context screen renders these values as a
+`requiredAction`, `nextStep`, and `userMessage`. An ambiguous response can render these values as a
 visible Gym/FreelanceCoach card; it never treats `Active` alone as proof that a tenant database or
 membership is ready. A pending application is tracked through `/identity/application-status`, not
 opened as a tenant dashboard, so loading/provisioning/failure states cannot become a blank screen.
@@ -61,8 +63,8 @@ database mapping. The browser does not receive or submit connection material.
 
 1. المدرب الحر يفتح `/auth/register-freelance` ويرسل هوية المالك، معرّف المساحة، والهوية البصرية الأساسية. لا يُنشأ JWT ولا مساحة تشغيلية في هذه المرحلة.
 2. ينتقل إلى `/identity/application-status` باستخدام Tracking Token قصير العمر محفوظ في جلسة المتصفح. عند `NeedsMoreInformation` لا يمكنه تعديل سوى الحقول التي طلبتها الإدارة ثم يعيد التقديم.
-3. عند انتهاء جلسة المتابعة يعود إلى `/identity/login`: الاستجابة تعيد المساحات النشطة والطلبات المعلقة معًا. يمكنه دخول مساحة نشطة أو إصدار جلسة متابعة جديدة لطلبه؛ لا يحجب أحدهما الآخر.
-4. بعد اعتماد المنصة يختار المدرب المساحة من `/identity/login`، ويستلم عندها Access JWT
+3. عند انتهاء جلسة المتابعة يعود إلى `/identity/login`: الاستجابة تعيد المساحات النشطة والطلبات المعلقة معًا. يدخل مساحة نشطة واحدة مباشرة، أو يصدر جلسة متابعة جديدة لطلب واحد مباشرة؛ لا يحجب أحدهما الآخر.
+4. بعد اعتماد المنصة يدخل المدرب مساحة واحدة مباشرة من `/identity/login`، ويستلم عندها Access JWT
    بينما يضع الخادم Refresh Token في HttpOnly Cookie، ثم يصل إلى لوحة المالك.
 5. المدرب أو المساعد المدعو ينشئ هوية عامة من `/identity/register` بالبريد الذي سيستخدمه مالك مساحة المدرب الحر. يرسل المالك طلب انضمام من `/owner/freelance-team`، ولا يصبح العضو نشطًا قبل موافقة Platform Admin وفحص حد الباقة مرة أخرى.
 
@@ -133,8 +135,9 @@ flowchart LR
    لا تفتح الواجهة Dashboard ولا تستدعي APIs الخاصة بالـTenant قبل أن يعيد الخادم `canAccessDashboard=true`.
 4. عند طلب معلومات إضافية تعدل الواجهة الحقول المطلوبة فقط ثم ترسل `PATCH .../tracking/fields`
    و`POST .../tracking/resubmit` دون إعادة التسجيل.
-5. بعد `POST /api/identity/login` يعرض النظام المساحات الفعالة والطلبات المعلقة. اختيار Workspace
-   عبر `POST /api/identity/select-workspace` هو الذي يصدر JWT؛ لا يعتمد الحارس على حالة قديمة في المتصفح.
+5. بعد `POST /api/identity/login` يعيد النظام المساحات الفعالة والطلبات المعلقة. المسار المحدد
+   تلقائيًا يستخدم `POST /api/identity/select-workspace` لإصدار JWT، بينما الاختيار اليدوي لا
+   يظهر إلا عند تعدد الوجهات؛ لا يعتمد الحارس على حالة قديمة في المتصفح.
 6. عند `401` تتم محاولة refresh واحدة مشتركة للطلبات المتوازية؛ فشلها يخرج المستخدم. عند `402` أو
    حالة Tenant غير متاحة تُعرض تجربة اشتراك/حالة تجهيز واضحة بدل صفحة فارغة.
 

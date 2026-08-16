@@ -15,10 +15,13 @@
 ### Unified entry update (2026-07-30)
 
 - `/` now opens `/identity/login`, the public identity-first entry. It accepts Email + Password,
-  then renders the same server-issued workspace/application context.
-- A single active workspace with no pending application is entered directly. Otherwise the user sees a workspace card and/or an application-tracking card; a pending request never hides an active workspace.
+  then consumes the server-issued destination without exposing an unnecessary context step.
+- One active workspace is entered directly even when another application is pending. With no active
+  workspace, one pending application opens tracking directly. The UI keeps a compact chooser only
+  when more than one active workspace or pending application makes automatic routing unsafe.
 - If the Backend reconciles an older Active Gym owner membership during identity login, the one-workspace response follows this same direct-entry path; the browser never edits membership state.
-- When no workspace or request exists, the screen presents only Gym, Freelance Workspace, and Join Workspace cards. Join is guidance for an invitation or QR until its backend contract is delivered; it does not invent a role or membership in the browser.
+- When no workspace or request exists, the login form shows a clear inline message instead of the old
+  `ابدأ باستخدام LogicFit` context/empty screen. Registration and joining remain separate entry flows.
 - `/auth/login`, `/auth/register`, and the old phone-based paths are compatibility redirects in the
   UI only; they do not call legacy Backend endpoints. Raw Tenant GUID input is hidden in Production.
 
@@ -34,7 +37,7 @@
   use HttpOnly cookies; browser JavaScript never receives a refresh token.
 
 - `WorkspaceType.FreelanceCoach` remains tenant-isolated but has an independent public identity and branding profile.
-- `/identity/login` proves the global identity before issuing a tenant JWT. It returns active workspaces and pending applications together; selecting one workspace exchanges a short-lived selection token for the existing JWT and HttpOnly refresh-cookie contract.
+- `/identity/login` proves the global identity before issuing a tenant JWT. It returns active workspaces and pending applications together; a deterministic destination is selected by the UI automatically, while an ambiguous result still requires an explicit workspace/application choice. Selecting a workspace exchanges a short-lived selection token for the existing JWT and HttpOnly refresh-cookie contract.
 - Backend #294 keeps workspace selection on the Platform/Tenant boundary: membership is checked from platform scalar ids, the assigned tenant database is resolved server-side, and `503 TENANT_DATABASE_UNAVAILABLE` is rendered as a retryable workspace-not-ready state instead of a blank page or generic server error.
 - Pending applications now include a safe activation snapshot (`paymentStatus`, `workspaceStatus`, `subscriptionStatus`, `provisioningStatus`, `databaseStatusCode`, `requiredAction`, `nextStep`, and `userMessage`). The login context shows the current stage and routes the user to tracking instead of opening an unready tenant.
 - `/identity/application-status` refreshes non-terminal lifecycle states every 10 seconds. When the server returns `canAccessDashboard=true`, it stops polling and shows `الدخول إلى المنصة`, which returns to identity login so the server can issue a fresh workspace-selection session; the read-only tracking token is never used as a tenant JWT. A `العودة إلى تسجيل الدخول` action is available in every status state.
