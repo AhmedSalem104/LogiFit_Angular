@@ -391,14 +391,15 @@ and its first payment are committed in the same server transaction.
 | `/owner/management` | Gym | Branches, facilities, coaches, staff, gate, classes and POS entry cards | Separate sidebar groups for every management sub-route |
 | `/owner/attendance` | Gym | Attendance and check-in operations | Attendance hidden inside unrelated management navigation |
 | `/owner/expenses` | Gym | Expense entry and monthly financial refresh | Finance hub as a mandatory extra step |
-| `/owner/finance` | Gym | Compatibility area for membership ledger, plans, payments, invoices and expenses | Not a primary sidebar screen; membership actions start from the member profile and expenses use `/owner/expenses` |
+| `/owner/finance` | Gym | Membership ledger, plans, payments, invoices and financial classifications | One organized collection area instead of scattering finance links across the sidebar |
 | `/coach/library` | Gym/FreelanceCoach | Exercises, foods and muscles entry cards | Three parallel library sections |
 | `/coach/trainees` | Gym/FreelanceCoach | External trainees for Gym; clients for FreelanceCoach | Ambiguous “trainees” label in both workspaces |
 
-The primary sidebar follows the TOP-GYM tabs: dashboard, members, trainees, management, attendance,
-expenses, library, and reports. Workout programs, nutrition plans, measurements, sessions, and
-membership/payment actions remain detail operations opened from the selected member/client or from
-its row actions; they are not repeated as top-level links.
+The primary sidebar follows the TOP-GYM tabs and keeps required operations reachable: dashboard,
+members, trainees, management, memberships/collection, attendance, expenses, library, and reports.
+The management hub contains branches, staff accounts, access, attendance, classes, POS, products,
+inventory, and suppliers. Workout programs, nutrition plans, measurements, sessions, and detailed
+member actions remain contextual operations opened from the selected member/client.
 
 Detailed routes remain protected and usable from the area cards, member row actions, or existing
 bookmarks. They are not duplicated in the primary sidebar. The legacy operations dashboard/report

@@ -466,9 +466,10 @@ model without exposing every internal detail page in the primary navigation:
   payment, and review/save. It submits the existing atomic `POST /api/clients/onboard` contract;
   the UI no longer asks the operator to create a generic person and then finish the same member in
   a separate subscription screen.
-- `owner/management` and `coach/library` are area hubs. `/owner/attendance` and `/owner/expenses`
-  are direct TOP-GYM tabs; the old `/owner/finance` hub remains only as a compatibility/internal
-  entry point and is not shown as a parallel primary screen.
+- `owner/management`, `owner/finance`, and `coach/library` are area hubs. The management hub
+  exposes facilities, staff accounts, access, attendance, classes, POS, products, inventory, and
+  suppliers. `/owner/attendance` and `/owner/expenses` remain direct TOP-GYM tabs, while
+  `/owner/finance` is the single organized membership/collection area.
 - Workout, diet, measurement, session, membership, and payment detail routes remain available from
   the selected member/client context and row actions, not as duplicate sidebar entries.
 - Gym and FreelanceCoach receive different canonical sidebar items. Gym external trainees are

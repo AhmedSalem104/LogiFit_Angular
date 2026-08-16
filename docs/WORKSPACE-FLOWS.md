@@ -246,8 +246,8 @@ resolve to `/workspace-unavailable` without invoking their feature API.
 
 After role and capability filtering, the sidebar applies the TOP-GYM tab order:
 
-- Gym: dashboard, members, external trainees, management, attendance, expenses, library, reports,
-  settings, platform subscription, profile.
+- Gym: dashboard, members, external trainees, management, memberships/collection, attendance,
+  expenses, library, reports, settings, platform subscription, profile.
 - FreelanceCoach: dashboard, clients, payments/debts, sessions/appointments, assistant team,
   library, reports, settings, platform subscription, profile.
 
@@ -313,7 +313,8 @@ single three-stage dialog. The order is the contract for the Gym owner experienc
 
 The primary sidebar now matches the file's eight product tabs instead of exposing every detail page:
 
-- Gym: dashboard, members, trainees, management, attendance, expenses, library, reports.
+- Gym: dashboard, members, trainees, management, memberships/collection, attendance, expenses,
+  library, reports.
 - FreelanceCoach: dashboard, clients, payments/debts, sessions/appointments, library, reports,
   assistant team.
 
