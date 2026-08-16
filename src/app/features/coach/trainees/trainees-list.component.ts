@@ -18,6 +18,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { PasswordFieldComponent } from '../../../shared/components/password-field/password-field.component';
 import { CoachService, Trainee, CreateTraineeResult } from '../services/coach.service';
+import { AuthService } from '../../../core/auth/services/auth.service';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -50,20 +51,20 @@ import { CoachService, Trainee, CreateTraineeResult } from '../services/coach.se
 
     <div class="trainees-page">
       <app-page-header
-        title="إدارة التدريب والتغذية"
-        subtitle="المتدربون والعملاء المرتبطون بخطط التدريب والتغذية والمتابعة"
-        [breadcrumbs]="[{label: 'لوحة التحكم', route: '/coach/dashboard'}, {label: 'إدارة التدريب والتغذية'}]"
+        [title]="pageTitle()"
+        [subtitle]="pageSubtitle()"
+        [breadcrumbs]="[{label: 'لوحة التحكم', route: '/coach/dashboard'}, {label: pageTitle()}]"
       >
         <button class="btn btn-primary" (click)="openAddDialog()">
           <i class="pi pi-plus"></i>
-          <span>إضافة متدرب</span>
+          <span>إضافة {{ entityLabel() }}</span>
         </button>
       </app-page-header>
 
       <div class="state-card error-state" *ngIf="!loading() && errorMessage()" role="alert">
         <i class="pi pi-exclamation-triangle"></i>
         <div>
-          <strong>تعذر تحميل المتدربين</strong>
+          <strong>تعذر تحميل {{ entityLabel() }}</strong>
           <p>{{ errorMessage() }}</p>
           <button type="button" class="btn btn-secondary" (click)="loadTrainees()">إعادة المحاولة</button>
         </div>
@@ -75,7 +76,7 @@ import { CoachService, Trainee, CreateTraineeResult } from '../services/coach.se
           <div class="stat-icon"><i class="pi pi-users"></i></div>
           <div class="stat-info">
             <span class="stat-value">{{ trainees().length }}</span>
-            <span class="stat-label">إجمالي المتدربين</span>
+            <span class="stat-label">إجمالي {{ entityLabel() }}</span>
           </div>
         </div>
         <div class="stat-card green">
@@ -110,7 +111,7 @@ import { CoachService, Trainee, CreateTraineeResult } from '../services/coach.se
         <div class="table-header">
           <div class="table-title">
             <i class="pi pi-users"></i>
-            <span>قائمة المتدربين</span>
+            <span>قائمة {{ entityLabel() }}</span>
             <span class="count-badge">{{ filteredTrainees().length }}</span>
           </div>
           <div class="table-actions">
@@ -142,7 +143,7 @@ import { CoachService, Trainee, CreateTraineeResult } from '../services/coach.se
           [rows]="10"
           [rowsPerPageOptions]="[5, 10, 25]"
           [showCurrentPageReport]="true"
-          currentPageReportTemplate="عرض {first} إلى {last} من {totalRecords} متدرب"
+          [currentPageReportTemplate]="'عرض {first} إلى {last} من {totalRecords} ' + entityLabel()"
           [sortField]="'clientName'"
           [sortOrder]="1"
           styleClass="p-datatable-striped"
@@ -152,7 +153,7 @@ import { CoachService, Trainee, CreateTraineeResult } from '../services/coach.se
             <tr>
               <th style="width: 5%">#</th>
               <th pSortableColumn="clientName" style="width: 20%">
-                المتدرب
+                {{ entityLabel() }}
                 <p-sortIcon field="clientName"></p-sortIcon>
               </th>
               <th style="width: 14%">التواصل</th>
@@ -309,11 +310,11 @@ import { CoachService, Trainee, CreateTraineeResult } from '../services/coach.se
               <td colspan="8">
                 <div class="empty-state">
                   <i class="pi pi-users"></i>
-                  <h3>لا يوجد متدربين</h3>
-                  <p>لم يتم تعيين أي متدربين لك بعد</p>
+                  <h3>لا يوجد {{ entityLabel() }}</h3>
+                  <p>{{ emptyMessage() }}</p>
                   <button class="btn btn-primary" (click)="openAddDialog()">
                     <i class="pi pi-plus"></i>
-                    إضافة متدرب
+                    إضافة {{ entityLabel() }}
                   </button>
                 </div>
               </td>
@@ -338,8 +339,8 @@ import { CoachService, Trainee, CreateTraineeResult } from '../services/coach.se
             <i [class]="editingTrainee ? 'pi pi-user-edit' : 'pi pi-user-plus'"></i>
           </div>
           <div class="header-text">
-            <span class="header-title">{{ editingTrainee ? 'تعديل بيانات المتدرب' : 'إضافة متدرب جديد' }}</span>
-            <span class="header-subtitle">{{ editingTrainee ? 'عدل بيانات المتدرب' : 'أدخل بيانات المتدرب' }}</span>
+            <span class="header-title">{{ editingTrainee ? 'تعديل بيانات ' + entityLabel() : 'إضافة ' + entityLabel() + ' جديد' }}</span>
+            <span class="header-subtitle">{{ editingTrainee ? 'عدل بيانات ' + entityLabel() : 'أدخل بيانات ' + entityLabel() }}</span>
           </div>
         </div>
       </ng-template>
@@ -541,7 +542,7 @@ import { CoachService, Trainee, CreateTraineeResult } from '../services/coach.se
               جاري الحفظ...
             } @else {
               <i class="pi pi-check"></i>
-              {{ editingTrainee ? 'حفظ التعديلات' : 'حفظ المتدرب' }}
+              {{ editingTrainee ? 'حفظ التعديلات' : 'حفظ ' + entityLabel() }}
             }
           </button>
         </div>
@@ -1196,6 +1197,7 @@ import { CoachService, Trainee, CreateTraineeResult } from '../services/coach.se
 })
 export class TraineesListComponent implements OnInit {
   private coachService = inject(CoachService);
+  private authService = inject(AuthService);
   private fb = inject(FormBuilder);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
@@ -1278,6 +1280,22 @@ export class TraineesListComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadTrainees();
+  }
+
+  isGymWorkspace(): boolean { return !this.authService.isFreelanceWorkspace(); }
+
+  entityLabel(): string { return this.isGymWorkspace() ? 'متدرب خارجي' : 'عميل'; }
+
+  pageTitle(): string { return this.isGymWorkspace() ? 'المتدربون الخارجيون' : 'العملاء'; }
+
+  pageSubtitle(): string {
+    return this.isGymWorkspace()
+      ? 'عملاء التدريب غير المرتبطين بعضوية جيم، مع برامجهم وقياساتهم وتقدمهم.'
+      : 'إدارة العملاء وبرامج التدريب والتغذية والقياسات والمتابعة.';
+  }
+
+  emptyMessage(): string {
+    return this.isGymWorkspace() ? 'لم تتم إضافة أي متدرب خارجي حتى الآن.' : 'لم تتم إضافة أي عميل حتى الآن.';
   }
 
   loadTrainees(): void {

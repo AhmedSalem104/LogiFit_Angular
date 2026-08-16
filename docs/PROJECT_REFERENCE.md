@@ -459,5 +459,23 @@ The Tenant UI implementation follows Backend Issue #313 while reusing the shared
 - Shared `CoachService`, `OwnerService`, and `ClientService` contracts expose the server overview,
   payment history, measurements, and check-in endpoints; no mock success state is used.
 
-These changes are merged into `main` through Tenant UI PR #103. Production release and health
-verification remain deployment steps. Platform Admin is unaffected.
+The follow-up implementation keeps one canonical Gym member screen and removes duplicate primary
+navigation without deleting backwards-compatible deep links:
+
+- `owner/clients` uses `app-member-onboarding-dialog` with three stages: member data, membership/
+  payment, and review/save. It submits the existing atomic `POST /api/clients/onboard` contract;
+  the UI no longer asks the operator to create a generic person and then finish the same member in
+  a separate subscription screen.
+- `owner/management`, `owner/finance`, and `coach/library` are area hubs. They group the existing
+  detailed feature routes so the sidebar matches the TOP-GYM tab model without duplicating APIs or
+  components.
+- Gym and FreelanceCoach receive different canonical sidebar items. Gym external trainees are
+  labelled explicitly; FreelanceCoach sees clients and coaching finance instead of Gym membership,
+  branches, POS, inventory, gate access, or Gym staff links.
+- `/owner/operations` and `/owner/operations-reports` are compatibility redirects to the canonical
+  dashboard/reports screens. `/coach/subscriptions` redirects to the client area and is not a
+  FreelanceCoach navigation feature.
+
+The implementation is frontend-only because the existing Backend onboarding handler already wraps
+member, optional subscription, payment and membership-card creation in one transaction. Production
+release and health verification remain deployment steps; Platform Admin is unaffected.

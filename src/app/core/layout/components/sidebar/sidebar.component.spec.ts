@@ -52,7 +52,7 @@ describe('sidebar navigation ordering', () => {
     expect(ordered.map(section => section.title)).toEqual(['First', 'Second']);
   });
 
-  it('places the Gym member journey after membership and before operations', () => {
+  it('places the Gym member journey before secondary areas', () => {
     const ordered = orderNavGroupsForWorkspace([
       group('Reports', ['/owner/reports']),
       group('Journey', ['/coach/appointments', '/coach/diet-plans', '/coach/trainees', '/coach/measurements', '/coach/workout-programs']),
@@ -60,8 +60,8 @@ describe('sidebar navigation ordering', () => {
       group('Members', ['/owner/clients'])
     ], 'Gym');
 
-    expect(ordered.map(section => section.title)).toEqual(['Members', 'Subscriptions', 'Journey', 'Reports']);
-    expect(ordered[2].items.map(navItem => navItem.route)).toEqual([
+    expect(ordered.map(section => section.title)).toEqual(['Members', 'Journey', 'Reports', 'Subscriptions']);
+    expect(ordered[1].items.map(navItem => navItem.route)).toEqual([
       '/coach/trainees',
       '/coach/workout-programs',
       '/coach/diet-plans',

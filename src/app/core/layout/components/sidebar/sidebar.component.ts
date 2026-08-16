@@ -32,48 +32,18 @@ export type SidebarWorkspaceType = 'Gym' | 'FreelanceCoach';
 // so a new feature is never silently moved to an arbitrary location.
 const GYM_NAVIGATION_ORDER: readonly string[] = [
   '/owner/dashboard',
-  '/owner/operations',
   '/owner/clients',
-  '/owner/subscriptions',
   '/coach/trainees',
   '/coach/workout-programs',
   '/coach/diet-plans',
   '/coach/measurements',
   '/coach/appointments',
+  '/owner/management',
+  '/owner/finance',
+  '/coach/library',
   '/owner/reports',
-  '/owner/subscription-plans',
-  '/owner/coaches',
-  '/owner/membership-cards',
-  '/owner/gate-access',
-  '/owner/attendance',
-  '/owner/branches',
-  '/owner/rooms',
-  '/owner/equipment',
-  '/owner/maintenance',
-  '/owner/group-classes',
-  '/owner/class-schedules',
-  '/owner/invoices',
-  '/owner/payments',
-  '/owner/expenses',
-  '/owner/expense-categories',
-  '/owner/coupons',
-  '/owner/tax-settings',
-  '/owner/pos-sales',
-  '/owner/products',
-  '/owner/product-categories',
-  '/owner/stock',
-  '/owner/suppliers',
-  '/owner/reports',
-  '/owner/operations-reports',
-  '/owner/employees',
-  '/owner/workspace-access',
-  '/owner/shifts',
-  '/owner/leaves',
-  '/owner/commissions',
-  '/owner/payroll',
   '/owner/gym-settings',
   '/owner/subscription',
-  '/owner/subscription/invoices',
   '/owner/profile'
 ];
 
@@ -85,19 +55,12 @@ const FREELANCE_NAVIGATION_ORDER: readonly string[] = [
   '/coach/diet-plans',
   '/coach/measurements',
   '/coach/appointments',
-  '/coach/chat',
-  '/coach/challenges',
-  '/coach/exercises',
-  '/coach/foods',
-  '/coach/muscles',
   '/coach/finance',
-  '/coach/subscriptions',
   '/coach/reports',
   '/owner/freelance-team',
+  '/coach/library',
   '/coach/settings',
   '/coach/subscription',
-  '/owner/subscription',
-  '/owner/subscription/invoices',
   '/coach/profile'
 ];
 
@@ -1205,6 +1168,70 @@ export class SidebarComponent {
     }
   ];
 
+  /**
+   * Canonical TOP-GYM navigation. The older feature routes remain available
+   * for backwards-compatible deep links, but they are no longer presented as
+   * parallel primary screens. Each visible item represents one product area;
+   * the area screen or the member profile opens its detailed actions.
+   */
+  private readonly canonicalNavGroups: NavGroup[] = [
+    {
+      title: 'الرئيسية',
+      items: [
+        { label: 'لوحة التحكم', icon: 'pi-th-large', route: '/owner/dashboard', roles: [UserRole.Owner], permission: 'ViewReports', gymOnly: true },
+        { label: 'لوحة التحكم', icon: 'pi-th-large', route: '/coach/dashboard', roles: [UserRole.Coach] }
+      ]
+    },
+    {
+      title: 'المشتركون والعملاء',
+      items: [
+        { label: 'المشتركون', icon: 'pi-users', route: '/owner/clients', roles: [UserRole.Owner], permission: 'ViewMembers', gymOnly: true },
+        { label: 'العملاء', icon: 'pi-users', route: '/coach/trainees', roles: [UserRole.Owner, UserRole.Coach], gymOnly: false }
+      ]
+    },
+    {
+      title: 'التدريب والتغذية',
+      items: [
+        { label: 'برامج التدريب', icon: 'pi-bolt', route: '/coach/workout-programs', roles: [UserRole.Owner, UserRole.Coach] },
+        { label: 'خطط التغذية', icon: 'pi-heart', route: '/coach/diet-plans', roles: [UserRole.Owner, UserRole.Coach] },
+        { label: 'القياسات والتقدم', icon: 'pi-chart-line', route: '/coach/measurements', roles: [UserRole.Owner, UserRole.Coach] },
+        { label: 'الجلسات والمواعيد', icon: 'pi-calendar-plus', route: '/coach/appointments', roles: [UserRole.Owner, UserRole.Coach] }
+      ]
+    },
+    {
+      title: 'إدارة الجيم',
+      items: [
+        { label: 'الإدارة', icon: 'pi-building', route: '/owner/management', roles: [UserRole.Owner], gymOnly: true, permission: ['ManageBranches', 'ManageCoaches', 'ManageEmployees'] },
+        { label: 'المالية والاشتراكات', icon: 'pi-wallet', route: '/owner/finance', roles: [UserRole.Owner], gymOnly: true, permission: ['ManageFinance', 'ManageClientSubscriptions'] }
+      ]
+    },
+    {
+      title: 'إدارة المدرب الحر',
+      items: [
+        { label: 'المدفوعات والمديونيات', icon: 'pi-wallet', route: '/coach/finance', roles: [UserRole.Owner, UserRole.Coach], freelanceOnly: true, permission: 'ManageFinance' },
+        { label: 'فريق المساعدة', icon: 'pi-users', route: '/owner/freelance-team', roles: [UserRole.Owner], freelanceOnly: true, permission: 'ManageCoaches' }
+      ]
+    },
+    {
+      title: 'المكتبة والتقارير',
+      items: [
+        { label: 'المكتبة', icon: 'pi-book', route: '/coach/library', roles: [UserRole.Owner, UserRole.Coach] },
+        { label: 'التقارير', icon: 'pi-chart-bar', route: '/owner/reports', roles: [UserRole.Owner], gymOnly: true, permission: 'ViewReports' },
+        { label: 'التقارير', icon: 'pi-chart-bar', route: '/coach/reports', roles: [UserRole.Owner, UserRole.Coach], freelanceOnly: true, permission: 'ViewReports' }
+      ]
+    },
+    {
+      title: 'الحساب والإعدادات',
+      items: [
+        { label: 'الإعدادات', icon: 'pi-cog', route: '/owner/gym-settings', roles: [UserRole.Owner], gymOnly: true, permission: 'ManageSettings' },
+        { label: 'الإعدادات', icon: 'pi-cog', route: '/coach/settings', roles: [UserRole.Owner, UserRole.Coach], freelanceOnly: true, permission: 'ManageSettings' },
+        { label: 'اشتراك المنصة', icon: 'pi-star', route: '/owner/subscription', roles: [UserRole.Owner], permission: 'ManageTenantBilling' },
+        { label: 'الملف الشخصي', icon: 'pi-user', route: '/owner/profile', roles: [UserRole.Owner], gymOnly: true },
+        { label: 'الملف الشخصي', icon: 'pi-user', route: '/coach/profile', roles: [UserRole.Owner, UserRole.Coach], freelanceOnly: true }
+      ]
+    }
+  ];
+
   /** Expand a panel-role list so that any role in the same family (back-office / coach) matches. */
   private matchesPanel(roles?: UserRole[]): boolean {
     if (!roles || !roles.length) return true;
@@ -1230,10 +1257,18 @@ export class SidebarComponent {
   }
 
   get visibleNavGroups(): NavGroup[] {
-    const visibleGroups = this.navGroups
+    const sourceGroups = this.authService.isClient() ? this.navGroups : this.canonicalNavGroups;
+    const visibleGroups = sourceGroups
       .filter(group => this.matchesPanel(group.roles) && this.matchesPermission(group.permission))
       .map(group => {
-        const items = group.items.filter(item => this.canShowItem(item));
+        const items = group.items
+          .filter(item => this.canShowItem(item))
+          .map(item => ({
+            ...item,
+            label: item.route === '/coach/trainees' && !this.authService.isFreelanceWorkspace()
+              ? 'المتدربون الخارجيون'
+              : item.label
+          }));
         return {
           ...group,
           title: this.contextualGroupTitle(group, items),

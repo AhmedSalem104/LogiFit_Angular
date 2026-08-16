@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { permissionGuard } from '../../core/auth/guards/permission.guard';
 import { Permissions, WorkspaceCapabilities } from '../../core/auth/models/auth.models';
 import { workspaceCapabilityGuard } from '../../core/auth/guards/workspace-capability.guard';
+import { FeatureHubComponent, COACH_LIBRARY_HUB } from '../../shared/components/feature-hub/feature-hub.component';
 
 export const COACH_ROUTES: Routes = [
   {
@@ -25,10 +26,16 @@ export const COACH_ROUTES: Routes = [
     title: 'تفاصيل المتدرب'
   },
   {
+    path: 'library',
+    canActivate: [workspaceCapabilityGuard([WorkspaceCapabilities.CoachingPrograms, WorkspaceCapabilities.CoachingNutrition])],
+    component: FeatureHubComponent,
+    data: { hub: COACH_LIBRARY_HUB },
+    title: 'المكتبة'
+  },
+  {
     path: 'subscriptions',
-    canActivate: [permissionGuard(Permissions.ManageClientSubscriptions)],
-    loadComponent: () => import('../owner/subscriptions/subscriptions-list.component').then(m => m.SubscriptionsListComponent),
-    title: 'اشتراكات العملاء'
+    redirectTo: 'trainees',
+    pathMatch: 'full'
   },
   {
     path: 'finance',
