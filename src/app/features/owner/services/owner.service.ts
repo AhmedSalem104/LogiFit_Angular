@@ -39,7 +39,16 @@ export interface CreateClientRequest {
 }
 
 export interface OnboardClientRequest extends CreateClientRequest {
-  membership?: { planId: string; startDate: string; issueCard: boolean } | null;
+  membership?: {
+    planId: string;
+    startDate: string;
+    paymentMethod?: number;
+    amountPaid?: number;
+    discount?: number;
+    notes?: string;
+    payFromWallet?: boolean;
+    issueCard: boolean;
+  } | null;
 }
 
 export interface UpdateClientRequest {
