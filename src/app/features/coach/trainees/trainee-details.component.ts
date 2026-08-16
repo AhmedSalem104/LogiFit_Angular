@@ -8,7 +8,7 @@ import { ButtonModule } from 'primeng/button';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { ChartCardComponent } from '../../../shared/components/chart-card/chart-card.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
-import { CoachService, Trainee, BodyMeasurement } from '../services/coach.service';
+import { CoachService, Trainee, BodyMeasurement, AthleteCheckin } from '../services/coach.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { MeasurementDialogComponent, MeasurementValue } from '../../../shared/components/measurement-dialog/measurement-dialog.component';
 
@@ -207,13 +207,13 @@ interface TraineeProgress {
                     <tr>
                       <td>{{ formatDate(m.dateRecorded || m.measurementDate || '') }}</td>
                       <td>{{ m.weightKg ?? m.weight }} كجم</td>
-                      <td>{{ m.height }} سم</td>
+                      <td>{{ m.heightCm ?? m.height ?? '-' }} سم</td>
                       <td>{{ m.bodyFatPercent ?? m.bodyFatPercentage ?? '-' }}%</td>
-                      <td>{{ m.chest || '-' }} سم</td>
-                      <td>{{ m.waist || '-' }} سم</td>
+                      <td>{{ m.chestCm ?? m.chest ?? '-' }} سم</td>
+                      <td>{{ m.waistCm ?? m.waist ?? '-' }} سم</td>
                       <td>
-                        <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm"></button>
-                        <button pButton icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm"></button>
+                        <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="editMeasurement(m)" aria-label="تعديل القياس"></button>
+                        <button pButton icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm" (click)="deleteMeasurement(m)" aria-label="حذف القياس"></button>
                       </td>
                     </tr>
                   } @empty {
@@ -221,6 +221,20 @@ interface TraineeProgress {
                       <td colspan="7" class="empty-row">لا توجد قياسات مسجلة</td>
                     </tr>
                   }
+                </tbody>
+              </table>
+            </div>
+          </p-tabPanel>
+
+          <!-- Daily readiness tab -->
+          <p-tabPanel header="الاستعداد اليومي">
+            <div class="measurements-table">
+              <table>
+                <thead><tr><th>التاريخ</th><th>الاستعداد</th><th>النوم</th><th>الإجهاد</th><th>ألم العضلات</th><th>ملاحظات</th></tr></thead>
+                <tbody>
+                  @for (checkin of checkins(); track checkin.id) {
+                    <tr><td>{{ formatDate(checkin.checkinDate) }}</td><td>{{ checkin.readinessScore ?? '-' }}%</td><td>{{ checkin.sleepHours ?? '-' }} ساعة</td><td>{{ checkin.fatigue ?? '-' }}/5</td><td>{{ checkin.soreness ?? '-' }}/5</td><td>{{ checkin.notes || '-' }}</td></tr>
+                  } @empty { <tr><td colspan="6" class="empty-row">لا توجد Check-ins مسجلة</td></tr> }
                 </tbody>
               </table>
             </div>
@@ -702,6 +716,7 @@ export class TraineeDetailsComponent implements OnInit {
   errorMessage = signal<string | null>(null);
   trainee = signal<Trainee | null>(null);
   measurements = signal<BodyMeasurement[]>([]);
+  checkins = signal<AthleteCheckin[]>([]);
   workoutHistory = signal<{ date: string; workout: string; duration: number }[]>([]);
   sessions = signal<any[]>([]);
   measurementDialogOpen = signal(false);
@@ -777,6 +792,7 @@ export class TraineeDetailsComponent implements OnInit {
         const clientId = data.clientId || id;
         this.loadMeasurements(clientId);
         this.loadSessions(clientId);
+        this.loadCheckins(clientId);
       },
       error: (err) => {
         console.error('Error loading trainee data:', err);
@@ -784,6 +800,7 @@ export class TraineeDetailsComponent implements OnInit {
         this.errorMessage.set('تعذر الاتصال بالخادم أو لم يعد هذا المتدرب متاحاً.');
         this.trainee.set(null);
         this.measurements.set([]);
+        this.checkins.set([]);
         this.workoutHistory.set([]);
         this.loading.set(false);
       }
@@ -818,6 +835,13 @@ export class TraineeDetailsComponent implements OnInit {
         this.sessions.set([]);
         this.workoutHistory.set([]);
       }
+    });
+  }
+
+  private loadCheckins(clientId: string): void {
+    this.coachService.getAthleteCheckins(clientId).subscribe({
+      next: rows => this.checkins.set(rows || []),
+      error: () => this.checkins.set([])
     });
   }
 
@@ -880,6 +904,19 @@ export class TraineeDetailsComponent implements OnInit {
 
   addMeasurement(): void {
     this.measurementDialogOpen.set(true);
+  }
+
+  editMeasurement(measurement: BodyMeasurement): void {
+    this.notificationService.info('يمكن تعديل القياس من شاشة القياسات مع الحفاظ على السجل السابق.');
+    this.router.navigate(['/coach/measurements'], { queryParams: { edit: measurement.id } });
+  }
+
+  deleteMeasurement(measurement: BodyMeasurement): void {
+    if (!window.confirm('هل تريد حذف هذا القياس؟ سيظل سجل الخطة والتدريب محفوظا.')) return;
+    this.coachService.deleteMeasurement(measurement.id).subscribe({
+      next: () => { this.measurements.update(rows => rows.filter(row => row.id !== measurement.id)); this.notificationService.success('تم حذف القياس.'); },
+      error: e => this.notificationService.error(e?.translatedMessage || 'تعذر حذف القياس.')
+    });
   }
 
   onSaveMeasurement(value: MeasurementValue): void {

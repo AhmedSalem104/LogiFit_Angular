@@ -254,3 +254,23 @@ After role and capability filtering, the sidebar applies a stable workspace-spec
 This changes presentation only. It preserves the existing shared routes, capability guards,
 permission checks, and backend tenant isolation. A new route not yet listed in the order map keeps
 its existing relative position until it is assigned to the appropriate workflow section.
+
+## Subscriber and coaching journey (Issue #102)
+
+The Gym and FreelanceCoach shells share the same tenant UI components, but the selected workspace
+capability controls the visible entry points. The member journey is:
+
+`owner opens member -> creates/selects membership -> reviews server payment ledger -> assigns coach
+-> coach builds workout/nutrition aggregate -> member opens active plan -> records sessions/meals,
+measurements, and one daily readiness check-in -> owner/coach reviews the overview`.
+
+The owner member screen is the starting point for membership and coaching context. The subscription
+screen keeps payment history visible and routes API failures to a retryable state. Builder screens
+save the whole aggregate and surface a version conflict instead of silently replacing another edit.
+The client check-in screen sends the daily fields to the Backend and does not mark success until the
+server responds.
+
+Every stage must render loading, empty, blocked, and error states. A member cannot execute another
+client's plan, and a coach cannot manage an unassigned client; those rules are enforced by the
+Backend in addition to the route and capability guards. This flow is task-branch only until the
+Backend and Tenant UI PRs are merged and released.

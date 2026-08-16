@@ -348,3 +348,19 @@ shown as Assistant Team for FreelanceCoach owners.
 Loading, empty, blocked, and API error states belong to the destination screen and are unchanged.
 No sidebar link invokes a new endpoint, and direct navigation remains protected by the existing
 route guard and backend authorization.
+
+## Subscriber, training and nutrition screens (Issue #102)
+
+| Route | Purpose | Primary actions | Required states |
+|---|---|---|---|
+| `/owner/clients/:id` | One member's operational and coaching overview | Open membership, workout/diet plan, measurements, and readiness context | Loading skeleton, not-found/API error with retry/back, empty sections, and permission-blocked state |
+| `/owner/subscriptions?clientId=...` | Create/manage the selected member's subscription | Create, add payment, renew, freeze/cancel according to API policy, review receipt ledger | Plans loading, form validation, API error/retry, payment history empty state, and immutable receipt display |
+| `/coach/workout-programs/builder` | Build the complete training aggregate | Select client, author routines/exercises, set metadata/notes, save/update with version | Client/plan loading, validation, stale-version conflict, save error, and success only after API confirmation |
+| `/coach/diet-plans/builder` | Build the complete nutrition aggregate | Select client, author meals/items, serving unit, notes, calculator metadata, save/update | Food loading, serving-size calculation, validation, stale-version conflict, save error, and empty states |
+| `/client/check-ins` | Record daily recovery/readiness | Create or edit today's sleep, recovery, soreness, stress, mood, vitals, weight, and notes; review history | One-per-day validation, loading, duplicate/API error, retry, empty history, and confirmed success |
+
+The owner overview and subscription screen use the shared service contracts; the coach builders use
+aggregate APIs; the client screen uses the authenticated self-service check-in contract. UI controls
+are not a security boundary: tenant, assignment, membership, ownership, and active-plan checks remain
+server-side. These additions are on the task branch until merge, release, and post-release health
+verification.

@@ -442,3 +442,22 @@ Ordering is frontend-only and uses the existing route/capability snapshot. It do
 permissions, or tenant data access. A FreelanceCoach group containing only
 /owner/freelance-team is labelled Assistant Team in that context; Gym-only links remain filtered
 out before ordering. Unknown future routes retain their original relative position.
+
+## Subscriber, training and nutrition parity (Issue #102)
+
+The Tenant UI implementation follows Backend Issue #313 while reusing the shared platform shell:
+
+- `owner/clients/:id` is the owner-facing member overview. It loads subscriptions/payment history,
+  workout and diet plans, measurements, readiness check-ins, and activity counts with explicit
+  loading, retry, empty, and API-error states.
+- `owner/subscriptions` accepts a preselected `clientId`, opens the existing membership flow, and
+  displays the immutable server payment ledger and receipt details.
+- Coach workout and diet builders submit complete nested aggregates, preserve notes/calculator
+  metadata, send `ExpectedVersion`, and calculate food macros from `Food.servingSize`.
+- `/client/check-ins` is the member daily readiness screen. It supports create, edit, delete, and
+  history while the API enforces one check-in per client/day.
+- Shared `CoachService`, `OwnerService`, and `ClientService` contracts expose the server overview,
+  payment history, measurements, and check-in endpoints; no mock success state is used.
+
+These changes are on the Issue #102 task branch until PR review, merge, release, and health
+verification. Platform Admin is unaffected.

@@ -231,6 +231,13 @@ export interface BodyMeasurement {
   frontPhotoUrl?: string;
   sidePhotoUrl?: string;
   backPhotoUrl?: string;
+  heightCm?: number;
+  chestCm?: number;
+  waistCm?: number;
+  hipsCm?: number;
+  armsCm?: number;
+  thighsCm?: number;
+  notes?: string;
   // Legacy properties for component compatibility
   measurementDate?: string; // alias for dateRecorded
   weight?: number; // alias for weightKg
@@ -316,6 +323,23 @@ export interface MealLog {
   totalProtein?: number;
   totalCarbs?: number;
   totalFat?: number;
+}
+
+export interface AthleteCheckin {
+  id: string;
+  clientId: string;
+  checkinDate: string;
+  sleepHours?: number;
+  sleepQuality?: number;
+  fatigue?: number;
+  soreness?: number;
+  stress?: number;
+  mood?: number;
+  restingHeartRate?: number;
+  hrv?: number;
+  bodyweightKg?: number;
+  notes?: string;
+  readinessScore?: number;
 }
 
 export interface LoggedFood {
@@ -604,6 +628,26 @@ export class ClientService {
   getMyMeasurements(): Observable<BodyMeasurement[]> {
     const userId = this.getCurrentUserId();
     return this.http.get<BodyMeasurement[]>(`${this.apiUrl}/bodymeasurements?clientId=${userId}`);
+  }
+
+  getMyCheckins(): Observable<AthleteCheckin[]> {
+    const userId = this.getCurrentUserId();
+    return this.http.get<AthleteCheckin[]>(`${this.apiUrl}/clients/${userId}/checkins`);
+  }
+
+  createMyCheckin(checkin: Partial<AthleteCheckin>): Observable<string> {
+    const userId = this.getCurrentUserId();
+    return this.http.post<string>(`${this.apiUrl}/clients/${userId}/checkins`, checkin);
+  }
+
+  updateMyCheckin(id: string, checkin: Partial<AthleteCheckin>): Observable<void> {
+    const userId = this.getCurrentUserId();
+    return this.http.put<void>(`${this.apiUrl}/clients/${userId}/checkins/${id}`, checkin);
+  }
+
+  deleteMyCheckin(id: string): Observable<void> {
+    const userId = this.getCurrentUserId();
+    return this.http.delete<void>(`${this.apiUrl}/clients/${userId}/checkins/${id}`);
   }
 
   // Progress - uses TraineeProgressReportDto from /api/Reports/coach/trainee/{clientId}
