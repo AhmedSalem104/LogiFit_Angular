@@ -34,12 +34,9 @@ const GYM_NAVIGATION_ORDER: readonly string[] = [
   '/owner/dashboard',
   '/owner/clients',
   '/coach/trainees',
-  '/coach/workout-programs',
-  '/coach/diet-plans',
-  '/coach/measurements',
-  '/coach/appointments',
   '/owner/management',
-  '/owner/finance',
+  '/owner/attendance',
+  '/owner/expenses',
   '/coach/library',
   '/owner/reports',
   '/owner/gym-settings',
@@ -48,14 +45,10 @@ const GYM_NAVIGATION_ORDER: readonly string[] = [
 ];
 
 const FREELANCE_NAVIGATION_ORDER: readonly string[] = [
-  '/owner/dashboard',
   '/coach/dashboard',
   '/coach/trainees',
-  '/coach/workout-programs',
-  '/coach/diet-plans',
-  '/coach/measurements',
-  '/coach/appointments',
   '/coach/finance',
+  '/coach/appointments',
   '/coach/reports',
   '/owner/freelance-team',
   '/coach/library',
@@ -1190,25 +1183,28 @@ export class SidebarComponent {
       ]
     },
     {
-      title: 'التدريب والتغذية',
+      title: 'إدارة الجيم',
       items: [
-        { label: 'برامج التدريب', icon: 'pi-bolt', route: '/coach/workout-programs', roles: [UserRole.Owner, UserRole.Coach] },
-        { label: 'خطط التغذية', icon: 'pi-heart', route: '/coach/diet-plans', roles: [UserRole.Owner, UserRole.Coach] },
-        { label: 'القياسات والتقدم', icon: 'pi-chart-line', route: '/coach/measurements', roles: [UserRole.Owner, UserRole.Coach] },
-        { label: 'الجلسات والمواعيد', icon: 'pi-calendar-plus', route: '/coach/appointments', roles: [UserRole.Owner, UserRole.Coach] }
+        { label: 'الإدارة', icon: 'pi-building', route: '/owner/management', roles: [UserRole.Owner], gymOnly: true, permission: ['ManageBranches', 'ManageCoaches', 'ManageEmployees'] }
       ]
     },
     {
-      title: 'إدارة الجيم',
+      title: 'الحضور والانصراف',
       items: [
-        { label: 'الإدارة', icon: 'pi-building', route: '/owner/management', roles: [UserRole.Owner], gymOnly: true, permission: ['ManageBranches', 'ManageCoaches', 'ManageEmployees'] },
-        { label: 'المالية والاشتراكات', icon: 'pi-wallet', route: '/owner/finance', roles: [UserRole.Owner], gymOnly: true, permission: ['ManageFinance', 'ManageClientSubscriptions'] }
+        { label: 'الحضور والانصراف', icon: 'pi-clock', route: '/owner/attendance', roles: [UserRole.Owner], gymOnly: true, permission: 'ManageAttendance' }
+      ]
+    },
+    {
+      title: 'المصروفات',
+      items: [
+        { label: 'المصروفات', icon: 'pi-money-bill', route: '/owner/expenses', roles: [UserRole.Owner], gymOnly: true, permission: 'ManageFinance' }
       ]
     },
     {
       title: 'إدارة المدرب الحر',
       items: [
         { label: 'المدفوعات والمديونيات', icon: 'pi-wallet', route: '/coach/finance', roles: [UserRole.Owner, UserRole.Coach], freelanceOnly: true, permission: 'ManageFinance' },
+        { label: 'الجلسات والمواعيد', icon: 'pi-calendar-plus', route: '/coach/appointments', roles: [UserRole.Owner, UserRole.Coach], freelanceOnly: true },
         { label: 'فريق المساعدة', icon: 'pi-users', route: '/owner/freelance-team', roles: [UserRole.Owner], freelanceOnly: true, permission: 'ManageCoaches' }
       ]
     },
