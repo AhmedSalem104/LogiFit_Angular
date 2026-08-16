@@ -1601,11 +1601,10 @@ export class SubscriptionsListComponent implements OnInit {
       this.notificationService.warn('لا يمكن إنشاء اشتراك قبل تحميل باقات الاشتراك');
       return;
     }
-    if (!this.createOnly && !this.clients().length) {
-      this.notificationService.warn('لا يمكن إنشاء اشتراك قبل تحميل قائمة العملاء');
-      return;
-    }
-    this.newClientMode = this.createOnly;
+    // The first subscription flow must be able to create the first client.
+    // Do not block the dialog just because the client list is empty or still
+    // unavailable; default to the new-client path in that case.
+    this.newClientMode = this.createOnly || !this.clients().length || !!this.clientsError();
     this.showNewClientPassword = false;
     this.newClient = { fullName: '', phoneNumber: '', email: '', password: '' };
     this.subscriptionForm = {
