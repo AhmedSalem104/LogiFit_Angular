@@ -410,3 +410,7 @@ URLs redirect to the canonical dashboard/reports pages.
 The onboarding dialog must be verified at `360x800`, `768x1024`, `1024x768`, and `1440x900`: three
 steps remain understandable, two-column fields collapse on mobile, footer actions remain reachable,
 and no horizontal page overflow is introduced. The area hubs use a one-column card grid on mobile.
+
+## 2026-08-18 UI/UX verification note
+
+All listed screens retain their existing role/capability guards and API contracts. The shared page header, sidebar, form, table, dialog, loading, empty, and error presentation rules are documented in `RESPONSIVE-DESIGN.md`. Route smoke verification covered the owner, coach, client, identity, and unavailable-workspace paths without an unauthenticated route exposing a protected screen.

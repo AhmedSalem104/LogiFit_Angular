@@ -110,6 +110,9 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
     :host { --journey-blue: #2563eb; --journey-cyan: #22d3ee; }
 
     .auth-layout {
+      width: 100%;
+      min-width: 0;
+      overflow-x: hidden;
       align-items: center;
       background: #1d4ed8;
       display: flex;
@@ -130,6 +133,7 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
       min-height: min(760px, calc(100vh - 3rem));
       overflow: hidden;
       width: 100%;
+      min-width: 0;
     }
 
     .auth-journey {
@@ -176,11 +180,11 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
     .journey-trust { align-items: center; border-top: 1px solid rgba(255,255,255,.16); color: rgba(255,255,255,.78); display: flex; font-size: .78rem; gap: .6rem; margin-top: auto; padding-top: 1.45rem; }
     .journey-trust i { color: #67e8f9; }
 
-    .auth-form-container { background: var(--card-bg); display: flex; flex-direction: column; min-width: 0; padding: clamp(1.5rem, 4vw, 3.5rem); position: relative; }
+    .auth-form-container { background: var(--card-bg); display: flex; flex-direction: column; min-width: 0; max-width: 100%; overflow: hidden; padding: clamp(1.5rem, 4vw, 3.5rem); position: relative; }
     .auth-actions { display: flex; gap: .5rem; justify-content: flex-end; }
     .action-btn { align-items: center; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-secondary); cursor: pointer; display: flex; font-size: .85rem; font-weight: 700; height: 38px; justify-content: center; transition: .2s ease; width: 38px; }
     .action-btn:hover { border-color: var(--primary-400); color: var(--primary-600); transform: translateY(-1px); }
-    .auth-form-wrapper { display: flex; flex: 1; flex-direction: column; justify-content: center; margin: 1.5rem auto; max-width: 440px; width: 100%; }
+    .auth-form-wrapper { display: flex; flex: 1; flex-direction: column; justify-content: center; margin: 1.5rem auto; max-width: 440px; min-width: 0; overflow-wrap: anywhere; width: 100%; }
     .form-footer { color: var(--text-muted); font-size: .76rem; text-align: center; }
 
     @keyframes float { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -20px, 0); } }
@@ -202,7 +206,8 @@ import { HelpLocalComponent } from '../../help/help-local/help-local.component';
 
     @media (max-width: 560px) {
       .auth-layout { align-items: center; padding: 1rem; }
-      .auth-card { border-radius: 22px; box-shadow: 0 18px 42px rgba(15, 23, 42, .2); min-height: calc(100vh - 2rem); }
+      .auth-layout { width: 100vw; max-width: 100vw; }
+      .auth-card { border-radius: 22px; box-shadow: 0 18px 42px rgba(15, 23, 42, .2); min-height: calc(100vh - 2rem); width: 100%; max-width: 100%; }
       .auth-journey { min-height: 280px; padding: 1.5rem; }
       .brand-lockup { font-size: 1.15rem; }
       .journey-intro { margin-top: 1.7rem; }

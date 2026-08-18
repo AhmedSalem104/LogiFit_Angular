@@ -1104,7 +1104,7 @@ textarea,
     }
   }
 
-  :host-context([dir="ltr"]) &.p-inputnumber-buttons-stacked {
+  [dir="ltr"] &.p-inputnumber-buttons-stacked {
     .p-inputtext {
       border-top-left-radius: 14px;
       border-bottom-left-radius: 14px;
@@ -1177,7 +1177,7 @@ textarea,
     padding-right: 2.75rem;
   }
 
-  :host-context([dir="ltr"]) & {
+  [dir="ltr"] & {
     .input-icon {
       right: auto;
       left: 1rem;
@@ -1215,7 +1215,7 @@ textarea,
     color: var(--text-muted);
   }
 
-  :host-context([dir="ltr"]) & {
+  [dir="ltr"] & {
     input {
       padding-right: 1rem;
       padding-left: 2.75rem;
@@ -3950,4 +3950,96 @@ p-table,
     max-width: calc(100vw - 1rem) !important;
     margin: .5rem !important;
   }
+}
+
+// ========================================
+// Final shared UI guardrails
+// These tokens and primitives are intentionally global so feature screens can
+// use the same visual language without duplicating component CSS.
+// ========================================
+:root {
+  --font-sans: 'Cairo', 'Tajawal', system-ui, sans-serif;
+  --text-strong: #172033;
+  --text-subtle: #94a3b8;
+  --radius-sm: .55rem;
+  --radius-md: .75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --control-height: 2.75rem;
+  --content-max-width: 1600px;
+  --page-padding: clamp(.75rem, 2.4vw, 1.5rem);
+  --focus-ring: 0 0 0 3px var(--input-focus-ring);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+button, input, select, textarea { font: inherit; }
+button, a, input, select, textarea, [tabindex]:not([tabindex='-1']) { outline-offset: 3px; }
+:where(button, a, input, select, textarea, [tabindex]:not([tabindex='-1'])):focus-visible {
+  outline: 3px solid var(--input-focus-border);
+  outline-offset: 2px;
+}
+button:disabled, input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; }
+main, section, article, form, .layout, .main-wrapper, .main-content, .content-container { min-width: 0; }
+img, svg, video, canvas { max-width: 100%; }
+body { overflow-x: clip; overflow-wrap: anywhere; }
+
+.content-container {
+  width: 100%;
+  max-width: var(--content-max-width);
+  padding-inline: var(--page-padding);
+}
+
+// Native and PrimeNG controls share one minimum touch target and radius.
+.form-input, .modern-input, .p-inputtext, input[type='text'], input[type='email'],
+input[type='password'], input[type='number'], input[type='tel'], input[type='search'],
+input[type='url'], select, textarea, .p-dropdown, .p-multiselect,
+.p-calendar .p-inputtext {
+  min-height: var(--control-height);
+  border-radius: var(--radius-md);
+}
+.btn, .p-button { min-height: var(--control-height); border-radius: var(--radius-md); }
+.p-button { font-family: var(--font-sans); }
+.p-datatable, .p-datatable-wrapper, .table-container, .table-wrapper, .report-table {
+  min-width: 0;
+  max-width: 100%;
+}
+.p-datatable-wrapper, .table-container, .table-wrapper, .report-table {
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.p-datatable-table, .p-datatable-wrapper > table, .table-container > table,
+.table-wrapper > table, .report-table > table { min-width: max-content; }
+.p-dialog, .modal, .dialog {
+  max-width: calc(100vw - 1rem);
+  max-height: calc(100vh - 1rem);
+}
+.p-dialog .p-dialog-content { max-height: calc(100vh - 10rem); overflow-y: auto; overflow-x: hidden; }
+.page-header, .table-header, .table-toolbar, .header-actions, .table-actions,
+.filter-row, .filters-row, .form-actions, .modal-actions { min-width: 0; }
+
+@media (max-width: 1024px) {
+  .main-content { padding-top: 64px; }
+  .content-container { padding-inline: clamp(.75rem, 3vw, 1.25rem); }
+}
+
+@media (max-width: 768px) {
+  .page-title { font-size: clamp(1.25rem, 4vw, 1.5rem); }
+  .page-header, .table-header, .table-toolbar, .header-actions, .table-actions,
+  .filter-row, .filters-row, .form-actions, .modal-actions { flex-wrap: wrap; }
+  .page-header > *, .table-header > *, .table-toolbar > *, .header-actions > *,
+  .table-actions > *, .filter-row > *, .filters-row > * { min-width: 0; }
+  .p-datatable .p-datatable-thead > tr > th,
+  .p-datatable .p-datatable-tbody > tr > td { padding: .7rem .8rem; font-size: .82rem; }
+  .p-paginator { flex-wrap: wrap; justify-content: center; gap: .125rem; }
+  .p-paginator .p-paginator-current { width: 100%; text-align: center; margin-top: .25rem; }
+}
+
+@media (max-width: 480px) {
+  .content-container { padding-inline: .75rem; }
+  .p-datatable .p-datatable-thead > tr > th,
+  .p-datatable .p-datatable-tbody > tr > td { padding: .6rem .7rem; }
+  .p-paginator .p-paginator-pages { display: none; }
+  .p-dialog { width: calc(100vw - 1rem) !important; max-width: calc(100vw - 1rem) !important; margin: .5rem !important; }
 }

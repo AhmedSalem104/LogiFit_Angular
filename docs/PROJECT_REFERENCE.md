@@ -482,3 +482,7 @@ model without exposing every internal detail page in the primary navigation:
 The implementation is frontend-only because the existing Backend onboarding handler already wraps
 member, optional subscription, payment and membership-card creation in one transaction. Production
 release and health verification remain deployment steps; Platform Admin is unaffected.
+
+## 2026-08-18 UI/UX verification note
+
+The platform UI baseline was refreshed without changing route contracts, API payloads, permissions, or tenant isolation. See `RESPONSIVE-DESIGN.md` for the shared token and breakpoint rules and Issue #111 for the implementation scope and QA evidence.
