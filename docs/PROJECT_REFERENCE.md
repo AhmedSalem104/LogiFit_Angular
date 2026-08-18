@@ -70,7 +70,7 @@
 | i18n | @ngx-translate — `assets/i18n/{en,ar}.json` (266 سطر لكل) + RTL |
 | HTTP | HttpClient + `jwtInterceptor` + `errorInterceptor` |
 | الرسوم | @swimlane/ngx-charts |
-| التصدير | jsPDF + jspdf-autotable + docx + file-saver (عبر `ExportService`) |
+| التصدير | jsPDF 4.2.1 + jspdf-autotable 5.0.8 + docx + file-saver (عبر `ExportService`)؛ تم تحديث حزم PDF لمعالجة الثغرات الحرجة في Issue #112، مع بقاء تحقق الإنتاج منفصلًا. |
 | التنبيهات | SweetAlert2 + PrimeNG MessageService |
 | النشر | Vercel → `dist/logicfit-app/browser` |
 
