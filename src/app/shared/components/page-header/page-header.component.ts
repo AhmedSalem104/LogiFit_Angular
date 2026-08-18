@@ -50,6 +50,8 @@ export interface Breadcrumb {
   styles: [`
     .page-header {
       display: flex;
+      width: 100%;
+      min-width: 0;
       justify-content: space-between;
       align-items: flex-start;
       margin-bottom: 1.5rem;
@@ -59,6 +61,7 @@ export interface Breadcrumb {
 
     .breadcrumbs {
       display: flex;
+      min-width: 0;
       align-items: center;
       gap: 0.5rem;
       margin-bottom: 0.5rem;
@@ -68,6 +71,7 @@ export interface Breadcrumb {
     .breadcrumb-link {
       color: var(--text-secondary);
       text-decoration: none;
+      overflow-wrap: anywhere;
       transition: color 0.2s;
 
       &:hover {
@@ -95,6 +99,7 @@ export interface Breadcrumb {
       color: var(--text-primary);
       margin: 0;
       line-height: 1.3;
+      overflow-wrap: anywhere;
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
@@ -125,10 +130,14 @@ export interface Breadcrumb {
 
     .page-header__actions {
       display: flex;
+      min-width: 0;
+      max-width: 100%;
       align-items: center;
       gap: 0.75rem;
       flex-wrap: wrap;
     }
+
+    .page-header__actions > * { max-width: 100%; }
 
     @media (max-width: 640px) {
       .page-header {
@@ -142,6 +151,7 @@ export interface Breadcrumb {
 
       .page-header__actions {
         justify-content: flex-start;
+        width: 100%;
       }
     }
   `]

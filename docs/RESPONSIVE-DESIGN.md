@@ -111,3 +111,11 @@ The member onboarding dialog uses three stages. At `360px` and `480px` the step 
 under their number, the form becomes one column, and the action footer remains visible after scroll.
 At tablet and desktop widths the form uses two columns and the price summary uses three columns.
 Loading, no-plan, API-error, and saving states must never render a blank dialog.
+
+## 2026-08-18 comprehensive UI/UX baseline (Issue #111)
+
+The shared responsive layer now defines canonical control, radius, typography, focus, and page-width tokens in `src/styles.scss`. Native and PrimeNG controls share a 2.75rem minimum touch target. Tables keep their own horizontal scroll container, dialogs scroll internally, and the page shell clips accidental document-wide overflow without hiding table data.
+
+The auth shell and identity login now enforce `min-width: 0`, bounded child widths, safe text wrapping, and a full-width mobile card. The platform sidebar renders named groups and one-column icon links on desktop, while its existing pinned rail/mobile drawer behaviour is preserved. `app-page-header` now bounds title/action content and wraps long labels safely.
+
+QA was run at 375, 430, 768, 1024, 1440, and 1920 CSS pixels. The route smoke matrix covered 95 platform routes; each returned the application shell or an intentional authentication redirect, with no 404, console/page error, or horizontal overflow in the unauthenticated state.

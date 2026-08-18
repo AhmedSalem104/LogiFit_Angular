@@ -152,7 +152,7 @@ export function orderNavGroupsForWorkspace(
       <nav class="sidebar-nav">
         @for (group of filteredNavGroups; track group.title) {
           <div class="nav-section">
-            <div class="section-divider" aria-hidden="true"><span></span></div>
+            <div class="section-title" role="heading" aria-level="2"><span class="title-text">{{ group.title }}</span><span class="title-line" aria-hidden="true"></span></div>
             <ul class="nav-list">
               @for (item of group.items; track item.route) {
                 @if (canShowItem(item)) {
@@ -583,6 +583,23 @@ export function orderNavGroupsForWorkspace(
       }
     }
 
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      min-height: 1.35rem;
+      margin: 0 .35rem .45rem;
+      padding-inline: .35rem;
+      color: rgba(148, 163, 184, .92);
+      font-size: .67rem;
+      font-weight: 800;
+      letter-spacing: .02em;
+      text-transform: none;
+
+      .title-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .title-line { display: none; width: 24px; height: 1px; border-radius: 999px; background: rgba(148, 163, 184, .42); }
+    }
+
     .section-divider {
       padding: 0.5rem 1rem;
       margin-bottom: 0.65rem;
@@ -597,7 +614,7 @@ export function orderNavGroupsForWorkspace(
       padding: 0;
       margin: 0;
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: 1fr;
       gap: 0.55rem;
     }
 
@@ -619,10 +636,10 @@ export function orderNavGroupsForWorkspace(
 
     .nav-link {
       display: flex;
-      min-height: 5.25rem;
-      flex-direction: column;
+      min-height: 3.15rem;
+      flex-direction: row;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       gap: .45rem;
       padding: 0.75rem 1rem;
       color: rgba(203, 213, 225, 0.85);
@@ -630,7 +647,7 @@ export function orderNavGroupsForWorkspace(
       border-radius: 12px;
       position: relative;
       overflow: hidden;
-      text-align: center;
+      text-align: right;
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
       &::before {
